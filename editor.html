@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习数据编辑器</title>
+    <link rel="stylesheet" href="assets/css/editor.css">
+    <script src="assets/lib/xlsx.full.min.js"></script>
+    <script src="assets/lib/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title apple-style-title">
+                    <svg class="title-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <span class="title-text">学习时间记录编辑器</span>
+                </h1>
+                <div class="header-actions">
+                    <a href="index.html" class="back-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 3a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5H6a.5.5 0 0 0 0 1h1.5A1.5 1.5 0 0 0 9 6.5v-2A1.5 1.5 0 0 0 7.5 3H6a.5.5 0 0 0 0 1h1.5z"/>
+                            <path d="M5 1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H5zm6 8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2V9z"/>
+                            <path d="M5 8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"/>
+                        </svg>
+                        返回主页
+                    </a>
+                    <button id="toggleThemeBtn" class="theme-toggle-btn" title="切换暗黑/明亮模式">🌙</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button id="saveTable" class="tool-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H9.5a1 1 0 0 0-1 1v7.293l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L7.5 9.293V2a2 2 0 0 1 2-2H14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h2.5a.5.5 0 0 1 0 1H2z"/>
+                        </svg>
+                        保存表格
+                    </button>
+                    <button id="exportExcel" class="tool-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                        </svg>
+                        导出Excel
+                    </button>
+                    <button id="clearDataBtn" class="tool-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                        </svg>
+                        清空数据
+                    </button>
+                    <button id="projectConfigBtn" class="tool-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        项目配置
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3 class="section-title">📝 数据输入区域</h3>
+                <table id="dataTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>学习项目名称</th>
+                            <th>项目开始时间</th>
+                            <th>项目结束时间</th>
+                            <th>项目完成时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 数据行将通过JavaScript动态添加 -->
+                    </tbody>
+                </table>
+                
+                <!-- 移动端数据卡片容器 -->
+                <div id="mobileDataCards" class="mobile-data-cards">
+                    <!-- 移动端数据卡片将通过JavaScript动态添加 -->
+                </div>
+            </div>
+
+            <div class="confirmed-data-container">
+                <h3 class="section-title">📅 学习日历</h3>
+                
+                <!-- 日历控制区域 -->
+                <div class="calendar-controls">
+                    <button id="prevMonth" class="calendar-nav-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                        </svg>
+                    </button>
+                    <h4 id="currentMonthYear">2024年1月</h4>
+                    <button id="nextMonth" class="calendar-nav-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 日历容器 -->
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-day-header">日</div>
+                        <div class="calendar-day-header">一</div>
+                        <div class="calendar-day-header">二</div>
+                        <div class="calendar-day-header">三</div>
+                        <div class="calendar-day-header">四</div>
+                        <div class="calendar-day-header">五</div>
+                        <div class="calendar-day-header">六</div>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- 日历日期将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 传统表格视图（桌面端） -->
+                <div class="table-view-toggle">
+                    <button id="toggleTableView" class="toggle-btn">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"/>
+                        </svg>
+                        切换到表格视图
+                    </button>
+                </div>
+                
+                <!-- 传统表格视图（隐藏状态） -->
+                <div id="tableView" class="table-view" style="display: none;">
+                    <!-- 查询控制区域 -->
+                    <div class="query-controls">
+                        <div class="query-filters">
+                            <div class="filter-group">
+                                <label for="queryStartDate">开始日期:</label>
+                                <input type="date" id="queryStartDate" class="query-input">
+                            </div>
+                            <div class="filter-group">
+                                <label for="queryEndDate">结束日期:</label>
+                                <input type="date" id="queryEndDate" class="query-input">
+                            </div>
+                            <div class="filter-group">
+                                <label for="queryProject">项目名称:</label>
+                                <select id="queryProject" class="query-input">
+                                    <option value="">全部项目</option>
+                                </select>
+                            </div>
+                            <button id="queryBtn" class="query-btn">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                                </svg>
+                                查询
+                            </button>
+                            <button id="resetQueryBtn" class="reset-btn">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                                </svg>
+                                重置
+                            </button>
+                        </div>
+                        <div class="query-summary">
+                            <span id="queryResultCount">共 0 条记录</span>
+                        </div>
+                    </div>
+                    
+                    <div class="confirmed-table-container">
+                        <table id="confirmedDataTable" class="confirmed-data-table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>学习项目名称</th>
+                                    <th>项目开始时间</th>
+                                    <th>项目结束时间</th>
+                                    <th>项目完成时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 已确认的数据将显示在这里 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- 分页控制区域 -->
+                    <div class="pagination-controls">
+                        <div class="pagination-info">
+                            <span id="paginationInfo">第 1 页，共 1 页</span>
+                            <span id="paginationCount">显示 0-0 条，共 0 条</span>
+                        </div>
+                        <div class="pagination-buttons">
+                            <button id="firstPageBtn" class="pagination-btn" disabled>
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                                    <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                                </svg>
+                            </button>
+                            <button id="prevPageBtn" class="pagination-btn" disabled>
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                                </svg>
+                            </button>
+                            <div class="page-numbers" id="pageNumbers">
+                                <!-- 页码按钮将在这里动态生成 -->
+                            </div>
+                            <button id="nextPageBtn" class="pagination-btn" disabled>
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                </svg>
+                            </button>
+                            <button id="lastPageBtn" class="pagination-btn" disabled>
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                    <path fill-rule="evenodd" d="M1.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L7.293 8 1.646 2.354a.5.5 0 0 1 0-.708z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="page-size-control">
+                            <label for="pageSizeSelect">每页显示:</label>
+                            <select id="pageSizeSelect" class="page-size-select">
+                                <option value="10">10条</option>
+                                <option value="20">20条</option>
+                                <option value="50">50条</option>
+                                <option value="100">100条</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 移动端已确认数据卡片容器 -->
+                    <div id="mobileConfirmedDataCards" class="mobile-data-cards">
+                        <!-- 移动端已确认数据卡片将通过JavaScript动态添加 -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 数据分析图表区域 -->
+        <section class="analytics-section">
+            <div class="analytics-header">
+                <h3 class="section-title">📈 实时数据分析</h3>
+                <div class="chart-controls">
+                    <div class="filter-group">
+                        <select id="chartProjectSelect">
+                            <option value="">全部项目</option>
+                        </select>
+                    </div>
+                    <div class="time-filter-buttons">
+                        <button class="time-filter-btn active" data-days="7">近7天</button>
+                        <button class="time-filter-btn" data-days="30">近30天</button>
+                        <button class="time-filter-btn" data-days="90">近3个月</button>
+                        <button class="time-filter-btn" data-days="0">全部时间</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-container" id="statsContainer">
+                <!-- 桌面端统计卡片 -->
+                <div class="stat-card">
+                    <div class="stat-title">总项目数</div>
+                    <div class="stat-value" id="totalProjects">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">总学习时间</div>
+                    <div class="stat-value" id="totalTime">0<span class="stat-unit">分钟</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">平均每日</div>
+                    <div class="stat-value" id="avgDailyTime">0<span class="stat-unit">分钟</span></div>
+                </div>
+                <div class="stat-card date-range-card">
+                    <div class="stat-title">分析日期范围</div>
+                    <div class="stat-value" id="dateRange">-</div>
+                </div>
+                
+                <!-- 移动端统计信息紧凑显示 -->
+                <div class="mobile-stats-summary">
+                    <h4>📊 学习统计概览</h4>
+                    <div class="mobile-stats-grid">
+                        <div class="mobile-stat-item">
+                            <div class="mobile-stat-label">总项目数</div>
+                            <div class="mobile-stat-value" id="mobileTotalProjects">0</div>
+                        </div>
+                        <div class="mobile-stat-item">
+                            <div class="mobile-stat-label">总学习时间</div>
+                            <div class="mobile-stat-value" id="mobileTotalTime">0<span class="mobile-stat-unit">分钟</span></div>
+                        </div>
+                        <div class="mobile-stat-item">
+                            <div class="mobile-stat-label">平均每日</div>
+                            <div class="mobile-stat-value" id="mobileAvgDailyTime">0<span class="mobile-stat-unit">分钟</span></div>
+                        </div>
+                        <div class="mobile-stat-item">
+                            <div class="mobile-stat-label">分析日期范围</div>
+                            <div class="mobile-stat-value" id="mobileDateRange">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表容器 -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h4 id="chartTitle">学习时间趋势 (折线图)</h4>
+                    <div class="chart-type-selector">
+                        <label for="chartTypeSelect">图表类型:</label>
+                        <select id="chartTypeSelect">
+                            <option value="trend">学习时间趋势 (折线图)</option>
+                            <option value="radar">项目分布 (雷达图)</option>
+                            <option value="bar">项目时间对比 (柱状图)</option>
+                            <option value="pie">项目时间占比 (饼图)</option>
+                            <option value="daily">每日学习时长 (柱状图)</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas id="mainChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑学习数据</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="form-group">
+                        <label for="editDate">日期:</label>
+                        <input type="date" id="editDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectName">学习项目名称:</label>
+                        <select id="editProjectName" required>
+                            <option value="">请选择学习项目</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStartTime">项目开始时间:</label>
+                        <input type="datetime-local" id="editStartTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEndTime">项目结束时间:</label>
+                        <input type="datetime-local" id="editEndTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editCompletionTime">项目完成时间:</label>
+                        <input type="text" id="editCompletionTime" readonly>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveEditBtn" class="save-btn">保存</button>
+                <button type="button" id="cancelEditBtn" class="cancel-btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 项目配置弹窗 -->
+    <div id="projectConfigModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>项目配置管理</h3>
+                <span id="closeProjectConfig" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-controls">
+                    <button id="addProjectBtn" class="tool-btn primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        添加项目
+                    </button>
+                </div>
+                <div class="project-config-list">
+                    <!-- 项目配置列表将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加项目配置弹窗 -->
+    <div id="addProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加项目配置</h3>
+                <span id="closeAddProject" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="projectName">项目名称</label>
+                    <input type="text" id="projectName" placeholder="请输入项目名称">
+                </div>
+                <div class="form-group">
+                    <label for="excellentTime">优秀时间（分钟）</label>
+                    <input type="number" id="excellentTime" placeholder="30" min="1" max="999">
+                    <small>完成时间 ≤ 此值，显示绿色和😊</small>
+                </div>
+                <div class="form-group">
+                    <label for="goodTime">良好时间（分钟）</label>
+                    <input type="number" id="goodTime" placeholder="60" min="1" max="999">
+                    <small>优秀时间 < 完成时间 ≤ 此值，显示橙色和💪</small>
+                </div>
+                <div class="form-group">
+                    <label for="poorTime">需改进时间（分钟）</label>
+                    <input type="number" id="poorTime" placeholder="120" min="1" max="999">
+                    <small>良好时间 < 完成时间 ≤ 此值，显示红色和😤</small>
+                </div>
+                <div class="form-group">
+                    <label for="excellentEmoji">优秀表情</label>
+                    <input type="text" id="excellentEmoji" value="😊" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 😊 微笑表情</small>
+                </div>
+                <div class="form-group">
+                    <label for="goodEmoji">良好表情</label>
+                    <input type="text" id="goodEmoji" value="💪" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 💪 肌肉表情</small>
+                </div>
+                <div class="form-group">
+                    <label for="poorEmoji">需改进表情</label>
+                    <input type="text" id="poorEmoji" value="😤" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 😤 生气表情</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelAddProject" class="cancel-btn">取消</button>
+                <button id="saveProjectBtn" class="save-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑项目配置弹窗 -->
+    <div id="editProjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑项目配置</h3>
+                <span id="closeEditProject" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editProjectName">项目名称</label>
+                    <input type="text" id="editProjectName" placeholder="请输入项目名称">
+                </div>
+                <div class="form-group">
+                    <label for="editExcellentTime">优秀时间（分钟）</label>
+                    <input type="number" id="editExcellentTime" placeholder="30" min="1" max="999">
+                    <small>完成时间 ≤ 此值，显示绿色和😊</small>
+                </div>
+                <div class="form-group">
+                    <label for="editGoodTime">良好时间（分钟）</label>
+                    <input type="number" id="editGoodTime" placeholder="60" min="1" max="999">
+                    <small>优秀时间 < 完成时间 ≤ 此值，显示橙色和💪</small>
+                </div>
+                <div class="form-group">
+                    <label for="editPoorTime">需改进时间（分钟）</label>
+                    <input type="number" id="editPoorTime" placeholder="120" min="1" max="999">
+                    <small>良好时间 < 完成时间 ≤ 此值，显示红色和😤</small>
+                </div>
+                <div class="form-group">
+                    <label for="editExcellentEmoji">优秀表情</label>
+                    <input type="text" id="editExcellentEmoji" value="😊" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 😊 微笑表情</small>
+                </div>
+                <div class="form-group">
+                    <label for="editGoodEmoji">良好表情</label>
+                    <input type="text" id="editGoodEmoji" value="💪" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 💪 肌肉表情</small>
+                </div>
+                <div class="form-group">
+                    <label for="editPoorEmoji">需改进表情</label>
+                    <input type="text" id="editPoorEmoji" value="😤" maxlength="10" class="emoji-input" readonly>
+                    <small>固定为 😤 生气表情</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelEditProject" class="cancel-btn">取消</button>
+                <button id="updateProjectBtn" class="save-btn">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期数据弹窗容器，供日历点击使用 -->
+    <div id="dateDataModal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="modal-body"></div>
+      </div>
+    </div>
+
+    <script src="assets/js/editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>学习项目完成耗时趋势分析</title>
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div>处理数据中...</div>
+  </div>
+  
+  <div class="header-container">
+    <h1>学习项目完成耗时趋势分析</h1>
+    <div class="header-actions">
+      <button id="loginBtn" class="login-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+        </svg>
+        登录
+      </button>
+      <button id="toggleThemeBtn" class="theme-toggle-btn" title="切换暗黑/明亮模式">🌙</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="filter-section">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="excelFile">选择Excel文件</label>
+          <input type="file" id="excelFile" accept=".xlsx, .xls" />
+          <div class="error-message" id="fileError"></div>
+        </div>
+        <div class="filter-group">
+          <label for="projectSelect">选择项目</label>
+          <select id="projectSelect">
+            <option value="">全部项目</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="startDate">开始日期</label>
+          <input type="date" id="startDate">
+        </div>
+        <div class="filter-group">
+          <label for="endDate">结束日期</label>
+          <input type="date" id="endDate">
+        </div>
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button id="applyFilter">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M3.5 5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-9zM2 8.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1zm4.5-.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-5z"/>
+            </svg>
+            应用筛选
+          </button>
+        </div>
+      </div>
+      
+      <div class="quick-date-buttons">
+        <button class="quick-date-btn" data-days="7">最近7天</button>
+        <button class="quick-date-btn" data-days="30">最近30天</button>
+        <button class="quick-date-btn" data-days="90">最近3个月</button>
+        <button class="quick-date-btn active" data-days="0">全部日期</button>
+      </div>
+    </div>
+    
+    <div class="stats-container" id="statsContainer">
+      <div class="stat-card">
+        <div class="stat-title">总项目数</div>
+        <div class="stat-value" id="totalProjects">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">总学习时间</div>
+        <div class="stat-value" id="totalTime">0<span class="stat-unit">分钟</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">平均每日</div>
+        <div class="stat-value" id="avgDailyTime">0<span class="stat-unit">分钟</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">分析日期范围</div>
+        <div class="stat-value" id="dateRange">-</div>
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-header">
+        <h4 id="chartTitle">学习时间趋势 (折线图)</h4>
+        <div class="chart-type-selector">
+          <label for="chartTypeSelect">图表类型:</label>
+          <select id="chartTypeSelect">
+            <option value="trend">学习时间趋势 (折线图)</option>
+            <option value="radar">项目分布 (雷达图)</option>
+            <option value="bar">项目时间对比 (柱状图)</option>
+            <option value="pie">项目时间占比 (饼图)</option>
+            <option value="daily">每日学习时长 (柱状图)</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="chart"></canvas>
+    </div>
+    
+    <div class="table-wrapper">
+      <!-- 查询控制区域 -->
+      <div class="query-controls">
+        <div class="query-filters">
+          <div class="filter-group">
+            <label for="queryStartDate">开始日期:</label>
+            <input type="date" id="queryStartDate" class="query-input">
+          </div>
+          <div class="filter-group">
+            <label for="queryEndDate">结束日期:</label>
+            <input type="date" id="queryEndDate" class="query-input">
+          </div>
+          <div class="filter-group">
+            <label for="queryProject">项目名称:</label>
+            <select id="queryProject" class="query-input">
+              <option value="">全部项目</option>
+            </select>
+          </div>
+          <button id="queryBtn" class="query-btn">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+            </svg>
+            查询
+          </button>
+          <button id="resetQueryBtn" class="reset-btn">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+            </svg>
+            重置
+          </button>
+        </div>
+        <div class="query-summary">
+          <span id="queryResultCount">共 0 条记录</span>
+        </div>
+      </div>
+      
+      <div id="output"></div>
+      
+      <!-- 分页控制区域 -->
+      <div class="pagination-controls">
+        <div class="pagination-info">
+          <span id="paginationInfo">第 1 页，共 1 页</span>
+          <span id="paginationCount">显示 0-0 条，共 0 条</span>
+        </div>
+        <div class="pagination-buttons">
+          <button id="firstPageBtn" class="pagination-btn" disabled>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+              <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+            </svg>
+          </button>
+          <button id="prevPageBtn" class="pagination-btn" disabled>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+            </svg>
+          </button>
+          <div class="page-numbers" id="pageNumbers">
+            <!-- 页码按钮将在这里动态生成 -->
+          </div>
+          <button id="nextPageBtn" class="pagination-btn" disabled>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+          <button id="lastPageBtn" class="pagination-btn" disabled>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708z"/>
+              <path fill-rule="evenodd" d="M1.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L7.293 8 1.646 2.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="page-size-control">
+          <label for="pageSizeSelect">每页显示:</label>
+          <select id="pageSizeSelect" class="page-size-select">
+            <option value="10">10条</option>
+            <option value="20">20条</option>
+            <option value="50">50条</option>
+            <option value="100">100条</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <div class="export-buttons">
+      <a href="editor.html" class="export-btn" id="openEditor">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-247.486-7L10 8.293 11.293 7 7.293 3 6 4.293 2.293 0H0v2.293z"/>
+        </svg>
+        在线编辑
+      </a>
+      <button class="export-btn" id="exportChart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+        导出图表
+      </button>
+      <button class="export-btn" id="downloadTemplate">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        下载模板
+      </button>
+      <button class="export-btn" id="exportData">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8.5 6.5a.5.5 0 0 0-1 0v3.793L6.354 9.146a.5.5 0 1 0-.708.708l2 2a.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0-.708-.708L8.5 10.293V6.5z"/>
+          <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+        </svg>
+        导出数据
+      </button>
+    </div>
+  </div>
+
+  <!-- 登录提示覆盖层 -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-overlay-content">
+      <h3>🔒 需要登录</h3>
+      <p>为了使用数据上传和分析功能，请先登录您的账户。</p>
+      <button class="login-overlay-btn" onclick="openLoginModal()">立即登录</button>
+    </div>
+  </div>
+
+  <!-- 登录弹窗 -->
+  <div id="authModal" class="login-modal">
+    <div class="login-modal-content">
+      <div class="login-modal-header">
+        <h2 class="login-modal-title">📚 学习追踪器</h2>
+        <p class="login-modal-subtitle">登录您的账户以继续使用</p>
+        <button id="closeAuthModal" class="login-modal-close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="login-modal-tabs">
+        <button class="login-tab active" data-tab="login">登录</button>
+        <button class="login-tab" data-tab="register">注册</button>
+      </div>
+
+      <div class="login-modal-body">
+        <!-- 登录表单 -->
+        <form id="loginForm" class="login-form active">
+          <div class="form-group">
+            <label for="loginUsername">用户名</label>
+            <input type="text" id="loginUsername" name="username" placeholder="请输入用户名" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">密码</label>
+            <input type="password" id="loginPassword" name="password" placeholder="请输入密码" required>
+          </div>
+          <button type="submit" class="login-btn">
+            登录
+          </button>
+          <div id="loginError" class="login-error"></div>
+          <div id="loginSuccess" class="login-success"></div>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="registerForm" class="login-form">
+          <div class="form-group">
+            <label for="registerUsername">用户名</label>
+            <input type="text" id="registerUsername" name="username" placeholder="请输入用户名" required>
+          </div>
+          <div class="form-group">
+            <label for="registerEmail">邮箱</label>
+            <div class="email-verification-group">
+              <input type="email" id="registerEmail" name="email" placeholder="请输入邮箱地址" required>
+              <button type="button" class="send-code-btn">
+                <span>发送验证码</span>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="verificationCode">验证码</label>
+            <div class="verification-code-input">
+              <input type="text" class="code-digit" maxlength="1" data-index="0" inputmode="numeric" pattern="[0-9]">
+              <input type="text" class="code-digit" maxlength="1" data-index="1" inputmode="numeric" pattern="[0-9]">
+              <input type="text" class="code-digit" maxlength="1" data-index="2" inputmode="numeric" pattern="[0-9]">
+              <input type="text" class="code-digit" maxlength="1" data-index="3" inputmode="numeric" pattern="[0-9]">
+              <input type="text" class="code-digit" maxlength="1" data-index="4" inputmode="numeric" pattern="[0-9]">
+              <input type="text" class="code-digit" maxlength="1" data-index="5" inputmode="numeric" pattern="[0-9]">
+            </div>
+            <input type="hidden" id="verificationCode" name="verificationCode">
+          </div>
+          <div class="form-group">
+            <label for="registerPassword">密码</label>
+            <input type="password" id="registerPassword" name="password" placeholder="请输入密码" required>
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">确认密码</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="请再次输入密码" required>
+          </div>
+          <button type="submit" class="login-btn">
+            提交
+          </button>
+          <div id="registerError" class="login-error"></div>
+          <div id="registerSuccess" class="login-success"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/lib/xlsx.full.min.js"></script>
+  <script src="assets/lib/chart.umd.min.js"></script>
+  <script src="assets/lib/moment.min.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html> 
