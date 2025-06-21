@@ -39,6 +39,15 @@ cp env.example .env
 # 编辑 .env 文件，填写必要的配置
 ```
 
+**🔐 JWT_SECRET 配置：**
+```bash
+# 自动生成JWT_SECRET
+JWT_SECRET=$(openssl rand -base64 32)
+echo "JWT_SECRET=$JWT_SECRET" >> .env
+
+# 或者手动编辑.env文件，将JWT_SECRET替换为生成的随机字符串
+```
+
 4. **启动开发服务器**
 ```bash
 npm start
@@ -77,6 +86,11 @@ npm start
    JWT_SECRET=your-super-secret-jwt-key-here
    NODE_ENV=production
    ```
+   
+   **🔐 JWT_SECRET 获取方式：**
+   - **自动生成**：在终端运行 `openssl rand -base64 32` 生成随机字符串
+   - **手动设置**：使用至少32位的随机字符串，包含字母、数字和特殊字符
+   - **安全提醒**：不要使用默认值，生产环境必须使用强随机字符串
 
 5. **部署**：点击 `Deploy` 按钮
 
@@ -108,6 +122,11 @@ npm start
    JWT_SECRET=your-super-secret-jwt-key-here
    NODE_ENV=production
    ```
+   
+   **🔐 JWT_SECRET 获取方式：**
+   - **自动生成**：在终端运行 `openssl rand -base64 32` 生成随机字符串
+   - **手动设置**：使用至少32位的随机字符串，包含字母、数字和特殊字符
+   - **安全提醒**：不要使用默认值，生产环境必须使用强随机字符串
 
 5. **部署**：点击 `Save and Deploy`
 
@@ -200,6 +219,25 @@ SMTP_PASS=your-app-password
 # 安全配置
 TRUST_PROXY=true
 ```
+
+#### 🔐 JWT_SECRET 获取方式
+
+**方法一：自动生成（推荐）**
+```bash
+# 使用OpenSSL生成32位随机字符串
+openssl rand -base64 32
+```
+
+**方法二：手动设置**
+- 使用至少32位的随机字符串
+- 可以包含字母、数字和特殊字符
+- 示例：`my-super-secret-jwt-key-2024-xyz123!@#`
+
+**安全建议：**
+- 生产环境必须使用强随机字符串
+- 不要使用默认值或简单字符串
+- 定期更换JWT_SECRET
+- 妥善保管，不要泄露给他人
 
 ### 安全配置
 
