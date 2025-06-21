@@ -1,8 +1,5 @@
 # 📚 学习项目完成耗时趋势分析系统
 
-[![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker)
-[![Deploy to Cloudflare Pages](https://deploy.cloudflare.com/button)](https://deploy.cloudflare.com/?url=https://github.com/laurawu0122/study-tracker)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://hub.docker.com/)
 
 一个现代化的学习项目追踪和分析系统，帮助用户记录学习项目完成时间，分析学习效率趋势，并提供直观的数据可视化。
 
@@ -55,6 +52,7 @@ npm start
 本项目支持三种部署方式，点击上方徽章即可一键部署：
 
 ### 1. Vercel 部署（推荐）
+[![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker)
 
 **优势：**
 - 自动SSL证书
