@@ -1,5 +1,9 @@
 # 📚 学习项目完成耗时趋势分析系统
 
+[![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker)
+[![Deploy to Cloudflare Pages](https://deploy.cloudflare.com/button)](https://deploy.cloudflare.com/?url=https://github.com/laurawu0122/study-tracker)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://hub.docker.com/)
+
 一个现代化的学习项目追踪和分析系统，帮助用户记录学习项目完成时间，分析学习效率趋势，并提供直观的数据可视化。
 
 ## ✨ 功能特性
@@ -48,7 +52,7 @@ npm start
 
 ## 🛠️ 部署方式
 
-本项目支持三种一键部署方式：
+本项目支持三种部署方式，点击上方徽章即可一键部署：
 
 ### 1. Vercel 部署（推荐）
 
@@ -59,13 +63,26 @@ npm start
 - 免费额度充足
 
 **部署步骤：**
-```bash
-# 安装Vercel CLI
-npm install -g vercel
 
-# 一键部署
-./scripts/deploy-vercel.sh
-```
+1. **点击部署按钮**：点击上方的 [![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker) 按钮
+
+2. **授权GitHub**：登录Vercel并授权访问GitHub
+
+3. **配置项目**：
+   - 项目名称：`study-tracker`（或自定义）
+   - Framework Preset：选择 `Node.js`
+   - Root Directory：`./`（默认）
+
+4. **环境变量配置**：
+   在Vercel控制台的 `Settings` → `Environment Variables` 中添加：
+   ```
+   JWT_SECRET=your-super-secret-jwt-key-here
+   NODE_ENV=production
+   ```
+
+5. **部署**：点击 `Deploy` 按钮
+
+6. **访问应用**：部署完成后会获得一个 `https://your-project.vercel.app` 的链接
 
 ### 2. Cloudflare Pages 部署
 
@@ -76,13 +93,29 @@ npm install -g vercel
 - 边缘计算支持
 
 **部署步骤：**
-```bash
-# 安装Wrangler CLI
-npm install -g wrangler
 
-# 一键部署
-./scripts/deploy-cloudflare.sh
-```
+1. **点击部署按钮**：点击上方的 [![Deploy to Cloudflare Pages](https://deploy.cloudflare.com/button)](https://deploy.cloudflare.com/?url=https://github.com/laurawu0122/study-tracker) 按钮
+
+2. **登录Cloudflare**：使用Cloudflare账户登录
+
+3. **选择仓库**：选择 `laurawu0122/study-tracker` 仓库
+
+4. **配置构建设置**：
+   - **Framework preset**: `None`
+   - **Build command**: `npm install`
+   - **Build output directory**: `./`
+   - **Root directory**: `./`
+
+5. **环境变量配置**：
+   在 `Environment variables` 部分添加：
+   ```
+   JWT_SECRET=your-super-secret-jwt-key-here
+   NODE_ENV=production
+   ```
+
+6. **部署**：点击 `Save and Deploy`
+
+7. **访问应用**：部署完成后会获得一个 `https://your-project.pages.dev` 的链接
 
 ### 3. Docker 部署
 
@@ -93,14 +126,38 @@ npm install -g wrangler
 - 数据完全私有
 
 **部署步骤：**
-```bash
-# 确保已安装Docker和Docker Compose
-docker --version
-docker-compose --version
 
-# 一键部署
-./scripts/deploy-docker.sh
+1. **克隆项目**
+```bash
+git clone https://github.com/laurawu0122/study-tracker.git
+cd study-tracker
 ```
+
+2. **配置环境变量**
+```bash
+cp env.example .env
+# 编辑 .env 文件，填写必要的配置
+```
+
+3. **生成SSL证书**（可选）
+```bash
+mkdir -p ssl
+openssl req -x509 -newkey rsa:4096 \
+  -keyout ssl/key.pem \
+  -out ssl/cert.pem \
+  -days 365 \
+  -nodes \
+  -subj "/C=CN/ST=State/L=City/O=Organization/CN=localhost"
+```
+
+4. **启动服务**
+```bash
+docker-compose up -d
+```
+
+5. **访问应用**
+- HTTP: `http://localhost`
+- HTTPS: `https://localhost`（如果配置了SSL）
 
 ## 📁 项目结构
 
