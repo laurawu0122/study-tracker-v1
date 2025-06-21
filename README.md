@@ -92,35 +92,32 @@ npm start
 
 **部署步骤：**
 
-1. **点击部署按钮**：点击上方的 [![Deploy to Cloudflare Pages](https://deploy.cloudflare.com/button)](https://deploy.cloudflare.com/?url=https://github.com/laurawu0122/study-tracker) 按钮
+1. **登录Cloudflare**：使用Cloudflare账户登录
 
-2. **登录Cloudflare**：使用Cloudflare账户登录
+2. **选择仓库**：选择 `laurawu0122/study-tracker` 仓库
 
-3. **选择仓库**：选择 `laurawu0122/study-tracker` 仓库
-
-4. **配置构建设置**：
+3. **配置构建设置**：
    - **Framework preset**: `None`
    - **Build command**: `npm install`
    - **Build output directory**: `./`
    - **Root directory**: `./`
 
-5. **环境变量配置**：
+4. **环境变量配置**：
    在 `Environment variables` 部分添加：
    ```
    JWT_SECRET=your-super-secret-jwt-key-here
    NODE_ENV=production
    ```
 
-6. **部署**：点击 `Save and Deploy`
+5. **部署**：点击 `Save and Deploy`
 
-7. **访问应用**：部署完成后会获得一个 `https://your-project.pages.dev` 的链接
+6. **访问应用**：部署完成后会获得一个 `https://your-project.pages.dev` 的链接
 
 ### 3. Docker 部署
 
 **优势：**
 - 完全控制部署环境
 - 支持自定义域名和SSL
-- 适合企业级部署
 - 数据完全私有
 
 **部署步骤：**
