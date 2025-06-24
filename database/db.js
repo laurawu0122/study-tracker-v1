@@ -15,10 +15,23 @@ let db;
 // 生成随机默认管理员密码
 function generateDefaultAdminPassword() {
     const crypto = require('crypto');
+    
+    // 优先使用环境变量中的密码
+    if (process.env.DEFAULT_ADMIN_PASSWORD) {
+        return process.env.DEFAULT_ADMIN_PASSWORD;
+    }
+    
+    // 检查是否在Vercel或Cloudflare Pages环境中
+    if (process.env.VERCEL || process.env.CF_PAGES || process.env.NODE_ENV === 'production') {
+        // 在生产环境中使用固定密码，避免每次重置
+        return 'Admin123!';
+    }
+    
+    // 本地开发环境使用随机密码
     return crypto.randomBytes(8).toString('hex').toUpperCase();
 }
 
-// 默认管理员密码 - 每次启动时重新生成
+// 默认管理员密码 - 根据环境决定是否重新生成
 const DEFAULT_ADMIN_PASSWORD = generateDefaultAdminPassword();
 
 function initDatabase() {

@@ -7,11 +7,12 @@
 
 - 🔐 **安全认证系统** - JWT token认证，支持用户注册和登录
 - 📊 **数据可视化** - 多种图表展示学习趋势和统计
-- 📱 **响应式设计** - 完美适配桌面和移动设备
+- 📱 **响应式设计** - 完美适配桌面和移动设备，移动端优化体验
 - 🌙 **深色模式** - 支持明暗主题切换
 - 📤 **Excel导入导出** - 支持Excel文件上传和模板下载
 - 📈 **趋势分析** - 雷达图和折线图展示学习效率
 - 🔒 **数据安全** - 本地SQLite数据库，数据完全私有
+- 🚀 **一键部署** - 支持Vercel和Docker部署，简单快捷
 
 ## 🚀 快速开始
 
@@ -58,7 +59,7 @@ npm start
 
 ## 🛠️ 部署方式
 
-本项目支持三种部署方式，点击上方徽章即可一键部署：
+本项目支持两种部署方式，点击上方徽章即可一键部署：
 
 ### 1. Vercel 部署（推荐）
 [![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker)
@@ -68,6 +69,7 @@ npm start
 - 全球CDN加速
 - 零配置部署
 - 免费额度充足
+- 数据持久化稳定
 
 **部署步骤：**
 
@@ -85,59 +87,37 @@ npm start
    ```
    JWT_SECRET=your-super-secret-jwt-key-here
    NODE_ENV=production
+   DEFAULT_ADMIN_PASSWORD=your-custom-admin-password
    ```
    
    **🔐 JWT_SECRET 获取方式：**
    - **自动生成**：在终端运行 `openssl rand -base64 32` 生成随机字符串
    - **手动设置**：使用至少32位的随机字符串，包含字母、数字和特殊字符
    - **安全提醒**：不要使用默认值，生产环境必须使用强随机字符串
+   
+   **🔑 DEFAULT_ADMIN_PASSWORD（可选）：**
+   - 设置默认管理员密码，避免每次部署都重新生成
+   - 如果不设置，系统会使用默认密码：`Admin123!`
+   - 建议设置一个强密码，登录后立即修改
 
 5. **部署**：点击 `Deploy` 按钮
 
 6. **访问应用**：部署完成后会获得一个 `https://your-project.vercel.app` 的链接
 
-### 2. Cloudflare Pages 部署
+7. **登录系统**：
+   - **用户名**: `admin`
+   - **密码**: 
+     - 如果设置了 `DEFAULT_ADMIN_PASSWORD` 环境变量，使用该密码
+     - 否则使用默认密码：`Admin123!`
+   - **重要**: 首次登录后请立即修改默认密码
 
-**优势：**
-- 极快的全球访问速度
-- 自动DDoS防护
-- 免费SSL证书
-- 边缘计算支持
-
-**部署步骤：**
-
-1. **登录Cloudflare**：使用Cloudflare账户登录
-
-2. **选择仓库**：选择 `laurawu0122/study-tracker` 仓库
-
-3. **配置构建设置**：
-   - **Framework preset**: `None`
-   - **Build command**: `npm install`
-   - **Build output directory**: `./`
-   - **Root directory**: `./`
-
-4. **环境变量配置**：
-   在 `Environment variables` 部分添加：
-   ```
-   JWT_SECRET=your-super-secret-jwt-key-here
-   NODE_ENV=production
-   ```
-   
-   **🔐 JWT_SECRET 获取方式：**
-   - **自动生成**：在终端运行 `openssl rand -base64 32` 生成随机字符串
-   - **手动设置**：使用至少32位的随机字符串，包含字母、数字和特殊字符
-   - **安全提醒**：不要使用默认值，生产环境必须使用强随机字符串
-
-5. **部署**：点击 `Save and Deploy`
-
-6. **访问应用**：部署完成后会获得一个 `https://your-project.pages.dev` 的链接
-
-### 3. Docker 部署
+### 2. Docker 部署
 
 **优势：**
 - 完全控制部署环境
 - 支持自定义域名和SSL
 - 数据完全私有
+- 数据持久化稳定
 
 **部署步骤：**
 
@@ -173,26 +153,49 @@ docker-compose up -d
 - HTTP: `http://localhost`
 - HTTPS: `https://localhost`（如果配置了SSL）
 
+**⚠️ 关于Cloudflare Pages部署**
+
+由于Cloudflare Pages是无服务器环境，存在以下限制：
+- 每次请求都会重新初始化数据库
+- 用户数据无法持久化
+- 默认密码会重新生成
+- 登录功能不稳定
+
+因此我们暂时不支持Cloudflare Pages部署方式。如需使用Cloudflare服务，建议：
+1. 使用Cloudflare D1数据库（需要额外配置）
+2. 或选择Vercel部署（推荐）
+3. 或使用Docker自建服务器
+
 ## 📁 项目结构
 
 ```
 study-tracker/
 ├── assets/                 # 前端资源
 │   ├── css/               # 样式文件
+│   │   ├── main.css       # 主样式
+│   │   ├── editor.css     # 编辑器样式
+│   │   └── mobile-optimized.css # 移动端优化样式
 │   ├── js/                # JavaScript文件
+│   │   ├── main.js        # 主逻辑
+│   │   ├── editor.js      # 编辑器逻辑
+│   │   └── mobile-optimized.js # 移动端优化脚本
 │   └── lib/               # 第三方库
 ├── database/              # 数据库相关
+│   └── db.js              # 数据库配置
 ├── middleware/            # 中间件
 ├── routes/                # API路由
 ├── services/              # 服务层
 ├── scripts/               # 部署脚本
+│   ├── deploy-vercel.sh   # Vercel部署脚本
+│   └── deploy-docker.sh   # Docker部署脚本
 ├── excel_templates/       # Excel模板
 ├── data/                  # 数据存储目录
 ├── server.js              # 服务器入口
 ├── package.json           # 项目配置
 ├── docker-compose.yml     # Docker配置
 ├── vercel.json           # Vercel配置
-├── wrangler.toml         # Cloudflare配置
+├── cloudflare-d1-setup.md # Cloudflare D1设置指南
+├── MOBILE_OPTIMIZATION.md # 移动端优化说明
 └── README.md             # 项目说明
 ```
 
