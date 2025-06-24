@@ -86,6 +86,10 @@ npm start
    - Build Command：留空（Vercel会自动检测）
    - Output Directory：留空（Vercel会自动检测）
 
+   **⚠️ 如果遇到项目名称冲突**：
+   - 使用不同的项目名称，如：`study-tracker-2024`、`learning-tracker`、`my-study-tracker`
+   - 或删除Vercel控制台中的现有同名项目
+
 4. **环境变量配置**：
    在Vercel控制台的 `Settings` → `Environment Variables` 中添加：
    ```

@@ -33,6 +33,20 @@
 - **Build Command**: 留空 (Vercel会自动检测)
 - **Output Directory**: 留空 (Vercel会自动检测)
 
+**⚠️ 项目名称冲突处理：**
+如果遇到 "Project 'study-tracker' already exists" 错误：
+1. **使用不同的项目名称**，例如：
+   - `study-tracker-2024`
+   - `learning-tracker`
+   - `my-study-tracker`
+   - `study-tracker-v2`
+   - 或者使用您的GitHub用户名作为前缀：`laurawu0122-study-tracker`
+
+2. **或者删除现有项目**：
+   - 在Vercel控制台找到现有的 `study-tracker` 项目
+   - 进入项目设置 → General → Delete Project
+   - 确认删除后重新部署
+
 **为什么选择Other？**
 - Vercel的Framework Preset中没有Node.js选项
 - 选择Other后，Vercel会根据项目结构和配置文件自动识别为Node.js项目
@@ -130,7 +144,25 @@
 
 ## 🐛 常见问题解决
 
-### 1. 部署失败
+### 1. 项目名称冲突
+
+**错误信息：** "Project 'study-tracker' already exists, please use a new name"
+
+**解决方案：**
+1. **使用新的项目名称**：
+   - `study-tracker-2024`
+   - `learning-tracker`
+   - `my-study-tracker`
+   - `study-tracker-v2`
+   - `laurawu0122-study-tracker`
+
+2. **删除现有项目**：
+   - 登录Vercel控制台
+   - 找到现有的 `study-tracker` 项目
+   - 进入 Settings → General → Delete Project
+   - 确认删除后重新部署
+
+### 2. 部署失败
 
 **错误信息：** "Build failed" 或 "Function execution failed"
 
@@ -139,7 +171,7 @@
 2. 确保JWT_SECRET不为空
 3. 查看Vercel部署日志获取详细错误信息
 
-### 2. 无法访问应用
+### 3. 无法访问应用
 
 **错误信息：** "404 Not Found" 或 "Function not found"
 
@@ -148,7 +180,7 @@
 2. 检查项目根目录是否有 `server.js` 文件
 3. 重新部署项目
 
-### 3. vercel.json 配置错误
+### 4. vercel.json 配置错误
 
 **错误信息：** "The `functions` property cannot be used in conjunction with the `builds` property"
 
@@ -175,7 +207,7 @@
 }
 ```
 
-### 4. 登录失败
+### 5. 登录失败
 
 **错误信息：** "Invalid credentials"
 
@@ -184,7 +216,7 @@
 2. 检查 `DEFAULT_ADMIN_PASSWORD` 环境变量是否正确设置
 3. 如果没有设置环境变量，使用默认密码：`Admin123!`
 
-### 5. 数据库问题
+### 6. 数据库问题
 
 **错误信息：** "Database connection failed"
 
