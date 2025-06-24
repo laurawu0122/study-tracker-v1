@@ -106,7 +106,10 @@
   "builds": [
     {
       "src": "server.js",        // 入口文件
-      "use": "@vercel/node"      // 使用Node.js运行时
+      "use": "@vercel/node",     // 使用Node.js运行时
+      "config": {
+        "maxDuration": 30        // 函数超时时间（秒）
+      }
     }
   ],
   "routes": [
@@ -121,11 +124,6 @@
   ],
   "env": {
     "NODE_ENV": "production"     // 默认环境变量
-  },
-  "functions": {
-    "server.js": {
-      "maxDuration": 30          // 函数超时时间（秒）
-    }
   }
 }
 ```
@@ -150,7 +148,34 @@
 2. 检查项目根目录是否有 `server.js` 文件
 3. 重新部署项目
 
-### 3. 登录失败
+### 3. vercel.json 配置错误
+
+**错误信息：** "The `functions` property cannot be used in conjunction with the `builds` property"
+
+**解决方案：**
+1. 确保 `vercel.json` 使用正确的格式
+2. 不要同时使用 `builds` 和 `functions` 属性
+3. 将函数配置放在 `builds` 的 `config` 中
+
+**正确的配置格式：**
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30
+      }
+    }
+  ],
+  "routes": [...],
+  "env": {...}
+}
+```
+
+### 4. 登录失败
 
 **错误信息：** "Invalid credentials"
 
@@ -159,7 +184,7 @@
 2. 检查 `DEFAULT_ADMIN_PASSWORD` 环境变量是否正确设置
 3. 如果没有设置环境变量，使用默认密码：`Admin123!`
 
-### 4. 数据库问题
+### 5. 数据库问题
 
 **错误信息：** "Database connection failed"
 
