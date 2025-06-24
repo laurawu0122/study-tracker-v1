@@ -173,7 +173,44 @@
 
 ### 3. 无法访问应用
 
-**错误信息：** "404 Not Found" 或 "Function not found"
+**错误信息：** "404 Not Found" 或 "Function not found" 或 "404: NOT_FOUND"
+
+**诊断步骤：**
+
+1. **测试调试端点**：
+   - 访问 `https://your-project.vercel.app/debug`
+   - 如果返回JSON数据，说明服务器正常运行
+   - 如果返回404，说明路由配置有问题
+
+2. **测试健康检查**：
+   - 访问 `https://your-project.vercel.app/health`
+   - 检查服务器状态和数据库连接
+
+3. **检查静态文件**：
+   - 访问 `https://your-project.vercel.app/assets/css/main.css`
+   - 确认静态文件是否能正常访问
+
+4. **检查环境变量**：
+   - 在Vercel控制台确认所有环境变量已正确设置
+   - 特别是 `JWT_SECRET` 和 `NODE_ENV`
+
+**常见原因和解决方案：**
+
+**原因1：路由配置错误**
+- 检查 `vercel.json` 中的路由配置
+- 确保所有路径都正确指向 `server.js`
+
+**原因2：环境变量缺失**
+- 确保设置了 `JWT_SECRET` 环境变量
+- 确保设置了 `NODE_ENV=production`
+
+**原因3：文件路径问题**
+- 确认 `index.html` 在项目根目录
+- 确认所有静态文件路径正确
+
+**原因4：构建失败**
+- 检查Vercel部署日志
+- 确认所有依赖包正确安装
 
 **解决方案：**
 1. 确认 `vercel.json` 文件存在且配置正确

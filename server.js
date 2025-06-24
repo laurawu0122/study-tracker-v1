@@ -95,6 +95,11 @@ app.get('/excel_templates/:filename', (req, res) => {
 app.use(express.static(__dirname)); // 根目录的静态文件服务优先
 app.use(express.static(path.join(__dirname, 'public'))); // public目录作为备用
 
+// 根路径处理 - 确保在Vercel环境中正确服务index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // 健康检查端点
 app.get('/health', async (req, res) => {
     try {
@@ -120,6 +125,24 @@ app.get('/health', async (req, res) => {
             timestamp: new Date().toISOString()
         });
     }
+});
+
+// 调试端点 - 用于诊断Vercel部署问题
+app.get('/debug', (req, res) => {
+    res.json({
+        message: 'Debug endpoint working',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        platform: process.env.VERCEL ? 'vercel' : 
+                 process.env.CF_PAGES ? 'cloudflare' : 
+                 process.env.DOCKER ? 'docker' : 'unknown',
+        request: {
+            url: req.url,
+            method: req.method,
+            headers: req.headers,
+            ip: req.ip
+        }
+    });
 });
 
 // API路由
