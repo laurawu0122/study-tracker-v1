@@ -147,6 +147,45 @@ cp env.example .env
 # 编辑 .env 文件，填写必要的配置
 ```
 
+**🔐 必需的环境变量配置：**
+
+**JWT_SECRET（必需）：**
+```bash
+# 自动生成JWT_SECRET
+JWT_SECRET=$(openssl rand -base64 32)
+echo "JWT_SECRET=$JWT_SECRET" >> .env
+
+# 或者手动编辑.env文件，将JWT_SECRET替换为生成的随机字符串
+```
+
+**DEFAULT_ADMIN_PASSWORD（可选）：**
+```bash
+# 设置默认管理员密码（如果不设置，使用默认密码：Admin123!）
+echo "DEFAULT_ADMIN_PASSWORD=your-custom-password" >> .env
+```
+
+**完整的.env文件示例：**
+```env
+# 应用配置
+NODE_ENV=production
+PORT=3001
+
+# JWT配置（必需）
+JWT_SECRET=your-generated-jwt-secret-here
+
+# 默认管理员密码（可选）
+DEFAULT_ADMIN_PASSWORD=your-custom-admin-password
+
+# 邮件配置（可选）
+SMTP_HOST=smtp.qq.com
+SMTP_PORT=587
+SMTP_USER=your-email@qq.com
+SMTP_PASS=your-app-password
+
+# 安全配置
+TRUST_PROXY=true
+```
+
 3. **生成SSL证书**（可选）
 ```bash
 mkdir -p ssl
@@ -166,6 +205,13 @@ docker-compose up -d
 5. **访问应用**
 - HTTP: `http://localhost`
 - HTTPS: `https://localhost`（如果配置了SSL）
+
+6. **登录系统**
+- **用户名**: `admin`
+- **密码**: 
+  - 如果设置了 `DEFAULT_ADMIN_PASSWORD` 环境变量，使用该密码
+  - 否则使用默认密码：`Admin123!`
+- **重要**: 首次登录后请立即修改默认密码
 
 **⚠️ 关于Cloudflare Pages部署**
 
