@@ -71,6 +71,8 @@ npm start
 - 免费额度充足
 - 数据持久化稳定
 
+**📖 详细部署指南：** 查看 [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) 获取完整的部署步骤和故障排除指南。
+
 **部署步骤：**
 
 1. **点击部署按钮**：点击上方的 [![Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flaurawu0122%2Fstudy-tracker) 按钮
@@ -79,8 +81,10 @@ npm start
 
 3. **配置项目**：
    - 项目名称：`study-tracker`（或自定义）
-   - Framework Preset：选择 `Node.js`
+   - Framework Preset：选择 `Other` ⭐ **重要：选择Other，不是Node.js**
    - Root Directory：`./`（默认）
+   - Build Command：留空（Vercel会自动检测）
+   - Output Directory：留空（Vercel会自动检测）
 
 4. **环境变量配置**：
    在Vercel控制台的 `Settings` → `Environment Variables` 中添加：
@@ -110,6 +114,12 @@ npm start
      - 如果设置了 `DEFAULT_ADMIN_PASSWORD` 环境变量，使用该密码
      - 否则使用默认密码：`Admin123!`
    - **重要**: 首次登录后请立即修改默认密码
+
+**⚠️ 重要提示：**
+- 选择 `Other` 作为Framework Preset，Vercel会自动检测这是一个Node.js项目
+- 项目根目录的 `vercel.json` 文件已经配置好了部署设置
+- 如果部署失败，请检查环境变量是否正确设置
+- 更多详细信息和故障排除，请查看 [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md)
 
 ### 2. Docker 部署
 

@@ -1,173 +1,234 @@
 # 🚀 Vercel 部署详细指南
 
+本指南将帮助您将学习项目完成耗时趋势分析系统部署到Vercel平台。
+
 ## 📋 部署前准备
 
-### 1. 准备环境变量
-在部署前，请准备好以下环境变量：
+1. **GitHub账户**：确保您的代码已推送到GitHub
+2. **Vercel账户**：注册 [Vercel](https://vercel.com) 账户
+3. **环境变量**：准备好JWT_SECRET等配置
 
-```bash
-# 必需的环境变量
-JWT_SECRET=your-super-secret-jwt-key-here
-NODE_ENV=production
+## 🔧 详细部署步骤
 
-# 可选的环境变量
-DEFAULT_ADMIN_PASSWORD=your-custom-admin-password
-```
+### 第一步：访问Vercel
 
-### 2. 生成JWT密钥
-```bash
-# 在终端中运行以下命令生成JWT密钥
-openssl rand -base64 32
-```
+1. 打开 [Vercel](https://vercel.com)
+2. 点击 "New Project" 或 "Add New..."
+3. 选择 "Import Git Repository"
 
-## 🔧 部署步骤
+### 第二步：连接GitHub
 
-### 步骤1：访问Vercel
-1. 打开 [Vercel官网](https://vercel.com)
-2. 使用GitHub、GitLab或Bitbucket账户登录
+1. 点击 "Continue with GitHub"
+2. 授权Vercel访问您的GitHub账户
+3. 搜索并选择您的项目仓库：`laurawu0122/study-tracker`
 
-### 步骤2：导入项目
-1. 点击 "New Project"
-2. 选择 "Import Git Repository"
-3. 搜索并选择 `laurawu0122/study-tracker` 仓库
-4. 点击 "Import"
+### 第三步：项目配置
 
-### 步骤3：配置项目
-在项目配置页面：
+在项目配置页面，按以下设置：
 
-**Framework Preset**: `Node.js`
-**Root Directory**: `./` (默认)
-**Build Command**: `npm install`
-**Output Directory**: `./`
-**Install Command**: `npm install`
+**基本配置：**
+- **Project Name**: `study-tracker` (或自定义名称)
+- **Framework Preset**: `Other` ⭐ **重要：选择Other，不是Node.js**
+- **Root Directory**: `./` (默认)
+- **Build Command**: 留空 (Vercel会自动检测)
+- **Output Directory**: 留空 (Vercel会自动检测)
 
-### 步骤4：设置环境变量
-在 "Environment Variables" 部分添加：
+**为什么选择Other？**
+- Vercel的Framework Preset中没有Node.js选项
+- 选择Other后，Vercel会根据项目结构和配置文件自动识别为Node.js项目
+- 项目根目录的 `vercel.json` 文件会告诉Vercel如何处理这个项目
 
-| 变量名 | 值 | 说明 |
-|--------|----|----|
-| `JWT_SECRET` | `your-generated-jwt-secret` | JWT签名密钥（必需） |
-| `NODE_ENV` | `production` | 生产环境标识（必需） |
-| `DEFAULT_ADMIN_PASSWORD` | `your-custom-password` | 默认管理员密码（可选） |
+### 第四步：环境变量配置
 
-**示例配置：**
-```
-JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NODE_ENV=production
-DEFAULT_ADMIN_PASSWORD=MySecurePassword123!
-```
+**重要：在部署前必须配置环境变量！**
 
-### 步骤5：部署
+点击 "Environment Variables" 部分，添加以下变量：
+
+#### 必需环境变量：
+
+1. **JWT_SECRET**
+   ```
+   Name: JWT_SECRET
+   Value: your-super-secret-jwt-key-here
+   Environment: Production, Preview, Development
+   ```
+   
+   **获取JWT_SECRET的方法：**
+   ```bash
+   # 方法1：使用OpenSSL生成（推荐）
+   openssl rand -base64 32
+   
+   # 方法2：使用Node.js生成
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+
+2. **NODE_ENV**
+   ```
+   Name: NODE_ENV
+   Value: production
+   Environment: Production, Preview, Development
+   ```
+
+#### 可选环境变量：
+
+3. **DEFAULT_ADMIN_PASSWORD**
+   ```
+   Name: DEFAULT_ADMIN_PASSWORD
+   Value: your-custom-admin-password
+   Environment: Production, Preview, Development
+   ```
+   
+   **说明：**
+   - 如果不设置，系统使用默认密码：`Admin123!`
+   - 建议设置一个强密码，登录后立即修改
+
+### 第五步：部署
+
 1. 点击 "Deploy" 按钮
 2. 等待部署完成（通常需要1-3分钟）
+3. 部署成功后会显示项目URL
 
-## 🔐 登录系统
+### 第六步：验证部署
 
-### 默认登录凭据
+1. **访问应用**：点击项目URL或复制到浏览器
+2. **测试登录**：
+   - 用户名：`admin`
+   - 密码：您设置的 `DEFAULT_ADMIN_PASSWORD` 或默认的 `Admin123!`
+3. **修改密码**：首次登录后立即修改默认密码
 
-**用户名**: `admin`
+## 🔍 部署配置说明
 
-**密码**（根据环境变量设置）：
-- 如果设置了 `DEFAULT_ADMIN_PASSWORD`：使用该密码
-- 如果未设置：使用默认密码 `Admin123!`
+### vercel.json 文件解析
 
-### 登录步骤
-1. 访问您的Vercel应用URL（例如：`https://your-project.vercel.app`）
-2. 点击右上角的 "登录" 按钮
-3. 输入用户名和密码
-4. 点击 "登录"
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",        // 入口文件
+      "use": "@vercel/node"      // 使用Node.js运行时
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",        // API路由
+      "dest": "/server.js"       // 转发到server.js
+    },
+    {
+      "src": "/(.*)",            // 静态文件路由
+      "dest": "/$1"              // 直接提供静态文件
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"     // 默认环境变量
+  },
+  "functions": {
+    "server.js": {
+      "maxDuration": 30          // 函数超时时间（秒）
+    }
+  }
+}
+```
 
-### 安全提醒
-- 首次登录后请立即修改默认密码
-- 建议启用两步验证
-- 定期更换JWT密钥
+## 🐛 常见问题解决
 
-## 🔍 故障排除
+### 1. 部署失败
 
-### 问题1：部署失败
-**可能原因**：
-- 环境变量未正确设置
-- 依赖包安装失败
-- 端口配置问题
+**错误信息：** "Build failed" 或 "Function execution failed"
 
-**解决方案**：
-1. 检查Vercel部署日志
-2. 确认所有必需的环境变量已设置
-3. 检查 `package.json` 中的依赖
+**解决方案：**
+1. 检查环境变量是否正确设置
+2. 确保JWT_SECRET不为空
+3. 查看Vercel部署日志获取详细错误信息
 
-### 问题2：无法登录
-**可能原因**：
-- 数据库初始化失败
-- 密码不正确
-- JWT密钥问题
+### 2. 无法访问应用
 
-**解决方案**：
-1. 检查Vercel函数日志
-2. 确认环境变量设置正确
-3. 尝试使用默认密码：`Admin123!`
+**错误信息：** "404 Not Found" 或 "Function not found"
 
-### 问题3：数据丢失
-**可能原因**：
-- Vercel函数重启
-- 数据库文件未持久化
+**解决方案：**
+1. 确认 `vercel.json` 文件存在且配置正确
+2. 检查项目根目录是否有 `server.js` 文件
+3. 重新部署项目
 
-**解决方案**：
-- 这是Vercel无服务器环境的限制
-- 考虑使用外部数据库服务
-- 定期备份重要数据
+### 3. 登录失败
+
+**错误信息：** "Invalid credentials"
+
+**解决方案：**
+1. 确认使用了正确的用户名：`admin`
+2. 检查 `DEFAULT_ADMIN_PASSWORD` 环境变量是否正确设置
+3. 如果没有设置环境变量，使用默认密码：`Admin123!`
+
+### 4. 数据库问题
+
+**错误信息：** "Database connection failed"
+
+**解决方案：**
+1. Vercel使用无服务器环境，每次请求都会重新初始化
+2. 这是正常行为，数据会在请求期间保持
+3. 如果需要持久化数据，考虑使用外部数据库服务
+
+## 🔧 高级配置
+
+### 自定义域名
+
+1. 在Vercel控制台点击项目
+2. 进入 "Settings" → "Domains"
+3. 添加您的自定义域名
+4. 配置DNS记录
+
+### 环境变量管理
+
+**生产环境变量：**
+- 只在生产环境生效
+- 用于正式部署
+
+**预览环境变量：**
+- 在Pull Request预览中生效
+- 用于测试新功能
+
+**开发环境变量：**
+- 在本地开发时生效
+- 用于本地测试
+
+### 自动部署
+
+**GitHub集成：**
+- 每次推送到main分支自动部署
+- Pull Request创建预览环境
+- 支持回滚到之前的版本
 
 ## 📊 监控和维护
 
-### 查看部署状态
-1. 登录Vercel控制台
-2. 进入项目页面
-3. 查看 "Deployments" 标签
+### 查看日志
 
-### 查看函数日志
-1. 在项目页面点击 "Functions" 标签
-2. 查看 `server.js` 函数的日志
-3. 监控错误和性能指标
+1. 在Vercel控制台点击项目
+2. 进入 "Functions" 标签
+3. 查看函数执行日志
 
-### 环境变量管理
-1. 在项目设置中管理环境变量
-2. 可以为不同环境设置不同的变量
-3. 敏感信息会自动加密
+### 性能监控
 
-## 🔄 更新部署
+1. 在Vercel控制台查看 "Analytics"
+2. 监控请求数量、响应时间
+3. 查看错误率和用户分布
 
-### 自动部署
-- 每次推送到GitHub主分支会自动触发部署
-- 可以设置预览部署用于测试
+### 更新部署
 
-### 手动部署
-1. 在Vercel控制台点击 "Redeploy"
-2. 或推送新的代码到GitHub
+1. 推送代码到GitHub
+2. Vercel自动触发新部署
+3. 或手动在Vercel控制台触发部署
 
-## 📞 获取帮助
+## 🆘 获取帮助
 
 如果遇到问题：
 
-1. **查看Vercel文档**：[vercel.com/docs](https://vercel.com/docs)
-2. **检查项目日志**：在Vercel控制台查看详细错误信息
-3. **联系支持**：通过Vercel控制台提交支持请求
-
-## 🎯 最佳实践
-
-1. **环境变量管理**
-   - 使用强密码和密钥
-   - 定期轮换敏感信息
-   - 为不同环境设置不同配置
-
-2. **安全配置**
-   - 启用HTTPS（Vercel自动提供）
-   - 设置适当的CORS策略
-   - 定期更新依赖包
-
-3. **性能优化**
-   - 监控函数执行时间
-   - 优化数据库查询
-   - 使用CDN缓存静态资源
+1. **查看日志**：Vercel控制台 → Functions → 查看详细日志
+2. **检查配置**：确认 `vercel.json` 和环境变量设置
+3. **社区支持**：访问 [Vercel社区](https://github.com/vercel/vercel/discussions)
+4. **官方文档**：查看 [Vercel文档](https://vercel.com/docs)
 
 ---
 
-通过以上步骤，您应该能够成功部署项目到Vercel并正常使用所有功能！ 
+🎉 **恭喜！** 您的学习项目完成耗时趋势分析系统已成功部署到Vercel！
+
+现在您可以通过 `https://your-project.vercel.app` 访问您的应用了。 
