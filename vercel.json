@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel-test.js",
+      "src": "server.js",
       "use": "@vercel/node",
       "config": {
         "maxDuration": 30
@@ -12,19 +12,19 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/vercel-test.js"
+      "dest": "/server.js"
     },
     {
       "src": "/excel_templates/(.*)",
-      "dest": "/vercel-test.js"
+      "dest": "/server.js"
     },
     {
       "src": "/health",
-      "dest": "/vercel-test.js"
+      "dest": "/server.js"
     },
     {
       "src": "/debug",
-      "dest": "/vercel-test.js"
+      "dest": "/server.js"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
@@ -32,7 +32,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/vercel-test.js"
+      "dest": "/server.js"
     }
   ],
   "env": {

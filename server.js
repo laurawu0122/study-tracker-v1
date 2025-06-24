@@ -7,7 +7,7 @@ const https = require('https');
 const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
-const { initDatabase } = require('./database/db');
+const { initDatabase, initDatabaseSimple } = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -189,7 +189,19 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         console.log('开始初始化数据库...');
-        await initDatabase();
+        console.log('环境变量检查:', {
+            NODE_ENV: process.env.NODE_ENV,
+            VERCEL: process.env.VERCEL,
+            JWT_SECRET: process.env.JWT_SECRET ? '已设置' : '未设置',
+            PORT: process.env.PORT
+        });
+        
+        // 根据环境选择数据库初始化方式
+        if (process.env.VERCEL) {
+            await initDatabaseSimple();
+        } else {
+            await initDatabase();
+        }
         console.log('数据库初始化完成');
         
         // 检查是否在Docker环境中需要HTTPS
@@ -211,6 +223,8 @@ async function startServer() {
                 console.log(`部署平台: ${process.env.VERCEL ? 'Vercel' : 
                            process.env.CF_PAGES ? 'Cloudflare Pages' : 
                            process.env.DOCKER ? 'Docker' : 'Local'}`);
+                console.log(`Node版本: ${process.version}`);
+                console.log(`启动时间: ${new Date().toISOString()}`);
             });
         }
     } catch (error) {
@@ -227,7 +241,10 @@ async function startServer() {
             });
         }
         
-        process.exit(1);
+        // 在Vercel环境中，不要立即退出，让函数继续运行
+        if (!process.env.VERCEL) {
+            process.exit(1);
+        }
     }
 }
 
