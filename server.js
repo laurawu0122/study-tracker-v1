@@ -188,7 +188,9 @@ app.use((err, req, res, next) => {
 // 启动服务器
 async function startServer() {
     try {
+        console.log('开始初始化数据库...');
         await initDatabase();
+        console.log('数据库初始化完成');
         
         // 检查是否在Docker环境中需要HTTPS
         if (process.env.NODE_ENV === 'production' && process.env.DOCKER === 'true') {
@@ -213,8 +215,49 @@ async function startServer() {
         }
     } catch (error) {
         console.error('启动服务器失败:', error);
+        console.error('错误堆栈:', error.stack);
+        
+        // 在Vercel环境中，我们需要确保错误被正确记录
+        if (process.env.VERCEL) {
+            console.error('Vercel环境错误详情:', {
+                message: error.message,
+                stack: error.stack,
+                environment: process.env.NODE_ENV,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
         process.exit(1);
     }
 }
+
+// 添加未捕获异常处理
+process.on('uncaughtException', (error) => {
+    console.error('未捕获的异常:', error);
+    console.error('错误堆栈:', error.stack);
+    
+    if (process.env.VERCEL) {
+        console.error('Vercel环境未捕获异常:', {
+            message: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('未处理的Promise拒绝:', reason);
+    console.error('Promise:', promise);
+    
+    if (process.env.VERCEL) {
+        console.error('Vercel环境未处理Promise拒绝:', {
+            reason: reason,
+            promise: promise,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
 
 startServer(); 

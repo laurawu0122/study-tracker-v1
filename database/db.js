@@ -1,13 +1,24 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'data', 'studytracker.db');
+// 根据环境选择数据库路径
+let dbPath;
+if (process.env.VERCEL) {
+    // Vercel环境使用临时目录
+    const os = require('os');
+    dbPath = path.join(os.tmpdir(), 'studytracker.db');
+} else {
+    // 本地环境使用data目录
+    dbPath = path.join(__dirname, '..', 'data', 'studytracker.db');
+}
 
-// 确保数据目录存在
+// 确保数据目录存在（仅在非Vercel环境）
 const fs = require('fs');
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+if (!process.env.VERCEL) {
+    const dataDir = path.join(__dirname, '..', 'data');
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
 }
 
 let db;
@@ -185,14 +196,24 @@ async function createDefaultAdmin() {
                     console.log('默认管理员账户创建成功');
                     console.log(`默认用户名: admin`);
                     console.log('⚠️  请首次登录后立即修改默认密码！');
-                    console.log('⚠️  默认密码请查看系统日志或联系管理员');
                     
-                    // 将生成的密码写入临时文件，供管理员查看
-                    const fs = require('fs');
-                    const passwordFile = path.join(__dirname, '..', 'data', 'admin_password.txt');
-                    fs.writeFileSync(passwordFile, `默认管理员密码: ${DEFAULT_ADMIN_PASSWORD}\n生成时间: ${new Date().toISOString()}\n⚠️  请及时删除此文件！`);
-                    console.log(`⚠️  默认密码已保存到: ${passwordFile}`);
-                    console.log('⚠️  请及时删除该文件以确保安全！');
+                    // 只在非生产环境或本地环境中写入密码文件
+                    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+                        console.log('⚠️  默认密码请查看系统日志或联系管理员');
+                        
+                        // 将生成的密码写入临时文件，供管理员查看
+                        const fs = require('fs');
+                        const passwordFile = path.join(__dirname, '..', 'data', 'admin_password.txt');
+                        try {
+                            fs.writeFileSync(passwordFile, `默认管理员密码: ${DEFAULT_ADMIN_PASSWORD}\n生成时间: ${new Date().toISOString()}\n⚠️  请及时删除此文件！`);
+                            console.log(`⚠️  默认密码已保存到: ${passwordFile}`);
+                            console.log('⚠️  请及时删除该文件以确保安全！');
+                        } catch (writeError) {
+                            console.log('⚠️  无法写入密码文件，请查看控制台日志获取默认密码');
+                        }
+                    } else {
+                        console.log('⚠️  生产环境：请使用环境变量 DEFAULT_ADMIN_PASSWORD 或默认密码 Admin123!');
+                    }
                     
                     setSystemConfigs().then(resolve).catch(reject);
                 }
