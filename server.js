@@ -145,6 +145,35 @@ app.get('/debug', (req, res) => {
     });
 });
 
+// 静态文件测试端点
+app.get('/test-static', (req, res) => {
+    const fs = require('fs');
+    const indexPath = path.join(__dirname, 'index.html');
+    
+    try {
+        if (fs.existsSync(indexPath)) {
+            res.json({
+                message: 'index.html文件存在',
+                path: indexPath,
+                size: fs.statSync(indexPath).size,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(404).json({
+                error: 'index.html文件不存在',
+                path: indexPath,
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            error: '检查静态文件时出错',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // API路由
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
