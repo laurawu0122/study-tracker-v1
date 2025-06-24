@@ -2,6 +2,7 @@
 // 用于诊断500错误问题
 
 const express = require('express');
+const path = require('path');
 const app = express();
 
 // 基本中间件
@@ -13,22 +14,24 @@ app.use((req, res, next) => {
     next();
 });
 
-// 测试路由
+// 静态文件服务
+app.use(express.static(__dirname));
+
+// 根路径处理
 app.get('/', (req, res) => {
     try {
-        res.json({
-            message: 'Vercel测试成功',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV || 'development',
-            platform: process.env.VERCEL ? 'vercel' : 'unknown',
-            nodeVersion: process.version,
-            memoryUsage: process.memoryUsage(),
-            env: {
-                NODE_ENV: process.env.NODE_ENV,
-                VERCEL: process.env.VERCEL,
-                PORT: process.env.PORT
-            }
-        });
+        const indexPath = path.join(__dirname, 'index.html');
+        const fs = require('fs');
+        
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.json({
+                message: 'index.html文件不存在',
+                path: indexPath,
+                timestamp: new Date().toISOString()
+            });
+        }
     } catch (error) {
         console.error('根路径错误:', error);
         res.status(500).json({
