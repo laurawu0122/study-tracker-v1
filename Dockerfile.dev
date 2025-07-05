@@ -35,4 +35,4 @@ USER nodejs
 EXPOSE 3001
 
 # 开发模式启动命令
-CMD ["npm", "run", "dev"] 
+CMD ["./scripts/start-app.sh"] 

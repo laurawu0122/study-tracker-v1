@@ -55,37 +55,49 @@ show_help() {
     echo "  $0 backup"
 }
 
+# 检查Docker Compose命令
+check_compose_cmd() {
+    if command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    elif docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    else
+        log_error "Docker Compose 未安装"
+        exit 1
+    fi
+}
+
 # 启动服务
 start_services() {
     log_info "启动服务..."
-    docker-compose up -d
+    $COMPOSE_CMD up -d
     log_success "服务启动完成"
 }
 
 # 停止服务
 stop_services() {
     log_info "停止服务..."
-    docker-compose down
+    $COMPOSE_CMD down
     log_success "服务停止完成"
 }
 
 # 重启服务
 restart_services() {
     log_info "重启服务..."
-    docker-compose restart
+    $COMPOSE_CMD restart
     log_success "服务重启完成"
 }
 
 # 查看日志
 show_logs() {
     log_info "查看应用日志..."
-    docker-compose logs -f app
+    $COMPOSE_CMD logs -f app
 }
 
 # 查看状态
 show_status() {
     log_info "服务状态:"
-    docker-compose ps
+    $COMPOSE_CMD ps
     echo ""
     
     # 显示资源使用情况
@@ -105,7 +117,7 @@ backup_database() {
     mkdir -p "$backup_dir"
     
     # 执行备份
-    docker-compose exec -T postgres pg_dump -U postgres study_tracker > "$backup_file"
+    $COMPOSE_CMD exec -T postgres pg_dump -U postgres study_tracker > "$backup_file"
     
     if [ $? -eq 0 ]; then
         log_success "数据库备份完成: $backup_file"
@@ -150,9 +162,9 @@ restore_database() {
     
     # 如果是压缩文件，先解压
     if [[ "$backup_file" == *.gz ]]; then
-        gunzip -c "$backup_file" | docker-compose exec -T postgres psql -U postgres -d study_tracker
+        gunzip -c "$backup_file" | $COMPOSE_CMD exec -T postgres psql -U postgres -d study_tracker
     else
-        docker-compose exec -T postgres psql -U postgres -d study_tracker < "$backup_file"
+        $COMPOSE_CMD exec -T postgres psql -U postgres -d study_tracker < "$backup_file"
     fi
     
     if [ $? -eq 0 ]; then
@@ -188,13 +200,13 @@ cleanup_resources() {
 # 进入应用容器
 enter_app_shell() {
     log_info "进入应用容器..."
-    docker-compose exec app sh
+    $COMPOSE_CMD exec app sh
 }
 
 # 进入数据库容器
 enter_db_shell() {
     log_info "进入数据库容器..."
-    docker-compose exec postgres psql -U postgres -d study_tracker
+    $COMPOSE_CMD exec postgres psql -U postgres -d study_tracker
 }
 
 # 更新应用
@@ -212,7 +224,7 @@ update_app() {
     
     # 重新构建镜像
     log_info "重新构建镜像..."
-    docker-compose build --no-cache app
+    $COMPOSE_CMD build --no-cache app
     
     # 启动服务
     start_services
@@ -222,6 +234,9 @@ update_app() {
 
 # 主函数
 main() {
+    # 检查Docker Compose命令
+    check_compose_cmd
+    
     local command=$1
     local arg=$2
     

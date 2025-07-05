@@ -24,8 +24,11 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # 创建必要的目录并设置权限
-RUN mkdir -p uploads/avatars && \
+RUN mkdir -p uploads/avatars logs && \
     chown -R nodejs:nodejs /app
+
+# 构建CSS文件
+RUN npm run build:css || echo "CSS构建失败，使用默认样式"
 
 # 切换到非root用户
 USER nodejs
@@ -38,4 +41,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3001/ || exit 1
 
 # 启动应用
-CMD ["npm", "start"] 
+CMD ["./scripts/start-app.sh"] 

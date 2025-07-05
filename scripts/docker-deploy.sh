@@ -36,12 +36,17 @@ check_docker() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
+    # 检查 Docker Compose (支持新旧两种命令)
+    if command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    elif docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    else
         log_error "Docker Compose 未安装，请先安装 Docker Compose"
         exit 1
     fi
     
-    log_success "Docker 环境检查通过"
+    log_success "Docker 环境检查通过 (使用命令: $COMPOSE_CMD)"
 }
 
 # 检查环境文件
@@ -67,7 +72,7 @@ create_directories() {
 # 停止现有容器
 stop_containers() {
     log_info "停止现有容器..."
-    docker-compose down --remove-orphans || true
+    $COMPOSE_CMD down --remove-orphans || true
     log_success "容器停止完成"
 }
 
@@ -84,9 +89,9 @@ build_images() {
     log_info "构建 Docker 镜像 (环境: $env)..."
     
     if [ "$env" = "dev" ]; then
-        docker-compose -f docker-compose.dev.yml build
+        $COMPOSE_CMD -f docker-compose.dev.yml build
     else
-        docker-compose build
+        $COMPOSE_CMD build
     fi
     
     log_success "镜像构建完成"
@@ -98,9 +103,9 @@ start_services() {
     log_info "启动服务 (环境: $env)..."
     
     if [ "$env" = "dev" ]; then
-        docker-compose -f docker-compose.dev.yml up -d
+        $COMPOSE_CMD -f docker-compose.dev.yml up -d
     else
-        docker-compose up -d
+        $COMPOSE_CMD up -d
     fi
     
     log_success "服务启动完成"
@@ -108,13 +113,14 @@ start_services() {
 
 # 等待服务就绪
 wait_for_services() {
+    local env=$1
     log_info "等待服务就绪..."
     
     # 等待数据库就绪
     log_info "等待数据库就绪..."
     timeout=60
     counter=0
-    while ! docker-compose exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do
+    while ! $COMPOSE_CMD exec -T postgres pg_isready -U postgres > /dev/null 2>&1; do
         sleep 2
         counter=$((counter + 2))
         if [ $counter -ge $timeout ]; then
@@ -123,6 +129,22 @@ wait_for_services() {
         fi
     done
     log_success "数据库就绪"
+    
+    # 运行数据库迁移
+    log_info "运行数据库迁移..."
+    if [ "$env" = "dev" ]; then
+        $COMPOSE_CMD exec -T app npm run db:migrate || log_warning "数据库迁移失败，可能表已存在"
+    else
+        $COMPOSE_CMD exec -T app npm run db:migrate || log_warning "数据库迁移失败，可能表已存在"
+    fi
+    
+    # 运行数据库种子
+    log_info "运行数据库种子..."
+    if [ "$env" = "dev" ]; then
+        $COMPOSE_CMD exec -T app npm run db:seed || log_warning "数据库种子运行失败，可能数据已存在"
+    else
+        $COMPOSE_CMD exec -T app npm run db:seed || log_warning "数据库种子运行失败，可能数据已存在"
+    fi
     
     # 等待应用就绪
     log_info "等待应用就绪..."
@@ -143,9 +165,9 @@ wait_for_services() {
 show_status() {
     log_info "服务状态:"
     if [ "$1" = "dev" ]; then
-        docker-compose -f docker-compose.dev.yml ps
+        $COMPOSE_CMD -f docker-compose.dev.yml ps
     else
-        docker-compose ps
+        $COMPOSE_CMD ps
     fi
     
     echo ""
@@ -154,17 +176,38 @@ show_status() {
     log_info "数据库端口: 5432"
     log_info "Redis端口: 6379"
     echo ""
-    log_info "查看日志: docker-compose logs -f app"
-    log_info "停止服务: docker-compose down"
+    log_info "查看日志: $COMPOSE_CMD logs -f app"
+    log_info "停止服务: $COMPOSE_CMD down"
+}
+
+# 显示帮助信息
+show_help() {
+    echo "学习追踪系统 Docker 部署脚本"
+    echo ""
+    echo "使用方法: $0 [dev|prod]"
+    echo ""
+    echo "参数:"
+    echo "  dev     部署开发环境"
+    echo "  prod    部署生产环境"
+    echo ""
+    echo "示例:"
+    echo "  $0 dev"
+    echo "  $0 prod"
 }
 
 # 主函数
 main() {
     local env=${1:-prod}
     
+    if [ "$env" = "help" ] || [ "$env" = "-h" ] || [ "$env" = "--help" ]; then
+        show_help
+        exit 0
+    fi
+    
     if [ "$env" != "dev" ] && [ "$env" != "prod" ]; then
         log_error "无效的环境参数，请使用 'dev' 或 'prod'"
-        echo "使用方法: $0 [dev|prod]"
+        echo ""
+        show_help
         exit 1
     fi
     
@@ -177,7 +220,7 @@ main() {
     cleanup_images
     build_images $env
     start_services $env
-    wait_for_services
+    wait_for_services $env
     show_status $env
 }
 
