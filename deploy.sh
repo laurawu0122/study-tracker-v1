@@ -12,7 +12,12 @@ curl -o .env https://raw.githubusercontent.com/laurawu0122/study-tracker/main/en
 # 3. 创建必要目录
 mkdir -p logs uploads/avatars
 
-# 4. 启动服务
+# 4. 构建应用镜像（如果预构建镜像不存在）
+echo "🔨 构建应用镜像..."
+docker build -t laurawu0122/study-tracker:latest .
+
+# 5. 启动服务
+echo "🚀 启动服务..."
 docker-compose up -d
 
 echo "✅ 部署完成！"
