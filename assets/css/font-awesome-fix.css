@@ -1,0 +1,187 @@
+/* Font Awesome 字体修复 */
+/* 注意：已移除外部CDN引用，使用本地Font Awesome文件 */
+
+/* 或者禁用本地字体加载，使用系统字体 */
+.fas, .fa-solid {
+  font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands", sans-serif !important;
+}
+
+/* 备用方案：使用 Unicode 字符 */
+.fa-star::before { content: "★"; }
+.fa-check::before { content: "✓"; }
+.fa-times::before { content: "✗"; }
+.fa-exclamation-triangle::before { content: "⚠"; }
+.fa-info::before { content: "ℹ"; }
+.fa-edit::before { content: "✎"; }
+.fa-trash::before { content: "🗑"; }
+.fa-plus::before { content: "+"; }
+.fa-search::before { content: "🔍"; }
+.fa-user::before { content: "👤"; }
+.fa-cog::before { content: "⚙"; }
+.fa-home::before { content: "🏠"; }
+.fa-chart-bar::before { content: "📊"; }
+.fa-trophy::before { content: "🏆"; }
+.fa-gift::before { content: "🎁"; }
+.fa-clock::before { content: "🕐"; }
+.fa-calendar::before { content: "📅"; }
+.fa-book::before { content: "📚"; }
+.fa-graduation-cap::before { content: "🎓"; }
+
+/* Font Awesome 修复 - 使用SVG图标替代字体文件 */
+
+/* 下载图标 */
+.fa-download::before {
+  content: "📥";
+}
+
+/* 文件夹加号图标 */
+.fa-folder-plus::before {
+  content: "📁➕";
+}
+
+/* 刷新图标 */
+.fa-refresh::before {
+  content: "🔄";
+}
+
+/* 保存图标 */
+.fa-save::before {
+  content: "💾";
+}
+
+/* 设置图标 */
+.fa-cog::before {
+  content: "⚙️";
+}
+
+/* 星星图标 */
+.fa-star::before {
+  content: "⭐";
+}
+
+/* 奖杯图标 */
+.fa-trophy::before {
+  content: "🏆";
+}
+
+/* 时钟图标 */
+.fa-clock::before {
+  content: "🕐";
+}
+
+/* 日历图标 */
+.fa-calendar::before {
+  content: "📅";
+}
+
+/* 火焰图标 */
+.fa-fire::before {
+  content: "🔥";
+}
+
+/* 书本图标 */
+.fa-book::before {
+  content: "📚";
+}
+
+/* 检查图标 */
+.fa-check::before {
+  content: "✅";
+}
+
+/* 警告图标 */
+.fa-exclamation-triangle::before {
+  content: "⚠️";
+}
+
+/* 信息图标 */
+.fa-info-circle::before {
+  content: "ℹ️";
+}
+
+/* 成功图标 */
+.fa-check-circle::before {
+  content: "✅";
+}
+
+/* 错误图标 */
+.fa-times-circle::before {
+  content: "❌";
+}
+
+/* 加载图标 */
+.fa-spinner::before {
+  content: "⏳";
+}
+
+/* 旋转动画 */
+.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 通用图标样式 */
+.fa {
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+/* 图标大小 */
+.fa-lg {
+  font-size: 1.33333em;
+  line-height: 0.75em;
+  vertical-align: -0.0667em;
+}
+
+.fa-2x {
+  font-size: 2em;
+}
+
+.fa-3x {
+  font-size: 3em;
+}
+
+/* 图标间距 */
+.fa-fw {
+  text-align: center;
+  width: 1.25em;
+}
+
+/* 图标堆叠 */
+.fa-stack {
+  display: inline-block;
+  height: 2em;
+  line-height: 2em;
+  position: relative;
+  vertical-align: middle;
+  width: 2.5em;
+}
+
+.fa-stack-1x,
+.fa-stack-2x {
+  left: 0;
+  position: absolute;
+  text-align: center;
+  width: 100%;
+}
+
+.fa-stack-1x {
+  font-size: 0.5em;
+  line-height: 2em;
+}
+
+.fa-stack-2x {
+  font-size: 1em;
+  line-height: 1em;
+} 

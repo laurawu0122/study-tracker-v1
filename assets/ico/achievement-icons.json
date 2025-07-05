@@ -1,0 +1,92 @@
+{
+  "achievement_icons": {
+    "first_study": "/assets/ico/first-study.svg",
+    "streak_7": "/assets/ico/streak-7.svg",
+    "streak_30": "/assets/ico/streak-30.svg",
+    "time_master": "/assets/ico/time-master.svg",
+    "project_complete": "/assets/ico/project-complete.svg",
+    "knowledge_star": "/assets/ico/knowledge-star.svg",
+    "study_expert": "/assets/ico/study-expert.svg",
+    "community_active": "/assets/ico/community-active.svg",
+    "holiday_special": "/assets/ico/holiday-special.svg",
+    "study_champion": "/assets/ico/study-champion.svg",
+    "frequency_daily": "/assets/ico/frequency-daily.svg",
+    "frequency_weekly": "/assets/ico/frequency-weekly.svg",
+    "frequency_monthly": "/assets/ico/frequency-monthly.svg",
+    "project_bronze": "/assets/ico/project-bronze.svg",
+    "project_silver": "/assets/ico/project-silver.svg",
+    "project_gold": "/assets/ico/project-gold.svg",
+    "efficiency_speed": "/assets/ico/efficiency-speed.svg",
+    "efficiency_focus": "/assets/ico/efficiency-focus.svg",
+    "efficiency_quality": "/assets/ico/efficiency-quality.svg",
+    "special_milestone": "/assets/ico/special-milestone.svg",
+    "special_innovation": "/assets/ico/special-innovation.svg",
+    "special_mastery": "/assets/ico/special-mastery.svg"
+  },
+  "icon_descriptions": {
+    "first_study": "新手入门 - 蓝色渐变钻石形状",
+    "streak_7": "连续打卡7天 - 红色渐变火焰形状",
+    "streak_30": "连续打卡30天 - 金色渐变连续线条",
+    "time_master": "时间管理大师 - 绿色渐变时钟",
+    "project_complete": "项目完成 - 蓝色渐变任务清单",
+    "knowledge_star": "知识之星 - 金色渐变五角星",
+    "study_expert": "学习达人 - 紫色渐变大脑",
+    "community_active": "社区活跃 - 红色渐变人群",
+    "holiday_special": "节日特别奖 - 绿色渐变礼物",
+    "study_champion": "学习冠军 - 金色渐变奖杯",
+    "frequency_daily": "每日学习 - 蓝色渐变同心圆",
+    "frequency_weekly": "每周学习 - 紫色渐变六边形",
+    "frequency_monthly": "每月学习 - 粉色渐变复杂几何",
+    "project_bronze": "青铜项目 - 青铜色任务清单",
+    "project_silver": "白银项目 - 银色任务清单",
+    "project_gold": "黄金项目 - 金色任务清单",
+    "efficiency_speed": "学习速度 - 绿色渐变三角形",
+    "efficiency_focus": "专注力 - 橙色渐变同心圆",
+    "efficiency_quality": "学习质量 - 青色渐变复杂几何",
+    "special_milestone": "里程碑 - 紫色渐变带星任务清单",
+    "special_innovation": "创新成就 - 红色渐变四角星",
+    "special_mastery": "精通成就 - 金色渐变复杂星形"
+  },
+  "color_schemes": {
+    "blue": [
+      "#4F46E5",
+      "#7C3AED"
+    ],
+    "red": [
+      "#DC2626",
+      "#EA580C"
+    ],
+    "green": [
+      "#059669",
+      "#10B981"
+    ],
+    "gold": [
+      "#CA8A04",
+      "#EAB308"
+    ],
+    "purple": [
+      "#7C3AED",
+      "#A855F7"
+    ],
+    "pink": [
+      "#EC4899",
+      "#BE185D"
+    ],
+    "cyan": [
+      "#06B6D4",
+      "#0891B2"
+    ],
+    "orange": [
+      "#F59E0B",
+      "#D97706"
+    ],
+    "bronze": [
+      "#CD7F32",
+      "#B8860B"
+    ],
+    "silver": [
+      "#C0C0C0",
+      "#A9A9A9"
+    ]
+  }
+}

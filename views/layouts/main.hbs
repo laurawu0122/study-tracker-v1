@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">{{title}} - 学习项目追踪系统</title>
+    <meta name="description" content="{{description}}">
+    
+    <!-- Preload critical assets -->
+    <!-- <link rel="preload" href="/assets/css/main.css" as="style"> -->
+    <!-- <link rel="preload" href="/assets/js/main.js" as="script"> -->
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
+    
+    <!-- htmx -->
+    <script src="/assets/js/htmx.min.js"></script>
+    
+    <!-- Chart.js (only load when needed) -->
+    {{#if charts}}
+    <script src="/assets/lib/chart.umd.min.js"></script>
+    {{/if}}
+    
+    <!-- Page specific CSS -->
+    {{#if pageCSS}}
+    <link rel="stylesheet" href="{{pageCSS}}">
+    {{/if}}
+    
+    <!-- Page specific JS -->
+    {{#if pageJS}}
+    <script defer src="{{pageJS}}"></script>
+    {{/if}}
+    
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
+    <!-- Font Awesome 修复 - 使用emoji替代缺失的字体文件 -->
+    <link rel="stylesheet" href="/assets/css/font-awesome-fix.css">
+    
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-effect {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .dark .card-hover:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        .loading {
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- 加载状态 - 只在初始化时显示 -->
+    <div id="loadingScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-gray-900">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-4"></div>
+            <p class="text-gray-600 dark:text-gray-400">正在加载...</p>
+        </div>
+    </div>
+    
+    <!-- 主要内容区域 - 左右分栏布局 -->
+    <div id="mainContent" class="min-h-screen flex" style="display: none;">
+        {{#if user}}
+            <!-- 左侧边栏 -->
+            <div class="flex-shrink-0">
+                {{> sidebar}}
+            </div>
+            <!-- 右侧内容区域 -->
+            <div class="flex-1 flex flex-col">
+                {{> main-content}}
+            </div>
+        {{else}}
+            {{#if showRegisterModalOnly}}
+                {{> @partial-block}}
+            {{else}}
+                {{> auth-screen}}
+            {{/if}}
+        {{/if}}
+    </div>
+    
+    <!-- Core JavaScript -->
+    <!-- <script src="/assets/js/main.js"></script> -->
+    
+    <!-- Page specific scripts -->
+    {{#if pageScript}}
+    <script src="{{pageScript}}"></script>
+    {{/if}}
+
+    <!-- 全局通知系统 -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2" style="display: none;">
+        <!-- 通知会动态插入这里 -->
+    </div>
+
+    <script src="/assets/js/main.js"></script>
+    <script src="/assets/js/points-navigation.js"></script>
+    <script src="/assets/js/admin-achievements.js"></script>
+    <script src="/assets/js/smtp-config.js"></script>
+    <script src="/assets/js/notification-badge.js"></script>
+    <script src="/assets/js/avatar-updater.js"></script>
+
+    <!-- 全局版权信息 -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+      <div class="w-full px-6">
+        <div class="text-center">
+          <p class="text-gray-600 dark:text-gray-400 text-sm">
+            © 2025 <a href="http://www.richarvin.com" target="_blank" class="text-black dark:text-white font-bold no-underline">知行笔记</a>. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+</body>
+</html> 

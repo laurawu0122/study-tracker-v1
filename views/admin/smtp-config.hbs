@@ -1,0 +1,529 @@
+<div class="space-y-6">
+  <!-- 页面标题 -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">📧 SMTP邮箱设置</h3>
+    <div class="mt-4 sm:mt-0 flex space-x-2">
+      <button id="testConnectionBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+        <span class="inline-flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          测试连接
+        </span>
+      </button>
+      <button id="saveSmtpConfigBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+        <span class="inline-flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          保存配置
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 弹窗遮罩 -->
+  <div id="modalOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div id="modalContent" class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0">
+      <div class="p-6">
+        <div class="flex items-center mb-4">
+          <div id="modalIcon" class="text-2xl mr-3"></div>
+          <h3 id="modalTitle" class="text-lg font-semibold text-gray-900 dark:text-white"></h3>
+        </div>
+        <p id="modalMessage" class="text-gray-600 dark:text-gray-300 mb-6"></p>
+        <div class="flex justify-end">
+          <button id="modalCloseBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors duration-200">
+            确定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配置表单 -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <form id="smtpConfigForm" class="space-y-6">
+      <!-- 基本设置 -->
+      <div>
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">基本设置</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h5 class="text-sm font-medium text-gray-900 dark:text-white">启用SMTP邮件服务</h5>
+              <p class="text-sm text-gray-600 dark:text-gray-400">启用后可以使用邮箱验证功能</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="smtpEnabled" name="smtpEnabled" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <h5 class="text-sm font-medium text-gray-900 dark:text-white">启用邮箱验证</h5>
+              <p class="text-sm text-gray-600 dark:text-gray-400">用户注册时需要邮箱验证</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="emailVerificationEnabled" name="emailVerificationEnabled" class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 邮箱服务提供商 -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">邮箱服务提供商</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择邮箱服务商</label>
+            <select id="smtpProvider" name="smtpProvider" 
+                    class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="custom">自定义配置</option>
+              <option value="qq">QQ邮箱</option>
+              <option value="163">163邮箱</option>
+              <option value="126">126邮箱</option>
+              <option value="gmail">Gmail</option>
+              <option value="outlook">Outlook/Hotmail</option>
+              <option value="sina">新浪邮箱</option>
+              <option value="sohu">搜狐邮箱</option>
+              <option value="yahoo">Yahoo邮箱</option>
+            </select>
+            <p id="providerDescription" class="mt-1 text-sm text-gray-500">选择邮箱服务提供商，系统会自动填充相应的SMTP配置</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SSL/TLS加密</label>
+            <select id="smtpSecure" name="smtpSecure" 
+                    class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="false">STARTTLS (推荐)</option>
+              <option value="true">SSL/TLS</option>
+            </select>
+            <p class="mt-1 text-sm text-gray-500">大多数邮箱服务商推荐使用STARTTLS</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SMTP服务器配置 -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">SMTP服务器配置</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP服务器地址</label>
+            <input type="text" id="smtpHost" name="smtpHost" 
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="例如: smtp.qq.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">SMTP端口</label>
+            <input type="number" id="smtpPort" name="smtpPort" min="1" max="65535"
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="587">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">邮箱账号</label>
+            <input type="email" id="smtpUser" name="smtpUser" 
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="your-email@example.com">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">邮箱密码/授权码</label>
+            <input type="password" id="smtpPass" name="smtpPass" 
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="邮箱密码或应用专用密码">
+          </div>
+        </div>
+      </div>
+
+      <!-- 发件人设置 -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">发件人设置</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">发件人显示名称</label>
+            <input type="text" id="smtpFromName" name="smtpFromName" 
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="学习项目追踪系统">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">发件人邮箱地址</label>
+            <input type="email" id="smtpFromEmail" name="smtpFromEmail" 
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="noreply@example.com">
+          </div>
+        </div>
+      </div>
+
+      <!-- 验证码设置 -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-4">验证码设置</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">验证码有效期（分钟）</label>
+            <input type="number" id="verificationCodeExpire" name="verificationCodeExpire" min="1" max="60"
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="10">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">邮件发送频率限制（秒）</label>
+            <input type="number" id="emailRateLimit" name="emailRateLimit" min="30" max="300"
+                   class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="60">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+// SMTP邮箱配置相关函数
+const emailProviders = {
+  qq: {
+    name: 'QQ邮箱',
+    host: 'smtp.qq.com',
+    port: 587,
+    secure: false,
+    description: '腾讯QQ邮箱，需要开启SMTP服务并获取授权码'
+  },
+  '163': {
+    name: '163邮箱',
+    host: 'smtp.163.com',
+    port: 587,
+    secure: false,
+    description: '网易163邮箱，需要开启SMTP服务并获取授权码'
+  },
+  '126': {
+    name: '126邮箱',
+    host: 'smtp.126.com',
+    port: 587,
+    secure: false,
+    description: '网易126邮箱，需要开启SMTP服务并获取授权码'
+  },
+  gmail: {
+    name: 'Gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    description: 'Google Gmail，需要开启两步验证并生成应用专用密码'
+  },
+  outlook: {
+    name: 'Outlook/Hotmail',
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    secure: false,
+    description: '微软Outlook/Hotmail邮箱'
+  },
+  sina: {
+    name: '新浪邮箱',
+    host: 'smtp.sina.com',
+    port: 587,
+    secure: false,
+    description: '新浪邮箱，需要开启SMTP服务'
+  },
+  sohu: {
+    name: '搜狐邮箱',
+    host: 'smtp.sohu.com',
+    port: 587,
+    secure: false,
+    description: '搜狐邮箱，需要开启SMTP服务'
+  },
+  yahoo: {
+    name: 'Yahoo邮箱',
+    host: 'smtp.mail.yahoo.com',
+    port: 587,
+    secure: false,
+    description: 'Yahoo邮箱，需要开启SMTP服务'
+  },
+  custom: {
+    name: '自定义配置',
+    host: '',
+    port: 587,
+    secure: false,
+    description: '自定义SMTP服务器配置'
+  }
+};
+
+// 初始化页面
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('页面加载完成，开始初始化...');
+  loadSmtpConfig();
+  setupEventListeners();
+  
+  // 测试弹窗功能
+  setTimeout(() => {
+    console.log('测试弹窗功能...');
+    showNotification('这是一个测试弹窗，用于验证弹窗功能是否正常工作', 'info');
+  }, 1000);
+});
+
+// 设置事件监听器
+function setupEventListeners() {
+  console.log('设置事件监听器...');
+  
+  // 邮箱服务商选择
+  const smtpProvider = document.getElementById('smtpProvider');
+  if (smtpProvider) {
+    smtpProvider.addEventListener('change', function() {
+      console.log('邮箱服务商选择改变:', this.value);
+      const provider = this.value;
+      const config = emailProviders[provider];
+      
+      if (config) {
+        document.getElementById('smtpHost').value = config.host;
+        document.getElementById('smtpPort').value = config.port;
+        document.getElementById('smtpSecure').value = config.secure.toString();
+        document.getElementById('providerDescription').textContent = config.description;
+      }
+    });
+  } else {
+    console.error('找不到smtpProvider元素');
+  }
+
+  // 测试连接
+  const testConnectionBtn = document.getElementById('testConnectionBtn');
+  if (testConnectionBtn) {
+    console.log('找到测试连接按钮，添加事件监听器');
+    testConnectionBtn.addEventListener('click', function() {
+      console.log('测试连接按钮被点击');
+      testSmtpConnection();
+    });
+  } else {
+    console.error('找不到testConnectionBtn元素');
+  }
+  
+  // 保存配置
+  const saveSmtpConfigBtn = document.getElementById('saveSmtpConfigBtn');
+  if (saveSmtpConfigBtn) {
+    console.log('找到保存配置按钮，添加事件监听器');
+    saveSmtpConfigBtn.addEventListener('click', function() {
+      console.log('保存配置按钮被点击');
+      saveSmtpConfig();
+    });
+  } else {
+    console.error('找不到saveSmtpConfigBtn元素');
+  }
+  
+  // 弹窗关闭按钮
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  if (modalCloseBtn) {
+    modalCloseBtn.addEventListener('click', hideModal);
+  }
+  
+  // 点击遮罩关闭弹窗
+  const modalOverlay = document.getElementById('modalOverlay');
+  if (modalOverlay) {
+    modalOverlay.addEventListener('click', function(e) {
+      if (e.target === modalOverlay) {
+        hideModal();
+      }
+    });
+  }
+}
+
+// 加载SMTP配置
+async function loadSmtpConfig() {
+  try {
+    const response = await fetch('/api/admin/smtp-config', {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      renderSmtpConfig(data.config);
+    } else {
+      showNotification('❌ 加载SMTP配置失败: ' + data.error, 'error');
+    }
+  } catch (error) {
+    showNotification('❌ 加载SMTP配置失败: ' + error.message, 'error');
+  }
+}
+
+// 渲染SMTP配置
+function renderSmtpConfig(config) {
+  document.getElementById('smtpEnabled').checked = config.smtp_enabled || false;
+  document.getElementById('emailVerificationEnabled').checked = config.email_verification_enabled !== false;
+  document.getElementById('smtpProvider').value = config.smtp_provider || 'custom';
+  document.getElementById('smtpSecure').value = (config.smtp_secure || false).toString();
+  document.getElementById('smtpHost').value = config.smtp_host || '';
+  document.getElementById('smtpPort').value = config.smtp_port || 587;
+  document.getElementById('smtpUser').value = config.smtp_user || '';
+  document.getElementById('smtpPass').value = config.smtp_pass || '';
+  document.getElementById('smtpFromName').value = config.smtp_from_name || '学习项目追踪系统';
+  document.getElementById('smtpFromEmail').value = config.smtp_from_email || '';
+  document.getElementById('verificationCodeExpire').value = config.verification_code_expire || 10;
+  document.getElementById('emailRateLimit').value = config.email_rate_limit || 60;
+  
+  // 触发提供商选择事件
+  document.getElementById('smtpProvider').dispatchEvent(new Event('change'));
+}
+
+// 保存SMTP配置
+async function saveSmtpConfig() {
+  const stopLoading = showLoading('saveSmtpConfigBtn', '保存中...');
+  
+  try {
+    const config = {
+      smtp_enabled: document.getElementById('smtpEnabled').checked,
+      email_verification_enabled: document.getElementById('emailVerificationEnabled').checked,
+      smtp_provider: document.getElementById('smtpProvider').value,
+      smtp_secure: document.getElementById('smtpSecure').value === 'true',
+      smtp_host: document.getElementById('smtpHost').value,
+      smtp_port: parseInt(document.getElementById('smtpPort').value),
+      smtp_user: document.getElementById('smtpUser').value,
+      smtp_pass: document.getElementById('smtpPass').value,
+      smtp_from_name: document.getElementById('smtpFromName').value,
+      smtp_from_email: document.getElementById('smtpFromEmail').value,
+      verification_code_expire: parseInt(document.getElementById('verificationCodeExpire').value),
+      email_rate_limit: parseInt(document.getElementById('emailRateLimit').value)
+    };
+    
+    const response = await fetch('/api/admin/smtp-config', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(config)
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showNotification('✅ SMTP配置保存成功！', 'success');
+    } else {
+      showNotification('❌ SMTP配置保存失败: ' + data.error, 'error');
+    }
+  } catch (error) {
+    showNotification('❌ SMTP配置保存失败: ' + error.message, 'error');
+  } finally {
+    stopLoading();
+  }
+}
+
+// 测试SMTP连接
+async function testSmtpConnection() {
+  console.log('testSmtpConnection函数被调用');
+  const stopLoading = showLoading('testConnectionBtn', '测试中...');
+  
+  try {
+    const config = {
+      smtp_host: document.getElementById('smtpHost').value,
+      smtp_port: parseInt(document.getElementById('smtpPort').value),
+      smtp_user: document.getElementById('smtpUser').value,
+      smtp_pass: document.getElementById('smtpPass').value,
+      smtp_secure: document.getElementById('smtpSecure').value === 'true'
+    };
+    
+    console.log('发送SMTP测试请求，配置:', config);
+    
+    const response = await fetch('/api/admin/smtp-config/test-connection', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(config)
+    });
+    
+    console.log('收到响应:', response.status);
+    const data = await response.json();
+    console.log('响应数据:', data);
+    
+    if (data.success) {
+      showNotification('✅ SMTP连接测试成功！', 'success');
+    } else {
+      showNotification('❌ SMTP连接测试失败: ' + data.error, 'error');
+    }
+  } catch (error) {
+    console.error('SMTP测试错误:', error);
+    showNotification('❌ SMTP连接测试失败: ' + error.message, 'error');
+  } finally {
+    stopLoading();
+  }
+}
+
+// 显示弹窗通知
+function showNotification(message, type = 'info') {
+  console.log('showModal被调用:', message, type);
+  
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalContent = document.getElementById('modalContent');
+  const modalIcon = document.getElementById('modalIcon');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  
+  if (!modalOverlay || !modalContent || !modalIcon || !modalTitle || !modalMessage) {
+    console.error('找不到弹窗元素');
+    return;
+  }
+  
+  // 设置图标和标题
+  let icon, title;
+  if (type === 'success') {
+    icon = '✅';
+    title = '操作成功';
+  } else if (type === 'error') {
+    icon = '❌';
+    title = '操作失败';
+  } else {
+    icon = 'ℹ️';
+    title = '提示信息';
+  }
+  
+  modalIcon.textContent = icon;
+  modalTitle.textContent = title;
+  modalMessage.textContent = message;
+  
+  // 显示弹窗
+  modalOverlay.classList.remove('hidden');
+  
+  // 添加动画效果
+  setTimeout(() => {
+    modalContent.style.transform = 'scale(1)';
+    modalContent.style.opacity = '1';
+  }, 10);
+}
+
+// 隐藏弹窗
+function hideModal() {
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalContent = document.getElementById('modalContent');
+  
+  if (!modalOverlay || !modalContent) {
+    return;
+  }
+  
+  // 添加关闭动画
+  modalContent.style.transform = 'scale(0.95)';
+  modalContent.style.opacity = '0';
+  
+  setTimeout(() => {
+    modalOverlay.classList.add('hidden');
+  }, 300);
+}
+
+// 显示加载状态
+function showLoading(buttonId, loadingText = '处理中...') {
+  const button = document.getElementById(buttonId);
+  const originalText = button.innerHTML;
+  
+  button.disabled = true;
+  button.innerHTML = `
+    <span class="inline-flex items-center">
+      <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      ${loadingText}
+    </span>
+  `;
+  
+  return () => {
+    button.disabled = false;
+    button.innerHTML = originalText;
+  };
+}
+</script> 

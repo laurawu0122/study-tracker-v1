@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习项目追踪系统</title>
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
+    <script src="/assets/js/htmx.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-gray-900">📚 学习追踪系统</span>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="loginBtn" class="text-gray-700 hover:text-blue-600 px-3 py-2">登录</button>
+                    <button id="registerBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">注册</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-12">
+        <div class="text-center mb-16">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">现代化学习管理平台</h1>
+            <p class="text-xl text-gray-600 mb-8">记录学习项目完成时间，分析学习效率趋势</p>
+            <div class="flex justify-center space-x-4">
+                <button id="startBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg">开始使用</button>
+                <button id="demoBtn" class="border border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-3 rounded-lg">查看演示</button>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 mb-16">
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <div class="text-2xl mb-4">📊</div>
+                <h3 class="text-xl font-semibold mb-2">数据可视化</h3>
+                <p class="text-gray-600">多种图表展示学习趋势和统计</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <div class="text-2xl mb-4">⏱️</div>
+                <h3 class="text-xl font-semibold mb-2">时间追踪</h3>
+                <p class="text-gray-600">精确记录学习时间，实时统计</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-lg">
+                <div class="text-2xl mb-4">📱</div>
+                <h3 class="text-xl font-semibold mb-2">响应式设计</h3>
+                <p class="text-gray-600">完美适配桌面和移动设备</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 版权信息 -->
+    <footer class="bg-white border-t border-gray-200 py-8 mt-16">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center">
+                <p class="text-gray-600 text-sm">
+                    © 2025 知行笔记. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 登录弹窗 -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h2 class="text-xl font-semibold text-gray-900">登录</h2>
+                    <button id="closeLoginModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <form hx-post="/api/auth/login" hx-target="#loginMessage" hx-swap="innerHTML" class="p-6">
+                    <div class="mb-4">
+                        <label for="loginUsername" class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                        <input type="text" id="loginUsername" name="username" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               autocomplete="username">
+                    </div>
+                    <div class="mb-6">
+                        <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">密码</label>
+                        <div class="relative">
+                            <input type="password" id="loginPassword" name="password" required 
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   autocomplete="current-password">
+                            <button type="button" id="loginPasswordToggle" 
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="loginPasswordEye">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="loginMessage"></div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition duration-200">
+                        登录
+                    </button>
+                    <div class="mt-4 text-center">
+                        <button type="button" id="forgotPasswordBtn" class="text-blue-600 hover:text-blue-800 text-sm">
+                            忘记密码？
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 注册弹窗 -->
+    {{> register-modal}}
+
+    <!-- 忘记密码弹窗 -->
+    <div id="forgotPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="flex justify-between items-center p-6 border-b">
+                    <h2 class="text-xl font-semibold text-gray-900">重置密码</h2>
+                    <button id="closeForgotPasswordModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <form id="forgotPasswordForm" class="p-6">
+                    <div class="mb-4">
+                        <label for="forgotPasswordEmail" class="block text-sm font-medium text-gray-700 mb-2">邮箱地址</label>
+                        <input type="email" id="forgotPasswordEmail" name="email" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="请输入您的注册邮箱">
+                    </div>
+                    <div class="mb-4">
+                        <label for="resetVerificationCode" class="block text-sm font-medium text-gray-700 mb-2">验证码</label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="resetVerificationCode" name="verificationCode" required 
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="请输入6位验证码" maxlength="6" pattern="[0-9]{6}">
+                            <button type="button" id="sendResetCodeBtn" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap">
+                                发送验证码
+                            </button>
+                        </div>
+                    </div>
+                                        <div class="mb-4">
+                        <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">新密码</label>
+                        <div class="relative">
+                            <input type="password" id="newPassword" name="newPassword" required 
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="请输入新密码（至少8位）" autocomplete="new-password">
+                            <button type="button" id="newPasswordToggle" 
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="newPasswordEye">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">密码长度至少为8位</p>
+                    </div>
+                    <div class="mb-6">
+                        <label for="confirmNewPassword" class="block text-sm font-medium text-gray-700 mb-2">确认新密码</label>
+                        <div class="relative">
+                                                    <input type="password" id="confirmNewPassword" name="confirmNewPassword" required 
+                               class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="请再次输入新密码" autocomplete="new-password">
+                            <button type="button" id="confirmNewPasswordToggle" 
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="confirmNewPasswordEye">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="forgotPasswordMessage" class="text-base text-center mb-4"></div>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-200">
+                        重置密码
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局通知系统 -->
+    <div id="notificationContainer" class="fixed top-4 right-4 z-50 space-y-2" style="display: none;">
+        <!-- 通知会动态插入这里 -->
+    </div>
+
+    <script src="/assets/js/main.js"></script>
+    <script>
+    // 弹窗控制
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // 重新初始化密码切换功能
+        setTimeout(initPasswordToggles, 100);
+    }
+
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    // 登录弹窗
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        showModal('loginModal');
+    });
+
+    document.getElementById('closeLoginModal').addEventListener('click', () => {
+        hideModal('loginModal');
+    });
+
+    // 注册弹窗
+    document.getElementById('registerBtn').addEventListener('click', () => {
+        showModal('registerModal');
+    });
+
+    document.getElementById('closeRegisterModal').addEventListener('click', () => {
+        hideModal('registerModal');
+    });
+
+    // 开始使用按钮
+    document.getElementById('startBtn').addEventListener('click', () => {
+        showModal('loginModal');
+    });
+
+    // 演示按钮
+    document.getElementById('demoBtn').addEventListener('click', () => {
+        alert('演示功能：\n- 数据仪表板\n- 项目管理\n- 时间追踪\n- 趋势分析');
+    });
+
+    // 点击背景关闭弹窗
+    document.getElementById('loginModal').addEventListener('click', (e) => {
+        if (e.target.id === 'loginModal') {
+            hideModal('loginModal');
+        }
+    });
+
+    document.getElementById('registerModal').addEventListener('click', (e) => {
+        if (e.target.id === 'registerModal') {
+            hideModal('registerModal');
+        }
+    });
+
+    // HTMX 成功登录后跳转
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.xhr.responseURL && evt.detail.xhr.responseURL.includes('/auth/login')) {
+            if (evt.detail.xhr.status === 200) {
+                // 登录成功，跳转到仪表板
+                window.location.href = '/dashboard';
+            }
+        }
+        if (evt.detail.xhr.responseURL && evt.detail.xhr.responseURL.includes('/auth/register')) {
+            if (evt.detail.xhr.status === 201) {
+                // 注册成功，关闭注册弹窗，显示登录弹窗
+                hideModal('registerModal');
+                showModal('loginModal');
+            }
+        }
+    });
+
+    // HTMX 错误处理
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        const target = evt.target;
+        const messageTarget = target.querySelector('[id$="Message"]') || target.querySelector('#loginMessage') || target.querySelector('#registerMessage');
+        
+        if (messageTarget) {
+            let errorMessage = '请求失败，请稍后重试';
+            
+            // 尝试从响应中获取具体的错误信息
+            try {
+                const response = evt.detail.xhr;
+                if (response && response.responseText) {
+                    const responseData = JSON.parse(response.responseText);
+                    if (responseData.error) {
+                        errorMessage = responseData.error;
+                    }
+                }
+            } catch (e) {
+                // 如果解析失败，使用默认错误信息
+                console.log('无法解析错误响应:', e);
+            }
+            
+            messageTarget.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${errorMessage}</div>`;
+        }
+    });
+
+    // 密码显示/隐藏功能
+    function initPasswordToggles() {
+        // 登录密码切换
+        const loginPasswordToggle = document.getElementById('loginPasswordToggle');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginPasswordEye = document.getElementById('loginPasswordEye');
+        
+        if (loginPasswordToggle && loginPassword && !loginPasswordToggle.dataset.bound) {
+            loginPasswordToggle.dataset.bound = 'true';
+            loginPasswordToggle.addEventListener('click', function() {
+                const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                loginPassword.setAttribute('type', type);
+                
+                // 切换图标
+                if (type === 'text') {
+                    loginPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    `;
+                } else {
+                    loginPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    `;
+                }
+            });
+        }
+
+        // 注册密码切换
+        const registerPasswordToggle = document.getElementById('registerPasswordToggle');
+        const registerPassword = document.getElementById('registerPassword');
+        const registerPasswordEye = document.getElementById('registerPasswordEye');
+        
+        if (registerPasswordToggle && registerPassword && !registerPasswordToggle.dataset.bound) {
+            registerPasswordToggle.dataset.bound = 'true';
+            registerPasswordToggle.addEventListener('click', function() {
+                const type = registerPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                registerPassword.setAttribute('type', type);
+                
+                // 切换图标
+                if (type === 'text') {
+                    registerPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    `;
+                } else {
+                    registerPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    `;
+                }
+            });
+        }
+
+        // 确认密码切换
+        const registerConfirmPasswordToggle = document.getElementById('registerConfirmPasswordToggle');
+        const registerConfirmPassword = document.getElementById('registerConfirmPassword');
+        const registerConfirmPasswordEye = document.getElementById('registerConfirmPasswordEye');
+        
+        if (registerConfirmPasswordToggle && registerConfirmPassword && !registerConfirmPasswordToggle.dataset.bound) {
+            registerConfirmPasswordToggle.dataset.bound = 'true';
+            registerConfirmPasswordToggle.addEventListener('click', function() {
+                const type = registerConfirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                registerConfirmPassword.setAttribute('type', type);
+                
+                // 切换图标
+                if (type === 'text') {
+                    registerConfirmPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    `;
+                } else {
+                    registerConfirmPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    `;
+                }
+            });
+        }
+
+        // 忘记密码弹窗中的密码切换
+        const newPasswordToggle = document.getElementById('newPasswordToggle');
+        const newPassword = document.getElementById('newPassword');
+        const newPasswordEye = document.getElementById('newPasswordEye');
+        
+        if (newPasswordToggle && newPassword && !newPasswordToggle.dataset.bound) {
+            newPasswordToggle.dataset.bound = 'true';
+            newPasswordToggle.addEventListener('click', function() {
+                const type = newPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                newPassword.setAttribute('type', type);
+                
+                // 切换图标
+                if (type === 'text') {
+                    newPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    `;
+                } else {
+                    newPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    `;
+                }
+            });
+        }
+
+        const confirmNewPasswordToggle = document.getElementById('confirmNewPasswordToggle');
+        const confirmNewPassword = document.getElementById('confirmNewPassword');
+        const confirmNewPasswordEye = document.getElementById('confirmNewPasswordEye');
+        
+        if (confirmNewPasswordToggle && confirmNewPassword && !confirmNewPasswordToggle.dataset.bound) {
+            confirmNewPasswordToggle.dataset.bound = 'true';
+            confirmNewPasswordToggle.addEventListener('click', function() {
+                const type = confirmNewPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmNewPassword.setAttribute('type', type);
+                
+                // 切换图标
+                if (type === 'text') {
+                    confirmNewPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    `;
+                } else {
+                    confirmNewPasswordEye.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    `;
+                }
+            });
+        }
+    }
+
+    // 忘记密码弹窗控制
+    document.getElementById('forgotPasswordBtn').addEventListener('click', () => {
+        hideModal('loginModal');
+        showModal('forgotPasswordModal');
+    });
+
+    document.getElementById('closeForgotPasswordModal').addEventListener('click', () => {
+        hideModal('forgotPasswordModal');
+    });
+
+    document.getElementById('forgotPasswordModal').addEventListener('click', (e) => {
+        if (e.target.id === 'forgotPasswordModal') {
+            hideModal('forgotPasswordModal');
+        }
+    });
+
+    // 发送重置验证码
+    document.getElementById('sendResetCodeBtn').addEventListener('click', async function() {
+        const email = document.getElementById('forgotPasswordEmail').value;
+        if (!email) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">请先输入邮箱地址</div>';
+            return;
+        }
+
+        this.disabled = true;
+        this.textContent = '发送中...';
+
+        try {
+            const response = await fetch('/api/auth/send-reset-code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                document.getElementById('forgotPasswordMessage').innerHTML = 
+                    '<div class="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">验证码已发送到您的邮箱</div>';
+                
+                // 倒计时60秒
+                let countdown = 60;
+                const timer = setInterval(() => {
+                    this.textContent = `${countdown}秒后重试`;
+                    countdown--;
+                    if (countdown < 0) {
+                        clearInterval(timer);
+                        this.disabled = false;
+                        this.textContent = '发送验证码';
+                    }
+                }, 1000);
+            } else {
+                document.getElementById('forgotPasswordMessage').innerHTML = 
+                    `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${data.error || '发送失败，请稍后重试'}</div>`;
+                this.disabled = false;
+                this.textContent = '发送验证码';
+            }
+        } catch (error) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">网络错误，请稍后重试</div>';
+            this.disabled = false;
+            this.textContent = '发送验证码';
+        }
+    });
+
+    // 忘记密码表单提交
+    document.getElementById('forgotPasswordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('forgotPasswordEmail').value;
+        const verificationCode = document.getElementById('resetVerificationCode').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+        // 前端验证
+        if (!email || !verificationCode || !newPassword || !confirmNewPassword) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">请完整填写所有信息</div>';
+            return;
+        }
+        
+        if (newPassword.length < 8) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">密码长度至少为8位</div>';
+            return;
+        }
+        
+        // 验证密码一致性
+        if (newPassword !== confirmNewPassword) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">两次输入的密码不一致</div>';
+            return;
+        }
+
+        try {
+            console.log('🔍 提交重置密码请求:', { email, verificationCode, newPassword: newPassword ? '***' : 'empty' });
+            
+            const response = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    verificationCode,
+                    newPassword
+                })
+            });
+
+            const data = await response.json();
+            console.log('🔍 重置密码响应:', { status: response.status, data });
+            
+            if (response.ok) {
+                document.getElementById('forgotPasswordMessage').innerHTML = 
+                    '<div class="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">密码重置成功！请使用新密码登录</div>';
+                
+                // 3秒后关闭弹窗并显示登录弹窗
+                setTimeout(() => {
+                    hideModal('forgotPasswordModal');
+                    showModal('loginModal');
+                    // 清空表单
+                    document.getElementById('forgotPasswordForm').reset();
+                    document.getElementById('forgotPasswordMessage').innerHTML = '';
+                }, 3000);
+            } else {
+                const errorMessage = data.error || data.details?.map(d => d.msg).join(', ') || '重置失败，请稍后重试';
+                document.getElementById('forgotPasswordMessage').innerHTML = 
+                    `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${errorMessage}</div>`;
+            }
+        } catch (error) {
+            document.getElementById('forgotPasswordMessage').innerHTML = 
+                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">网络错误，请稍后重试</div>';
+        }
+    });
+
+    // 注册密码一致性验证
+    function checkPasswordMatch() {
+        const password = document.getElementById('registerPassword');
+        const confirmPassword = document.getElementById('registerConfirmPassword');
+        const messageElement = document.getElementById('passwordMatchMessage');
+        
+        if (password && confirmPassword && messageElement) {
+            const checkMatch = () => {
+                if (confirmPassword.value === '') {
+                    messageElement.innerHTML = '';
+                } else if (password.value === confirmPassword.value) {
+                    messageElement.innerHTML = '<div class="text-green-600 text-sm">✓ 密码匹配</div>';
+                } else {
+                    messageElement.innerHTML = '<div class="text-red-600 text-sm">✗ 密码不匹配</div>';
+                }
+            };
+            
+            password.addEventListener('input', checkMatch);
+            confirmPassword.addEventListener('input', checkMatch);
+        }
+    }
+
+    // 初始化密码切换功能
+    document.addEventListener('DOMContentLoaded', function() {
+        initPasswordToggles();
+        checkPasswordMatch();
+    });
+    
+
+    </script>
+</body>
+</html> 

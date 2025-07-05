@@ -1,0 +1,2062 @@
+<style>
+    /* 确保筛选器完全对齐 */
+    #statusFilter, #timeRangeFilter {
+        height: 40px !important;
+        line-height: 1 !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+    }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+    <div class="space-y-6" id="projectsContainer">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">项目管理</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">管理你的学习项目，跟踪进度和状态</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-2">
+                <button id="importExcelBtn" 
+                    class="hidden inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
+                    <span class="mr-2">📊</span>
+                    导入Excel
+                </button>
+                <button id="createProjectBtn" 
+                    class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700">
+                    <span class="mr-2">➕</span>
+                    新建项目
+                </button>
+            </div>
+        </div>
+
+        <!-- 批量操作和导出 -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+            <div class="flex items-center space-x-2 mb-2 sm:mb-0">
+                <!-- 移除全选框和批量操作按钮 -->
+            </div>
+            <div>
+                <button id="exportProjectsBtn" class="hidden px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">导出Excel</button>
+            </div>
+        </div>
+
+        <!-- 项目列表 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">项目列表</h3>
+                    <!-- 隐藏重复的按钮，只保留页面顶部的#createProjectBtn -->
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                项目名称
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                描述
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                状态
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                预估时间
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                创建时间
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- 项目数据将通过JavaScript动态加载 -->
+                    </tbody>
+                </table>
+                
+                <!-- 空状态 -->
+                <div id="projectsEmptyState" class="hidden text-center py-12">
+                    <div class="text-gray-400 dark:text-gray-500">
+                        <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg font-medium mb-2">暂无项目</p>
+                        <p class="text-sm mb-4">开始创建你的第一个学习项目吧！</p>
+                        <!-- 隐藏重复的按钮，只保留页面顶部的#createProjectBtn -->
+                    </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div id="projectsLoadingState" class="text-center py-12">
+                    <div class="inline-flex items-center text-gray-500 dark:text-gray-400">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        加载中...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 分页导航 -->
+            <div id="projectsPagination" class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 hidden">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700 dark:text-gray-300">
+                        显示 <span id="projectsStartIndex">1</span> 到 <span id="projectsEndIndex">10</span> 条，共 <span id="projectsTotal">0</span> 条记录
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="projectsPrevBtn" class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            上一页
+                        </button>
+                        <span id="projectsPageInfo" class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300"></span>
+                        <button id="projectsNextBtn" class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            下一页
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表分析区域 -->
+        <div id="analyticsSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hidden">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-4">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">📈 项目数据分析</h2>
+                <div class="flex flex-wrap items-center gap-6">
+                    <!-- 筛选器 -->
+                    <select id="statusFilter" class="h-10 border rounded-lg px-4 text-sm bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[160px] focus:ring-2 focus:ring-primary-500 focus:border-primary-500 leading-none flex-shrink-0">
+                        <option value="">全部状态</option>
+                        <option value="active">进行中</option>
+                        <option value="completed">已完成</option>
+                        <option value="paused">已暂停</option>
+                    </select>
+                    <select id="timeRangeFilter" class="h-10 border rounded-lg px-4 text-sm bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[160px] focus:ring-2 focus:ring-primary-500 focus:border-primary-500 leading-none flex-shrink-0">
+                        <option value="all">全部时间</option>
+                        <option value="week">本周</option>
+                        <option value="month">本月</option>
+                        <option value="quarter">本季度</option>
+                        <option value="year">本年</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 图表网格 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 项目状态分布 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">项目状态分布</h3>
+                    <div style="height: 250px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 项目分类分布 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">项目分类分布</h3>
+                    <div style="height: 250px;">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 项目进度趋势 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">项目进度趋势</h3>
+                    <div style="height: 250px;">
+                        <canvas id="progressChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 项目完成时间分布 -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-md font-medium text-gray-900 dark:text-white mb-3">项目完成时间分布</h3>
+                    <div style="height: 250px;">
+                        <canvas id="durationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                            <span class="text-xl">📊</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-blue-600 dark:text-blue-400">总项目数</p>
+                            <p class="text-2xl font-bold text-blue-900 dark:text-blue-100" id="totalProjectsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 dark:bg-green-800 rounded-lg">
+                            <span class="text-xl">✅</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-green-600 dark:text-green-400">已完成</p>
+                            <p class="text-2xl font-bold text-green-900 dark:text-green-100" id="completedProjectsCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 dark:bg-yellow-900/30 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg">
+                            <span class="text-xl">⏱️</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-yellow-600 dark:text-yellow-400">平均进度</p>
+                            <p class="text-2xl font-bold text-yellow-900 dark:text-yellow-100" id="avgProgress">0%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                            <span class="text-xl">📈</span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-purple-600 dark:text-purple-400">完成率</p>
+                            <p class="text-2xl font-bold text-purple-900 dark:text-purple-100" id="completionRate">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel导入模态框 -->
+    <div id="importModal" class="hidden fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+                <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">导入Excel文件</h2>
+                    <button id="closeImportModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择Excel文件</label>
+                        <input type="file" id="excelFile" accept=".xlsx,.xls" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="mb-4">
+                        <a href="/excel_templates/学习项目记录示例.xlsx" download 
+                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm">
+                            📥 下载Excel模板
+                        </a>
+                    </div>
+                    <div id="importMessage" class="mb-4"></div>
+                    <div class="flex justify-end space-x-3">
+                        <button id="cancelImportBtn" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                            取消
+                        </button>
+                        <button id="confirmImportBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            导入
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 现代化新建项目模态框 -->
+    <div id="createProjectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden">
+        <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 28rem; width: 100%;">
+            <!-- 弹窗主体 -->
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 max-h-[90vh] flex flex-col overflow-hidden" style="width: 100%;">
+                <!-- 头部 -->
+                <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">创建新项目</h3>
+                    </div>
+                    <button id="cancelCreateBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 内容区 - 可滚动 -->
+                <form id="createProjectForm" class="px-6 py-6 flex-1 overflow-y-auto" style="min-height:0;max-height:calc(90vh - 64px - 72px);">
+                    <div class="space-y-4">
+                        <!-- 项目名称 -->
+                        <div>
+                            <label for="projectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                项目名称 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="projectName" name="name" required
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                   placeholder="请输入项目名称" autocomplete="off">
+                        </div>
+
+                        <!-- 项目描述 -->
+                        <div>
+                            <label for="projectDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                项目描述
+                            </label>
+                            <div class="relative">
+                                <textarea id="projectDescription" name="description" rows="3" maxlength="50"
+                                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                                          placeholder="请输入项目描述（可选），最多50字。"
+                                          style="resize: none;"></textarea>
+                                <div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">
+                                    <span id="descriptionCharCount">0</span>/50
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 项目类型 - 固定为自定义 -->
+                        <div>
+                            <label for="projectType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                项目类型
+                            </label>
+                            <select id="projectType" name="project_type" required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                    disabled>
+                                <option value="custom" selected>自定义</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">使用自定义评级标准</p>
+                        </div>
+
+                        <!-- 预估时间 -->
+                        <div>
+                            <label for="projectEstimatedHours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                预估时间 <span class="text-red-500">*</span>
+                            </label>
+                            <select id="projectEstimatedHours" name="estimated_hours" required
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                <option value="">请选择预估时间</option>
+                                <option value="15">15分钟</option>
+                                <option value="20">20分钟</option>
+                                <option value="30">30分钟</option>
+                                <option value="40">40分钟</option>
+                                <option value="60">60分钟</option>
+                                <option value="90">90分钟</option>
+                                <option value="120">120分钟</option>
+                                <option value="150">150分钟</option>
+                                <option value="180">180分钟</option>
+                            </select>
+                        </div>
+
+                        <!-- 自定义评级设置 - 始终显示 -->
+                        <div id="customRatingSettings" class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">自定义评级标准</h4>
+                            
+                            <!-- 优秀评级 -->
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 w-12">优秀:</label>
+                                <input type="number" id="excellentTime" name="excellent_time" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="30" value="30">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">分钟以内</span>
+                                <span class="text-lg">😊</span>
+                            </div>
+                            
+                            <!-- 良评级 -->
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 w-12">良:</label>
+                                <input type="number" id="goodTimeMin" name="good_time_min" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="30" value="30">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
+                                <input type="number" id="goodTimeMax" name="good_time_max" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="60" value="60">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">分钟</span>
+                                <span class="text-lg">😊</span>
+                            </div>
+                            
+                            <!-- 中评级 -->
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 w-12">中:</label>
+                                <input type="number" id="mediumTimeMin" name="medium_time_min" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="60" value="60">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
+                                <input type="number" id="mediumTimeMax" name="medium_time_max" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="90" value="90">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">分钟</span>
+                                <span class="text-lg">💪</span>
+                            </div>
+                            
+                            <!-- 差评级 -->
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600 dark:text-gray-400 w-12">差:</label>
+                                <input type="number" id="poorTimeMin" name="poor_time_min" min="1" max="300"
+                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                       placeholder="90" value="90">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">分钟以上</span>
+                                <span class="text-lg">😠</span>
+                            </div>
+                        </div>
+
+                        <!-- 智能评级预览 -->
+                        <div id="ratingPreview" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                智能评级预览
+                            </label>
+                            <div id="ratingDisplay" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white">
+                                <!-- 评级内容将在这里动态显示 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 消息显示区域 -->
+                    <div id="createProjectMessage" class="mt-4"></div>
+                    
+                    <!-- 按钮区 - 移到表单内部 -->
+                    <div class="flex flex-col-reverse sm:flex-row gap-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+                        <button type="button" id="cancelCreateBtn2" 
+                                class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
+                            取消
+                        </button>
+                        <button type="submit" id="confirmCreateBtn" 
+                                class="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            创建项目
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑项目弹窗 -->
+<div id="editProjectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4">
+    <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 32rem; width: 100%; max-height: 90vh;">
+        <!-- 弹窗主体 -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col" style="width: 100%; max-height: 90vh;">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">编辑项目</h3>
+                </div>
+                <button id="closeEditProjectModalBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                    <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 内容区 -->
+            <form id="editProjectForm" class="px-6 py-6 flex-1 overflow-y-auto">
+                <div class="space-y-4">
+                    <!-- 项目名称 -->
+                    <div>
+                        <label for="editProjectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            项目名称 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="editProjectName" name="name" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请输入项目名称" autocomplete="off">
+                        <div id="editProjectNameError" class="text-red-500 text-xs mt-1 hidden"></div>
+                    </div>
+
+                    <!-- 项目描述 -->
+                    <div>
+                        <label for="editProjectDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            项目描述 <span class="text-gray-500 text-xs">(可选，最多50字)</span>
+                        </label>
+                        <textarea id="editProjectDescription" name="description" rows="3" maxlength="50"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                                  placeholder="请输入项目描述"></textarea>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">禁用拖拽调整大小</span>
+                            <span id="editProjectDescriptionCount" class="text-xs text-gray-500 dark:text-gray-400">0/50</span>
+                        </div>
+                    </div>
+
+                    <!-- 预估时间 -->
+                    <div>
+                        <label for="editProjectEstimatedHours" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            预估时间 <span class="text-red-500">*</span>
+                        </label>
+                        <select id="editProjectEstimatedHours" name="estimated_hours" required
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                            <option value="">请选择预估时间</option>
+                            <option value="15">15分钟</option>
+                            <option value="20">20分钟</option>
+                            <option value="30">30分钟</option>
+                            <option value="40">40分钟</option>
+                            <option value="60">60分钟</option>
+                            <option value="90">90分钟</option>
+                            <option value="120">120分钟</option>
+                            <option value="150">150分钟</option>
+                            <option value="180">180分钟</option>
+                        </select>
+                    </div>
+
+                    <!-- 项目状态 -->
+                    <div>
+                        <label for="editProjectStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            项目状态
+                        </label>
+                        <select id="editProjectStatus" name="status"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                            <option value="not_started">未开始</option>
+                            <option value="in_progress">进行中</option>
+                            <option value="paused">已暂停</option>
+                            <option value="completed">已完成</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 消息显示区域 -->
+                <div id="editProjectMessage" class="mt-4"></div>
+            </form>
+
+            <!-- 按钮区 -->
+            <div class="flex flex-col-reverse sm:flex-row gap-4 p-6 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+                <button type="button" id="cancelEditProjectBtn" 
+                        class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
+                    取消
+                </button>
+                <button type="submit" id="saveEditProjectBtn" 
+                        class="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    保存修改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 项目管理应用
+class ProjectsApp {
+    constructor() {
+        console.log('ProjectsApp 构造函数被调用');
+        
+        // 检查是否已经初始化过
+        if (window.projectsAppInitialized) {
+            console.log('ProjectsApp 已经初始化过，跳过重复初始化');
+            return;
+        }
+        
+        this.projects = [];
+        this.currentPage = 1;
+        this.pageSize = 10;
+        this.charts = {};
+        this.filters = {
+            category: '',
+            status: '',
+            timeRange: 'all'
+        };
+        
+        // 清理可能存在的旧图表
+        this.cleanupCharts();
+        
+        this.init();
+        
+        // 标记为已初始化
+        window.projectsAppInitialized = true;
+    }
+    
+    init() {
+        console.log('ProjectsApp 初始化开始');
+        
+        // 检查是否已经加载过项目数据
+        if (this.projects.length > 0) {
+            console.log('项目数据已存在，跳过重新加载');
+            this.setupEventListeners();
+            return;
+        }
+        
+        this.loadProjects();
+        this.setupEventListeners();
+        console.log('ProjectsApp 初始化完成');
+    }
+    
+    async loadProjects(page = 1) {
+        // 防止重复加载
+        if (this.isLoading) {
+            console.log('项目数据正在加载中，跳过重复请求');
+            return;
+        }
+        
+        this.isLoading = true;
+        this.currentPage = page;
+        
+        try {
+            this.showLoading();
+            
+            // 调用API时传递分页参数
+            const response = await fetch(`/api/projects?page=${page}&limit=${this.pageSize}`);
+            if (response.ok) {
+                const data = await response.json();
+                this.projects = data.projects || [];
+                this.totalProjects = data.pagination?.total || this.projects.length;
+                this.totalPages = data.pagination?.pages || Math.ceil(this.totalProjects / this.pageSize);
+                
+                // 始终显示项目分析卡片
+                this.showAnalyticsSection();
+                
+                if (this.projects.length === 0) {
+                    this.showEmptyState();
+                } else {
+                    this.showProjectsTable();
+                    this.renderProjects();
+                }
+            } else {
+                throw new Error('加载项目失败');
+            }
+        } catch (error) {
+            console.error('加载项目失败:', error);
+            this.showError('加载项目失败，请稍后重试');
+            this.showEmptyState();
+            // 即使出错也显示项目分析卡片
+            this.showAnalyticsSection();
+        } finally {
+            this.hideLoading();
+            this.isLoading = false;
+        }
+    }
+    
+    renderProjects() {
+        const tbody = document.getElementById('projectsTableBody');
+        
+        // 直接渲染当前页的项目，不需要客户端分页
+        tbody.innerHTML = this.projects.map(project => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10">
+                            <div class="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">${project.name}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate" title="${this.escapeHtml(project.description) || '暂无描述'}">
+                        ${this.escapeHtml(project.description) || '暂无描述'}
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        project.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        project.status === 'in_progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                        project.status === 'paused' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                    }">
+                        ${
+                            project.status === 'completed' ? '已完成' :
+                            project.status === 'in_progress' ? '进行中' :
+                            project.status === 'paused' ? '已暂停' :
+                            '未开始'
+                        }
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${Math.round((project.estimated_hours || 0) * 60)} 分钟
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    ${new Date(project.created_at).toLocaleDateString('zh-CN')}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="projectsApp.editProject(${project.id})" 
+                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-200">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="projectsApp.deleteProject(${project.id})" 
+                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 01-1.995 1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+        
+        this.updatePagination();
+    }
+    
+    setupEventListeners() {
+        console.log('开始设置事件监听器...');
+        
+        // 新建项目按钮
+        const createProjectBtn = document.getElementById('createProjectBtn');
+        const createProjectBtn2 = document.getElementById('createProjectBtn2');
+        
+        console.log('createProjectBtn:', createProjectBtn);
+        console.log('createProjectBtn2:', createProjectBtn2);
+        
+        if (createProjectBtn) {
+            console.log('为 createProjectBtn 添加点击事件');
+            createProjectBtn.addEventListener('click', () => {
+                console.log('createProjectBtn 被点击了！');
+                this.showCreateModal();
+            });
+        }
+        
+        if (createProjectBtn2) {
+            console.log('为 createProjectBtn2 添加点击事件');
+            createProjectBtn2.addEventListener('click', () => {
+                console.log('新建项目按钮被点击');
+                this.showCreateModal();
+            });
+        }
+        
+        // 取消按钮
+        const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+        const cancelCreateBtn2 = document.getElementById('cancelCreateBtn2');
+        
+        if (cancelCreateBtn) {
+            cancelCreateBtn.addEventListener('click', () => {
+                this.hideCreateModal();
+            });
+        }
+        
+        if (cancelCreateBtn2) {
+            cancelCreateBtn2.addEventListener('click', () => {
+                this.hideCreateModal();
+            });
+        }
+        
+        // 表单提交
+        const createProjectForm = document.getElementById('createProjectForm');
+        if (createProjectForm) {
+            createProjectForm.addEventListener('submit', (e) => {
+                this.createProject(e);
+            });
+        }
+        
+        // 项目名称实时验证
+        const projectNameInput = document.getElementById('projectName');
+        if (projectNameInput) {
+            projectNameInput.addEventListener('input', (e) => {
+                this.validateProjectName(e.target.value);
+            });
+            projectNameInput.addEventListener('blur', (e) => {
+                this.validateProjectName(e.target.value);
+            });
+        }
+        
+        // 项目描述字符计数
+        const projectDescriptionInput = document.getElementById('projectDescription');
+        if (projectDescriptionInput) {
+            projectDescriptionInput.addEventListener('input', (e) => {
+                this.updateDescriptionCharCount(e.target.value);
+            });
+            // 初始化字符计数
+            this.updateDescriptionCharCount(projectDescriptionInput.value);
+        }
+        
+        // 预估时间选择事件
+        const estimatedHoursSelect = document.getElementById('projectEstimatedHours');
+        if (estimatedHoursSelect) {
+            estimatedHoursSelect.addEventListener('change', (e) => {
+                this.updateRatingPreview();
+            });
+        }
+        
+        // 自定义评级设置事件
+        const customRatingInputs = ['excellentTime', 'goodTimeMin', 'goodTimeMax', 'mediumTimeMin', 'mediumTimeMax', 'poorTimeMin'];
+        customRatingInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', () => {
+                    this.updateRatingPreview();
+                });
+            }
+        });
+        
+        // 筛选器事件
+        // const categoryFilter = document.getElementById('categoryFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const timeRangeFilter = document.getElementById('timeRangeFilter');
+        
+        // if (categoryFilter) {
+        //     categoryFilter.addEventListener('change', () => {
+        //         this.filters.category = categoryFilter.value;
+        //         this.updateAnalytics();
+        //     });
+        // }
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                this.filters.status = statusFilter.value;
+                this.updateAnalytics();
+            });
+        }
+        
+        if (timeRangeFilter) {
+            timeRangeFilter.addEventListener('change', () => {
+                this.filters.timeRange = timeRangeFilter.value;
+                this.updateAnalytics();
+            });
+        }
+        
+        // 分页
+        const prevBtn = document.getElementById('projectsPrevBtn');
+        const nextBtn = document.getElementById('projectsNextBtn');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        
+        if (prevBtn) prevBtn.addEventListener('click', () => this.prevPage());
+        if (nextBtn) nextBtn.addEventListener('click', () => this.nextPage());
+        if (pageSizeSelect) pageSizeSelect.addEventListener('change', (e) => this.changePageSize(parseInt(e.target.value)));
+        
+        // 编辑项目弹窗事件
+        const closeEditProjectModalBtn = document.getElementById('closeEditProjectModalBtn');
+        const cancelEditProjectBtn = document.getElementById('cancelEditProjectBtn');
+        const editProjectForm = document.getElementById('editProjectForm');
+        const editProjectDescriptionInput = document.getElementById('editProjectDescription');
+        
+        if (closeEditProjectModalBtn) {
+            closeEditProjectModalBtn.addEventListener('click', () => {
+                this.hideEditModal();
+            });
+        }
+        
+        if (cancelEditProjectBtn) {
+            cancelEditProjectBtn.addEventListener('click', () => {
+                this.hideEditModal();
+            });
+        }
+        
+        if (editProjectForm) {
+            editProjectForm.addEventListener('submit', (e) => {
+                this.saveEditProject(e);
+            });
+        }
+        
+        // 保存按钮点击事件
+        const saveEditProjectBtn = document.getElementById('saveEditProjectBtn');
+        if (saveEditProjectBtn) {
+            saveEditProjectBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.saveEditProject(e);
+            });
+        }
+        
+        if (editProjectDescriptionInput) {
+            editProjectDescriptionInput.addEventListener('input', (e) => {
+                this.updateEditDescriptionCharCount(e.target.value);
+            });
+        }
+        
+        // 点击弹窗外部关闭编辑弹窗
+        const editProjectModal = document.getElementById('editProjectModal');
+        if (editProjectModal) {
+            editProjectModal.addEventListener('click', (e) => {
+                if (e.target === editProjectModal) {
+                    this.hideEditModal();
+                }
+            });
+        }
+        
+        console.log('事件监听器设置完成');
+    }
+    
+    // 分页方法
+    prevPage() {
+        if (this.currentPage > 1) {
+            this.loadProjects(this.currentPage - 1);
+        }
+    }
+    
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.loadProjects(this.currentPage + 1);
+        }
+    }
+    
+    changePageSize(newSize) {
+        this.pageSize = newSize;
+        this.currentPage = 1; // 重置到第一页
+        this.loadProjects(1);
+    }
+    
+    // 图表分析功能
+    showAnalyticsSection() {
+        const analyticsSection = document.getElementById('analyticsSection');
+        if (analyticsSection) {
+            analyticsSection.classList.remove('hidden');
+            this.updateAnalytics();
+        }
+    }
+    
+    updateAnalytics() {
+        this.updateStatistics();
+        this.updateCharts();
+    }
+    
+    updateStatistics() {
+        const filteredProjects = this.getFilteredProjects();
+        const total = filteredProjects.length;
+        const completed = filteredProjects.filter(p => p.status === 'completed').length;
+        const avgProgress = total > 0 ? Math.round(filteredProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / total) : 0;
+        const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        document.getElementById('totalProjectsCount').textContent = total;
+        document.getElementById('completedProjectsCount').textContent = completed;
+        document.getElementById('avgProgress').textContent = avgProgress + '%';
+        document.getElementById('completionRate').textContent = completionRate + '%';
+    }
+    
+    updateCharts() {
+        const filteredProjects = this.getFilteredProjects();
+        
+        // 状态分布图
+        this.updateStatusChart(filteredProjects);
+        
+        // 分类分布图
+        this.updateCategoryChart(filteredProjects);
+        
+        // 进度趋势图
+        this.updateProgressChart(filteredProjects);
+        
+        // 完成时间分布图
+        this.updateDurationChart(filteredProjects);
+    }
+    
+    updateStatusChart(projects) {
+        const statusData = {
+            active: projects.filter(p => p.status === 'active').length,
+            completed: projects.filter(p => p.status === 'completed').length,
+            paused: projects.filter(p => p.status === 'paused').length
+        };
+        
+        const ctx = document.getElementById('statusChart');
+        if (!ctx) {
+            console.warn('statusChart canvas not found');
+            return;
+        }
+        
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未加载，跳过图表更新');
+            return;
+        }
+        
+        // 销毁现有图表
+        if (this.charts.statusChart) {
+            this.charts.statusChart.destroy();
+        }
+        
+        // 检查是否已有Chart实例使用此canvas
+        Chart.helpers.each(Chart.instances, (instance) => {
+            if (instance.canvas.id === 'statusChart') {
+                instance.destroy();
+            }
+        });
+        
+        this.charts.statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['进行中', '已完成', '已暂停'],
+                datasets: [{
+                    data: [statusData.active, statusData.completed, statusData.paused],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    updateCategoryChart(projects) {
+        const categoryData = {};
+        projects.forEach(project => {
+            const category = project.category || 'other';
+            categoryData[category] = (categoryData[category] || 0) + 1;
+        });
+        
+        const ctx = document.getElementById('categoryChart');
+        if (!ctx) {
+            console.warn('categoryChart canvas not found');
+            return;
+        }
+        
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未加载，跳过图表更新');
+            return;
+        }
+        
+        // 销毁现有图表
+        if (this.charts.categoryChart) {
+            this.charts.categoryChart.destroy();
+        }
+        
+        // 检查是否已有Chart实例使用此canvas
+        Chart.helpers.each(Chart.instances, (instance) => {
+            if (instance.canvas.id === 'categoryChart') {
+                instance.destroy();
+            }
+        });
+        
+        this.charts.categoryChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(categoryData).map(key => this.getCategoryText(key)),
+                datasets: [{
+                    data: Object.values(categoryData),
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    updateProgressChart(projects) {
+        const progressRanges = {
+            '0-25%': 0,
+            '25-50%': 0,
+            '50-75%': 0,
+            '75-100%': 0
+        };
+        
+        projects.forEach(project => {
+            const progress = this.getProgress(project);
+            if (progress <= 25) progressRanges['0-25%']++;
+            else if (progress <= 50) progressRanges['25-50%']++;
+            else if (progress <= 75) progressRanges['50-75%']++;
+            else progressRanges['75-100%']++;
+        });
+        
+        const ctx = document.getElementById('progressChart');
+        if (!ctx) {
+            console.warn('progressChart canvas not found');
+            return;
+        }
+        
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未加载，跳过图表更新');
+            return;
+        }
+        
+        // 销毁现有图表
+        if (this.charts.progressChart) {
+            this.charts.progressChart.destroy();
+        }
+        
+        // 检查是否已有Chart实例使用此canvas
+        Chart.helpers.each(Chart.instances, (instance) => {
+            if (instance.canvas.id === 'progressChart') {
+                instance.destroy();
+            }
+        });
+        
+        this.charts.progressChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(progressRanges),
+                datasets: [{
+                    label: '项目数量',
+                    data: Object.values(progressRanges),
+                    backgroundColor: '#10b981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    updateDurationChart(projects) {
+        const durationRanges = {
+            '0-1天': 0,
+            '1-3天': 0,
+            '3-7天': 0,
+            '7-30天': 0,
+            '30天+': 0
+        };
+        
+        projects.forEach(project => {
+            const startDate = new Date(project.start_date);
+            const endDate = project.end_date ? new Date(project.end_date) : new Date();
+            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            
+            if (days <= 1) durationRanges['0-1天']++;
+            else if (days <= 3) durationRanges['1-3天']++;
+            else if (days <= 7) durationRanges['3-7天']++;
+            else if (days <= 30) durationRanges['7-30天']++;
+            else durationRanges['30天+']++;
+        });
+        
+        const ctx = document.getElementById('durationChart');
+        if (!ctx) {
+            console.warn('durationChart canvas not found');
+            return;
+        }
+        
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未加载，跳过图表更新');
+            return;
+        }
+        
+        // 销毁现有图表
+        if (this.charts.durationChart) {
+            this.charts.durationChart.destroy();
+        }
+        
+        // 检查是否已有Chart实例使用此canvas
+        Chart.helpers.each(Chart.instances, (instance) => {
+            if (instance.canvas.id === 'durationChart') {
+                instance.destroy();
+            }
+        });
+        
+        this.charts.durationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(durationRanges),
+                datasets: [{
+                    label: '项目数量',
+                    data: Object.values(durationRanges),
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    getFilteredProjects() {
+        let filtered = [...this.projects];
+        
+        if (this.filters.status) {
+            filtered = filtered.filter(p => p.status === this.filters.status);
+        }
+        
+        if (this.filters.timeRange !== 'all') {
+            const now = new Date();
+            let startDate;
+            
+            switch (this.filters.timeRange) {
+                case 'week':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'month':
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    break;
+                case 'quarter':
+                    const quarter = Math.floor(now.getMonth() / 3);
+                    startDate = new Date(now.getFullYear(), quarter * 3, 1);
+                    break;
+                case 'year':
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    break;
+            }
+            
+            filtered = filtered.filter(p => new Date(p.created_at) >= startDate);
+        }
+        
+        return filtered;
+    }
+    
+    updateFilter(type, value) {
+        this.filters[type] = value;
+        this.updateAnalytics();
+    }
+    
+    // 显示状态控制
+    showLoading() {
+        document.getElementById('projectsLoadingState').classList.remove('hidden');
+    }
+    
+    hideLoading() {
+        document.getElementById('projectsLoadingState').classList.add('hidden');
+    }
+    
+    showEmptyState() {
+        document.getElementById('projectsEmptyState').classList.remove('hidden');
+        document.getElementById('projectsTableBody').innerHTML = '';
+        document.getElementById('projectsPagination').classList.add('hidden');
+    }
+    
+    showProjectsTable() {
+        document.getElementById('projectsEmptyState').classList.add('hidden');
+        document.getElementById('projectsTableBody').innerHTML = '';
+    }
+    
+    updatePagination() {
+        const startIndex = (this.currentPage - 1) * this.pageSize + 1;
+        const endIndex = Math.min(this.currentPage * this.pageSize, this.totalProjects);
+        
+        document.getElementById('projectsTotal').textContent = this.totalProjects;
+        document.getElementById('projectsStartIndex').textContent = this.totalProjects > 0 ? startIndex : 0;
+        document.getElementById('projectsEndIndex').textContent = endIndex;
+        document.getElementById('projectsPageInfo').textContent = `第 ${this.currentPage} 页，共 ${this.totalPages} 页`;
+        document.getElementById('projectsPrevBtn').disabled = this.currentPage === 1;
+        document.getElementById('projectsNextBtn').disabled = this.currentPage === this.totalPages;
+        
+        // 显示/隐藏分页
+        const pagination = document.getElementById('projectsPagination');
+        if (this.totalProjects > 0) {
+            pagination.classList.remove('hidden');
+        } else {
+            pagination.classList.add('hidden');
+        }
+    }
+    
+    // 工具方法
+    getCategoryText(category) {
+        const categories = {
+            programming: '编程',
+            language: '语言学习',
+            design: '设计',
+            business: '商业',
+            other: '其他'
+        };
+        return categories[category] || category;
+    }
+    
+    getStatusText(status) {
+        const statuses = {
+            active: '进行中',
+            completed: '已完成',
+            paused: '已暂停'
+        };
+        return statuses[status] || status;
+    }
+    
+    getStatusClass(status) {
+        const classes = {
+            active: 'badge-primary',
+            completed: 'badge-success',
+            paused: 'badge-warning'
+        };
+        return classes[status] || 'badge-primary';
+    }
+    
+    getProgress(project) {
+        return Math.min(100, Math.max(0, project.progress || 0));
+    }
+    
+    // 创建项目功能
+    showCreateModal() {
+        const createProjectModal = document.getElementById('createProjectModal');
+        const modalContent = createProjectModal?.querySelector('.bg-white, .dark\\:bg-gray-900');
+        document.body.style.overflow = 'hidden'; // 禁止背景滚动
+        
+        if (modalContent) {
+            // 重置表单和验证状态
+            const form = document.getElementById('createProjectForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // 清除验证消息
+            const messageDiv = document.getElementById('createProjectMessage');
+            if (messageDiv) {
+                messageDiv.innerHTML = '';
+            }
+            
+            // 重置项目名称输入框样式
+            const projectNameInput = document.getElementById('projectName');
+            if (projectNameInput) {
+                projectNameInput.classList.remove('border-red-500', 'border-green-500');
+                projectNameInput.classList.add('border-gray-300', 'dark:border-gray-700');
+            }
+            
+            // 隐藏评级预览
+            const ratingPreview = document.getElementById('ratingPreview');
+            if (ratingPreview) {
+                ratingPreview.classList.add('hidden');
+            }
+            
+            // 添加预估时间选择监听器
+            const estimatedHoursInput = document.getElementById('projectEstimatedHours');
+            if (estimatedHoursInput) {
+                estimatedHoursInput.addEventListener('change', (e) => {
+                    this.updateRatingPreview();
+                });
+            }
+            
+            // 显示模态框
+            createProjectModal.classList.remove('hidden');
+            
+            // 添加显示动画
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        } else {
+            createProjectModal.classList.remove('hidden');
+        }
+    }
+    
+    // 智能评级系统
+    updateRatingPreview() {
+        const estimatedTime = document.getElementById('projectEstimatedHours').value;
+        const ratingPreview = document.getElementById('ratingPreview');
+        const ratingDisplay = document.getElementById('ratingDisplay');
+        
+        if (!estimatedTime) {
+            ratingPreview.classList.add('hidden');
+            return;
+        }
+        
+        const rating = this.calculateRating('custom', parseInt(estimatedTime));
+        ratingDisplay.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <span class="text-lg">${rating.emoji}</span>
+                <span class="font-medium">${rating.level}</span>
+                <span class="text-sm text-gray-500">(${rating.description})</span>
+            </div>
+        `;
+        ratingPreview.classList.remove('hidden');
+    }
+    
+    // 更新项目描述字符计数
+    updateDescriptionCharCount(text) {
+        const charCount = text.length;
+        const charCountElement = document.getElementById('descriptionCharCount');
+        
+        if (charCountElement) {
+            charCountElement.textContent = charCount;
+            
+            // 根据字符数改变颜色
+            if (charCount <= 39) {
+                charCountElement.className = 'text-gray-400 dark:text-gray-500';
+            } else if (charCount <= 44) {
+                charCountElement.className = 'text-yellow-500 dark:text-yellow-400';
+            } else {
+                charCountElement.className = 'text-red-500 dark:text-red-400';
+            }
+        }
+    }
+    
+    // 验证项目名称
+    validateProjectName(name) {
+        const projectNameInput = document.getElementById('projectName');
+        const messageDiv = document.getElementById('createProjectMessage');
+        const submitBtn = document.getElementById('confirmCreateBtn');
+        
+        if (!projectNameInput || !messageDiv) return;
+        
+        const trimmedName = name.trim();
+        
+        // 清除之前的样式
+        projectNameInput.classList.remove('border-red-500', 'border-green-500');
+        projectNameInput.classList.add('border-gray-300', 'dark:border-gray-700');
+        
+        // 清空消息
+        messageDiv.innerHTML = '';
+        
+        // 重置提交按钮状态
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+        if (!trimmedName) {
+            // 名称为空，不显示验证消息
+            return;
+        }
+        
+        // 检查项目名称是否已存在
+        const existingProject = this.projects.find(project => 
+            project.name.toLowerCase().trim() === trimmedName.toLowerCase()
+        );
+        
+        if (existingProject) {
+            // 名称重复
+            projectNameInput.classList.remove('border-gray-300', 'dark:border-gray-700');
+            projectNameInput.classList.add('border-red-500');
+            messageDiv.innerHTML = `<div class="text-red-600 text-sm mt-2">⚠️ 项目名称"${trimmedName}"已存在，请使用其他名称</div>`;
+            
+            // 禁用提交按钮
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            // 名称可用
+            projectNameInput.classList.remove('border-gray-300', 'dark:border-gray-700');
+            projectNameInput.classList.add('border-green-500');
+            messageDiv.innerHTML = `<div class="text-green-600 text-sm mt-2">✅ 项目名称"${trimmedName}"可用</div>`;
+        }
+    }
+    
+    hideCreateModal() {
+        const createProjectModal = document.getElementById('createProjectModal');
+        const modalContent = createProjectModal?.querySelector('.bg-white, .dark\\:bg-gray-900');
+        document.body.style.overflow = ''; // 恢复背景滚动
+        
+        if (modalContent) {
+            // 添加关闭动画
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // 等待动画完成后隐藏模态框
+            setTimeout(() => {
+                createProjectModal.classList.add('hidden');
+            }, 300);
+        } else {
+            createProjectModal.classList.add('hidden');
+        }
+    }
+    
+    async createProject(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const messageDiv = document.getElementById('createProjectMessage');
+        const submitBtn = document.getElementById('confirmCreateBtn');
+        
+        // 禁用提交按钮
+        submitBtn.disabled = true;
+        submitBtn.textContent = '创建中...';
+        
+        try {
+            // 构建请求数据
+            const projectData = {
+                name: formData.get('name'),
+                description: formData.get('description') || '',
+                project_type: formData.get('project_type'),
+                estimated_hours: formData.get('estimated_hours') ? Math.round(parseFloat(formData.get('estimated_hours')) * 100) / 100 / 60 : null, // 转换为小时，保留2位小数
+                start_date: new Date().toISOString().split('T')[0], // 默认今天
+                status: 'in_progress', // 默认进行中
+                category: 'other', // 默认其他分类
+                difficulty_level: this.calculateDifficultyLevel(formData.get('estimated_hours')), // 根据预估时间计算难度等级
+                rating_standards: this.getRatingStandards(formData.get('project_type')) // 获取评级标准
+            };
+            
+            // 验证必填字段
+            if (!projectData.name.trim()) {
+                throw new Error('项目名称不能为空');
+            }
+            
+            if (!projectData.estimated_hours) {
+                throw new Error('预估时间不能为空');
+            }
+            
+            // 检查项目名称是否已存在
+            const existingProject = this.projects.find(project => 
+                project.name.toLowerCase().trim() === projectData.name.toLowerCase().trim()
+            );
+            
+            if (existingProject) {
+                throw new Error(`项目名称"${projectData.name}"已存在，请使用其他名称`);
+            }
+            
+            // 验证项目名称格式（可选：添加更多验证规则）
+            if (projectData.name.trim().length < 2) {
+                throw new Error('项目名称至少需要2个字符');
+            }
+            
+            if (projectData.name.trim().length > 50) {
+                throw new Error('项目名称不能超过50个字符');
+            }
+            
+            messageDiv.innerHTML = '<div class="text-blue-600 text-sm">正在创建项目...</div>';
+            
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(projectData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                messageDiv.innerHTML = '<div class="text-green-600 text-sm">✅ 项目创建成功！</div>';
+                
+                // 立即关闭模态框并刷新列表
+                this.hideCreateModal();
+                try {
+                    await this.loadProjects(1); // 重新加载第一页
+                    
+                    // 触发全局事件，通知其他模块刷新项目列表
+                    const projectUpdateEvent = new CustomEvent('projectListUpdated', {
+                        detail: { action: 'created', projectName: projectData.name }
+                    });
+                    window.dispatchEvent(projectUpdateEvent);
+                    console.log('已触发项目列表更新事件');
+                    
+                } catch (loadError) {
+                    console.warn('重新加载项目列表时出现警告:', loadError);
+                    // 不显示错误，因为项目已经创建成功
+                }
+            } else {
+                throw new Error(result.error || '创建项目失败');
+            }
+        } catch (error) {
+            console.error('创建项目失败:', error);
+            messageDiv.innerHTML = `<div class="text-red-600 text-sm">❌ ${error.message}</div>`;
+        } finally {
+            // 恢复提交按钮
+            submitBtn.disabled = false;
+            submitBtn.textContent = '创建项目';
+        }
+    }
+    
+    // 根据预估时间计算难度等级
+    calculateDifficultyLevel(minutes) {
+        const minutesNum = parseInt(minutes) || 0;
+        
+        if (minutesNum <= 30) {
+            return 1; // 非常简单
+        } else if (minutesNum <= 60) {
+            return 2; // 简单
+        } else if (minutesNum <= 90) {
+            return 3; // 中等
+        } else {
+            return 4; // 困难
+        }
+    }
+    
+    // 处理项目类型变化
+    handleProjectTypeChange(projectType) {
+        const customRatingSettings = document.getElementById('customRatingSettings');
+        
+        if (projectType === 'custom') {
+            customRatingSettings.classList.remove('hidden');
+            // 设置默认值
+            document.getElementById('excellentTime').value = '30';
+            document.getElementById('goodTimeMin').value = '30';
+            document.getElementById('goodTimeMax').value = '60';
+            document.getElementById('mediumTimeMin').value = '60';
+            document.getElementById('mediumTimeMax').value = '90';
+            document.getElementById('poorTimeMin').value = '90';
+        } else {
+            customRatingSettings.classList.add('hidden');
+        }
+        
+        this.updateRatingPreview();
+    }
+    
+    editProject(id) {
+        console.log('编辑项目:', id);
+        this.currentEditProjectId = id;
+        this.loadProjectForEdit(id);
+    }
+    
+    async loadProjectForEdit(id) {
+        try {
+            const response = await fetch(`/api/projects/${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                const project = data.project;
+                this.fillEditForm(project);
+                this.showEditModal();
+            } else {
+                throw new Error('加载项目详情失败');
+            }
+        } catch (error) {
+            console.error('加载项目详情失败:', error);
+            this.showError('加载项目详情失败，请稍后重试');
+        }
+    }
+    
+    fillEditForm(project) {
+        // 填充表单字段
+        document.getElementById('editProjectName').value = project.name || '';
+        document.getElementById('editProjectDescription').value = project.description || '';
+        // 将小时转换为分钟显示
+        const estimatedMinutes = Math.round((project.estimated_hours || 0) * 60);
+        document.getElementById('editProjectEstimatedHours').value = estimatedMinutes || '';
+        document.getElementById('editProjectStatus').value = project.status || 'in_progress';
+        
+        // 更新字符计数
+        this.updateEditDescriptionCharCount(project.description || '');
+    }
+    
+    showEditModal() {
+        const modal = document.getElementById('editProjectModal');
+        const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
+        
+        modal.classList.remove('hidden');
+        
+        // 添加动画效果
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        // 禁止背景滚动
+        document.body.style.overflow = 'hidden';
+    }
+    
+    hideEditModal() {
+        const modal = document.getElementById('editProjectModal');
+        const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
+        
+        // 添加关闭动画
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // 恢复背景滚动
+            document.body.style.overflow = '';
+        }, 200);
+        
+        // 清理表单
+        this.clearEditForm();
+    }
+    
+    clearEditForm() {
+        document.getElementById('editProjectForm').reset();
+        document.getElementById('editProjectMessage').innerHTML = '';
+        document.getElementById('editProjectNameError').classList.add('hidden');
+        this.updateEditDescriptionCharCount('');
+        this.currentEditProjectId = null;
+    }
+    
+    updateEditDescriptionCharCount(text) {
+        const countElement = document.getElementById('editProjectDescriptionCount');
+        countElement.textContent = `${text.length}/50`;
+    }
+    
+    async saveEditProject(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(document.getElementById('editProjectForm'));
+        const projectData = {
+            name: formData.get('name'),
+            description: formData.get('description'),
+            estimated_hours: formData.get('estimated_hours') ? Math.round(parseFloat(formData.get('estimated_hours')) * 100) / 100 / 60 : null, // 转换为小时，保留2位小数
+            status: formData.get('status')
+        };
+        
+        // 验证必填字段
+        if (!projectData.name.trim()) {
+            this.showEditError('项目名称不能为空');
+            return;
+        }
+        
+        if (!projectData.estimated_hours || projectData.estimated_hours <= 0) {
+            this.showEditError('请选择有效的预估时间');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/projects/${this.currentEditProjectId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(projectData)
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.showEditSuccess('项目更新成功！');
+                
+                // 立即关闭模态框并重新加载项目列表
+                this.hideEditModal();
+                this.loadProjects(this.currentPage);
+                
+                // 触发全局事件，通知其他模块刷新项目列表
+                const projectUpdateEvent = new CustomEvent('projectListUpdated', {
+                    detail: { action: 'updated', projectName: projectData.name }
+                });
+                window.dispatchEvent(projectUpdateEvent);
+                console.log('已触发项目列表更新事件');
+            } else {
+                const errorData = await response.json();
+                this.showEditError(errorData.error || '更新项目失败');
+            }
+        } catch (error) {
+            console.error('更新项目失败:', error);
+            this.showEditError('更新项目失败，请稍后重试');
+        }
+    }
+    
+    showEditSuccess(message) {
+        const messageDiv = document.getElementById('editProjectMessage');
+        messageDiv.innerHTML = `
+            <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span class="text-green-800 dark:text-green-200 text-sm">${message}</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    showEditError(message) {
+        const messageDiv = document.getElementById('editProjectMessage');
+        messageDiv.innerHTML = `
+            <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span class="text-red-800 dark:text-red-200 text-sm">${message}</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    async deleteProject(id) {
+        const confirmed = await this.showConfirmDialog(
+            '删除项目',
+            '确定要删除这个项目吗？此操作不可撤销。',
+            '删除',
+            '取消'
+        );
+        
+        if (confirmed) {
+            this.performDeleteProject(id);
+        }
+    }
+    
+    async performDeleteProject(id) {
+        try {
+            const response = await fetch(`/api/projects/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                this.showSuccess('项目删除成功！');
+                // 重新加载项目列表
+                this.loadProjects(this.currentPage);
+                
+                // 触发全局事件，通知其他模块刷新项目列表
+                const projectUpdateEvent = new CustomEvent('projectListUpdated', {
+                    detail: { action: 'deleted' }
+                });
+                window.dispatchEvent(projectUpdateEvent);
+                console.log('已触发项目列表更新事件');
+            } else {
+                const errorData = await response.json();
+                this.showError(errorData.error || '删除项目失败');
+            }
+        } catch (error) {
+            console.error('删除项目失败:', error);
+            this.showError('删除项目失败，请稍后重试');
+        }
+    }
+    
+    showError(message) {
+        alert(message);
+    }
+
+    // 显示确认对话框
+    showConfirmDialog(title, message, confirmText = '确定', cancelText = '取消') {
+        return new Promise((resolve) => {
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+            modal.id = 'confirmModal';
+            
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 transform transition-all duration-300">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900 mb-4">
+                            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">${title}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">${message}</p>
+                        <div class="flex space-x-3">
+                            <button id="cancelBtn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
+                                ${cancelText}
+                            </button>
+                            <button id="confirmBtn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300">
+                                ${confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 绑定事件
+            const confirmBtn = modal.querySelector('#confirmBtn');
+            const cancelBtn = modal.querySelector('#cancelBtn');
+
+            const cleanup = () => {
+                document.body.removeChild(modal);
+            };
+
+            confirmBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(true);
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+
+            // 点击背景关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    cleanup();
+                    resolve(false);
+                }
+            });
+
+            // ESC键关闭
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    cleanup();
+                    resolve(false);
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        });
+    }
+    
+    showSuccess(message) {
+        // 创建一个临时的成功消息提示
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full';
+        successDiv.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(successDiv);
+        
+        // 显示动画
+        setTimeout(() => {
+            successDiv.classList.remove('translate-x-full');
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            successDiv.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.body.removeChild(successDiv);
+            }, 300);
+        }, 3000);
+    }
+    
+    cleanupCharts() {
+        // 检查Chart.js是否已加载
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js 未加载，跳过图表清理');
+            return;
+        }
+        
+        // 清理所有Chart实例
+        Chart.helpers.each(Chart.instances, (instance) => {
+            instance.destroy();
+        });
+        
+        // 清理本地图表引用
+        this.charts = {};
+    }
+
+    // 计算评级
+    calculateRating(projectType, minutes) {
+        let rating = { level: '未知', emoji: '❓', description: '无法确定评级' };
+        
+        if (projectType === 'math') {
+            // 数学项目评级标准
+            if (minutes <= 30) {
+                rating = { level: '优秀', emoji: '😊', description: '完成时间≤30分钟' };
+            } else if (minutes > 30 && minutes <= 60) {
+                rating = { level: '良', emoji: '😊', description: '完成时间30-60分钟' };
+            } else if (minutes > 60 && minutes <= 90) {
+                rating = { level: '中', emoji: '💪', description: '完成时间60-90分钟' };
+            } else {
+                rating = { level: '差', emoji: '😠', description: '完成时间>90分钟' };
+            }
+        } else if (projectType === 'english') {
+            // 英语项目评级标准
+            if (minutes <= 20) {
+                rating = { level: '优秀', emoji: '😊', description: '完成时间≤20分钟' };
+            } else if (minutes > 20 && minutes <= 40) {
+                rating = { level: '良', emoji: '😊', description: '完成时间20-40分钟' };
+            } else if (minutes > 40 && minutes <= 60) {
+                rating = { level: '中', emoji: '💪', description: '完成时间40-60分钟' };
+            } else {
+                rating = { level: '差', emoji: '😠', description: '完成时间>60分钟' };
+            }
+        } else if (projectType === 'custom') {
+            // 自定义评级标准
+            const excellentTime = parseInt(document.getElementById('excellentTime').value) || 30;
+            const goodTimeMin = parseInt(document.getElementById('goodTimeMin').value) || 30;
+            const goodTimeMax = parseInt(document.getElementById('goodTimeMax').value) || 60;
+            const mediumTimeMin = parseInt(document.getElementById('mediumTimeMin').value) || 60;
+            const mediumTimeMax = parseInt(document.getElementById('mediumTimeMax').value) || 90;
+            const poorTimeMin = parseInt(document.getElementById('poorTimeMin').value) || 90;
+            
+            if (minutes <= excellentTime) {
+                rating = { level: '优秀', emoji: '😊', description: `完成时间≤${excellentTime}分钟` };
+            } else if (minutes > goodTimeMin && minutes <= goodTimeMax) {
+                rating = { level: '良', emoji: '😊', description: `完成时间${goodTimeMin}-${goodTimeMax}分钟` };
+            } else if (minutes > mediumTimeMin && minutes <= mediumTimeMax) {
+                rating = { level: '中', emoji: '💪', description: `完成时间${mediumTimeMin}-${mediumTimeMax}分钟` };
+            } else if (minutes > poorTimeMin) {
+                rating = { level: '差', emoji: '😠', description: `完成时间>${poorTimeMin}分钟` };
+            }
+        }
+        
+        return rating;
+    }
+    
+    // 获取评级标准
+    getRatingStandards(projectType) {
+        if (projectType === 'math') {
+            return {
+                excellent: { max: 30, emoji: '😊' },
+                good: { min: 30, max: 60, emoji: '😊' },
+                medium: { min: 60, max: 90, emoji: '💪' },
+                poor: { min: 90, emoji: '😠' }
+            };
+        } else if (projectType === 'english') {
+            return {
+                excellent: { max: 20, emoji: '😊' },
+                good: { min: 20, max: 40, emoji: '😊' },
+                medium: { min: 40, max: 60, emoji: '💪' },
+                poor: { min: 60, emoji: '😠' }
+            };
+        } else if (projectType === 'custom') {
+            return {
+                excellent: { 
+                    max: parseInt(document.getElementById('excellentTime').value) || 30, 
+                    emoji: '😊' 
+                },
+                good: { 
+                    min: parseInt(document.getElementById('goodTimeMin').value) || 30, 
+                    max: parseInt(document.getElementById('goodTimeMax').value) || 60, 
+                    emoji: '😊' 
+                },
+                medium: { 
+                    min: parseInt(document.getElementById('mediumTimeMin').value) || 60, 
+                    max: parseInt(document.getElementById('mediumTimeMax').value) || 90, 
+                    emoji: '💪' 
+                },
+                poor: { 
+                    min: parseInt(document.getElementById('poorTimeMin').value) || 90, 
+                    emoji: '😠' 
+                }
+            };
+        }
+        return null;
+    }
+
+    // 转义HTML
+    escapeHtml(str) {
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;');
+    }
+}
+
+// 初始化函数 - 供main-content.hbs调用
+function initializeProjects() {
+    console.log('initializeProjects 函数被调用');
+    
+    // 清理现有的 ProjectsApp 实例
+    if (window.projectsApp) {
+        console.log('清理现有的 ProjectsApp 实例');
+        // 清理旧实例的图表
+        if (window.projectsApp.charts) {
+            Object.values(window.projectsApp.charts).forEach(chart => {
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
+            });
+        }
+        window.projectsApp = null;
+    }
+    
+    // 清理初始化标记，允许重新初始化
+    window.projectsAppInitialized = false;
+    
+    // 检查ProjectsApp类是否已定义
+    if (typeof ProjectsApp === 'undefined') {
+        console.error('ProjectsApp 类未定义，无法创建实例');
+        return;
+    }
+    
+    console.log('创建新的 ProjectsApp 实例');
+    try {
+        window.projectsApp = new ProjectsApp();
+    } catch (error) {
+        console.error('创建 ProjectsApp 实例失败:', error);
+    }
+}
+
+// 确保全局函数可用
+if (typeof window !== 'undefined') {
+    window.initializeProjects = initializeProjects;
+}
+</script> 

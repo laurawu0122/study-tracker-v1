@@ -1,0 +1,476 @@
+<div class="space-y-6">
+  <!-- 页面标题 -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">⚙️ 系统配置</h3>
+    <div class="mt-4 sm:mt-0">
+          <button id="saveConfigBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium" onclick="handleSaveConfigClick(event)">
+      保存配置
+    </button>
+    </div>
+  </div>
+
+  <!-- 配置标签页 -->
+  <div class="border-b border-gray-200 dark:border-gray-700">
+    <nav class="-mb-px flex flex-wrap gap-4 sm:gap-8" aria-label="配置标签页">
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="basic">
+        基本设置
+      </button>
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="study">
+        学习设置
+      </button>
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="notification">
+        通知设置
+      </button>
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="security">
+        安全设置
+      </button>
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="smtp">
+        SMTP邮箱设置
+      </button>
+      <button class="config-tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200" data-tab="advanced">
+        高级设置
+      </button>
+    </nav>
+  </div>
+
+  <!-- 配置内容区域 -->
+  <div id="configContent">
+    <!-- 基本设置 -->
+    <div id="basicConfig" class="config-tab-content">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <form id="basicConfigForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">系统名称</label>
+              <input type="text" id="systemName" name="systemName" 
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     autocomplete="off">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">系统版本</label>
+              <input type="text" id="systemVersion" name="systemVersion" readonly
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">管理员邮箱</label>
+              <input type="email" id="adminEmail" name="adminEmail" 
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     autocomplete="email">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">时区设置</label>
+              <select id="timezone" name="timezone" 
+                      class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="Asia/Shanghai">中国标准时间 (UTC+8)</option>
+                <option value="UTC">协调世界时 (UTC)</option>
+                <option value="America/New_York">美国东部时间 (UTC-5)</option>
+                <option value="Europe/London">英国时间 (UTC+0)</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 学习设置 -->
+    <div id="studyConfig" class="config-tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <form id="studyConfigForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">默认学习时长（分钟）</label>
+              <input type="number" id="defaultStudyTime" name="defaultStudyTime" min="1" max="480"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">每日学习目标（分钟）</label>
+              <input type="number" id="dailyGoal" name="dailyGoal" min="1" max="1440"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">学习提醒时间</label>
+              <input type="time" id="reminderTime" name="reminderTime"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">自动保存间隔（秒）</label>
+              <input type="number" id="autoSaveInterval" name="autoSaveInterval" min="30" max="300"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 通知设置 -->
+    <div id="notificationConfig" class="config-tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <form id="notificationConfigForm" class="space-y-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-sm font-medium text-gray-900 dark:text-white">浏览器通知</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">启用浏览器推送通知</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="browserNotifications" name="browserNotifications" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-sm font-medium text-gray-900 dark:text-white">学习提醒</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">每日学习时间提醒</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="studyReminders" name="studyReminders" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 安全设置 -->
+    <div id="securityConfig" class="config-tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <form id="securityConfigForm" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">会话超时时间（分钟）</label>
+              <input type="number" id="sessionTimeout" name="sessionTimeout" min="5" max="1440"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">最大登录尝试次数</label>
+              <input type="number" id="maxLoginAttempts" name="maxLoginAttempts" min="3" max="10"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">密码最小长度</label>
+              <input type="number" id="minPasswordLength" name="minPasswordLength" min="6" max="20"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">数据备份频率（天）</label>
+              <input type="number" id="backupFrequency" name="backupFrequency" min="1" max="30"
+                     class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- SMTP邮箱设置 -->
+    <div id="smtpConfig" class="config-tab-content hidden">
+      <!-- SMTP配置内容将通过AJAX加载 -->
+      <div id="smtpConfigContent" class="text-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p class="mt-2 text-gray-600">加载SMTP配置中...</p>
+      </div>
+    </div>
+
+    <!-- 高级设置 -->
+    <div id="advancedConfig" class="config-tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <form id="advancedConfigForm" class="space-y-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-sm font-medium text-gray-900 dark:text-white">调试模式</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">启用详细的错误日志和调试信息</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="debugMode" name="debugMode" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h5 class="text-sm font-medium text-gray-900 dark:text-white">维护模式</h5>
+                <p class="text-sm text-gray-600 dark:text-gray-400">启用系统维护模式，限制用户访问</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="maintenanceMode" name="maintenanceMode" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系统信息 -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h4 class="text-lg font-medium text-gray-900 dark:text-white">系统信息</h4>
+      <button id="refreshSystemInfoBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-medium" onclick="refreshSystemInfo()">
+        <i class="fas fa-sync-alt mr-1"></i>刷新
+      </button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">服务器信息</h5>
+        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">Node.js 版本:</span>
+            <div class="flex items-center space-x-2">
+              <span id="nodeVersion" class="font-mono text-right min-w-[80px]">-</span>
+              <span class="text-xs text-gray-400">(静态)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">数据库类型:</span>
+            <div class="flex items-center space-x-2">
+              <span id="dbType" class="font-mono text-right min-w-[80px]">-</span>
+              <span class="text-xs text-gray-400">(静态)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">数据库版本:</span>
+            <div class="flex items-center space-x-2">
+              <span id="dbVersion" class="font-mono text-right min-w-[80px]">-</span>
+              <span class="text-xs text-gray-400">(静态)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">运行时间:</span>
+            <div class="flex items-center space-x-2">
+              <span id="uptime" class="font-mono text-right min-w-[80px]">-</span>
+              <span class="text-xs text-blue-500">(30秒)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">系统资源</h5>
+        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">内存使用率:</span>
+            <div class="flex items-center space-x-2">
+              <span id="memoryUsageText" class="font-mono text-right min-w-[80px]">--%</span>
+              <span class="text-xs text-blue-500">(30秒)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">CPU 使用率:</span>
+            <div class="flex items-center space-x-2">
+              <span id="cpuUsageText" class="font-mono text-right min-w-[80px]">--%</span>
+              <span class="text-xs text-blue-500">(30秒)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">磁盘空间使用率:</span>
+            <div class="flex items-center space-x-2">
+              <span id="diskSpaceText" class="font-mono text-right min-w-[80px]">--%</span>
+              <span class="text-xs text-green-500">(6小时)</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between h-6">
+            <span class="flex-shrink-0">连接数:</span>
+            <div class="flex items-center space-x-2">
+              <span id="connections" class="font-mono text-right min-w-[80px]">-</span>
+              <span class="text-xs text-blue-500">(30秒)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        <div class="flex items-center space-x-4">
+          <span class="flex items-center">
+            <span class="w-2 h-2 bg-gray-400 rounded-full mr-1"></span>
+            静态信息 (登录时获取)
+          </span>
+          <span class="flex items-center">
+            <span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+            30秒更新
+          </span>
+          <span class="flex items-center">
+            <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+            6小时更新
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 系统配置页面初始化
+(function() {
+  console.log('=== 系统配置页面加载完成 ===');
+  
+  // 全局保存配置函数
+  window.handleSaveConfigClick = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('🔥 保存按钮被点击（全局函数）');
+    
+    // 立即显示反馈
+    showMessage('正在保存配置...', 'info');
+    
+    // 尝试调用AdminApp的保存方法
+    if (window.adminApp && window.adminApp.saveAllConfig) {
+      console.log('调用 AdminApp.saveAllConfig');
+      window.adminApp.saveAllConfig();
+    } else if (window.currentAdminApp && window.currentAdminApp.saveAllConfig) {
+      console.log('调用 currentAdminApp.saveAllConfig');
+      window.currentAdminApp.saveAllConfig();
+    } else {
+      console.log('AdminApp 不可用，使用备用保存方法');
+      saveConfigDirectly();
+    }
+  };
+  
+  // 备用保存方法
+  window.saveConfigDirectly = async function() {
+    try {
+      // 收集所有配置数据
+      const configData = {
+        systemName: document.getElementById('systemName')?.value || '',
+        systemVersion: document.getElementById('systemVersion')?.value || '',
+        adminEmail: document.getElementById('adminEmail')?.value || '',
+        timezone: document.getElementById('timezone')?.value || 'Asia/Shanghai',
+        // 添加更多配置项
+        emailRateLimit: document.getElementById('emailRateLimit')?.value || 60,
+        smtpEnabled: document.getElementById('smtpEnabled')?.checked || false,
+        emailVerificationEnabled: document.getElementById('emailVerificationEnabled')?.checked || false,
+        debugMode: document.getElementById('debugMode')?.checked || false,
+        maintenanceMode: document.getElementById('maintenanceMode')?.checked || false
+      };
+      
+      console.log('🔥 备用保存方法，收集到的数据:', configData);
+      
+      const response = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(configData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('🔥 服务器返回成功:', data);
+        showMessage('配置保存成功！', 'success');
+        
+        // 添加验证：重新加载配置来确认是否真的保存了
+        setTimeout(() => {
+          console.log('🔥 3秒后重新加载配置进行验证...');
+          loadSystemConfig();
+        }, 3000);
+      } else {
+        console.error('🔥 服务器返回失败:', data);
+        showMessage('配置保存失败: ' + data.error, 'error');
+      }
+    } catch (error) {
+      console.error('备用保存方法错误:', error);
+      showMessage('保存失败: ' + error.message, 'error');
+    }
+  };
+  
+  // 消息显示函数
+  window.showMessage = function(message, type = 'info') {
+    console.log(`🔥 显示消息 [${type}]:`, message);
+    
+    // 移除可能存在的旧消息
+    const existingMessages = document.querySelectorAll('.config-message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    // 创建消息元素
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `config-message fixed top-4 right-4 px-6 py-3 rounded-md text-white z-[9999] shadow-lg ${
+      type === 'success' ? 'bg-green-600' : 
+      type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    }`;
+    messageDiv.textContent = message;
+    
+    // 添加动画效果
+    messageDiv.style.opacity = '0';
+    messageDiv.style.transform = 'translateY(-20px)';
+    messageDiv.style.transition = 'all 0.3s ease';
+    
+    // 添加到页面
+    document.body.appendChild(messageDiv);
+    
+    // 触发动画
+    setTimeout(() => {
+      messageDiv.style.opacity = '1';
+      messageDiv.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // 3秒后移除
+    setTimeout(() => {
+      if (messageDiv.parentNode) {
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+          if (messageDiv.parentNode) {
+            messageDiv.parentNode.removeChild(messageDiv);
+          }
+        }, 300);
+      }
+    }, 3000);
+  };
+  
+  // 格式化运行时间函数
+  window.formatUptime = function(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days}天 ${hours}小时 ${minutes}分钟`;
+    } else if (hours > 0) {
+      return `${hours}小时 ${minutes}分钟`;
+    } else {
+      return `${minutes}分钟`;
+    }
+  };
+  
+  // 重新加载系统配置函数
+  window.loadSystemConfig = async function() {
+    try {
+      console.log('🔥 开始重新加载系统配置...');
+      const response = await fetch('/api/admin/config', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      console.log('🔥 重新加载的配置数据:', data);
+      
+      if (data.success && data.config) {
+        // 更新表单字段
+        const config = data.config;
+        if (document.getElementById('systemName')) document.getElementById('systemName').value = config.systemName || '';
+        if (document.getElementById('systemVersion')) document.getElementById('systemVersion').value = config.systemVersion || '';
+        if (document.getElementById('adminEmail')) document.getElementById('adminEmail').value = config.adminEmail || '';
+        if (document.getElementById('timezone')) document.getElementById('timezone').value = config.timezone || 'Asia/Shanghai';
+        if (document.getElementById('emailRateLimit')) document.getElementById('emailRateLimit').value = config.emailRateLimit || 60;
+        if (document.getElementById('smtpEnabled')) document.getElementById('smtpEnabled').checked = config.smtpEnabled || false;
+        if (document.getElementById('emailVerificationEnabled')) document.getElementById('emailVerificationEnabled').checked = config.emailVerificationEnabled || false;
+        if (document.getElementById('debugMode')) document.getElementById('debugMode').checked = config.debugMode || false;
+        if (document.getElementById('maintenanceMode')) document.getElementById('maintenanceMode').checked = config.maintenanceMode || false;
+        
+        console.log('🔥 配置重新加载完成，表单已更新');
+        showMessage('配置重新加载完成！', 'success');
+      } else {
+        console.error('🔥 重新加载配置失败:', data);
+        showMessage('重新加载配置失败: ' + (data.error || '未知错误'), 'error');
+      }
+    } catch (error) {
+      console.error('🔥 重新加载配置出错:', error);
+      showMessage('重新加载配置出错: ' + error.message, 'error');
+    }
+  };
+  
+  console.log('系统配置页面脚本加载完成');
+})();
+</script> 

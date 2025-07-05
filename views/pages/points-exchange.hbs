@@ -1,0 +1,159 @@
+{{!-- 积分兑换页面 --}}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="container mx-auto px-4 py-8">
+    <!-- 页面标题和积分信息 -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
+        🎁 积分兑换
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300 mb-4">
+        用你的学习积分兑换心仪的虚拟商品
+      </p>
+      
+      <!-- 积分卡片 -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md mx-auto">
+        <div class="flex items-center justify-center space-x-4">
+          <div class="text-3xl">⭐</div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400" id="userPoints">0</div>
+            <div class="text-sm text-gray-600 dark:text-gray-300">可用积分</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分类筛选 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+          <input type="text" id="searchInput" placeholder="搜索商品..." autocomplete="off" 
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+        </div>
+        <div class="flex gap-2">
+          <select id="categoryFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            <option value="">全部分类</option>
+          </select>
+          <select id="pointsFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            <option value="">全部积分</option>
+            <option value="50">50积分以下</option>
+            <option value="100">100积分以下</option>
+            <option value="200">200积分以下</option>
+            <option value="500">500积分以下</option>
+          </select>
+          <button id="refreshBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="productsGrid">
+      <!-- 动态加载商品 -->
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loadingState" class="text-center py-8 hidden">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">加载中...</p>
+    </div>
+
+    <!-- 空状态 -->
+    <div id="emptyState" class="text-center py-8 hidden">
+      <div class="text-6xl mb-4">📦</div>
+      <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">暂无商品</h3>
+      <p class="text-gray-600 dark:text-gray-300">暂时没有可兑换的商品</p>
+    </div>
+  </div>
+</div>
+
+<!-- 商品详情模态框 -->
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 transform transition-all duration-300">
+    <div class="text-center">
+      <div id="modalProductImage" class="mx-auto h-32 w-32 mb-4 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+        <i class="fas fa-image text-4xl text-gray-400"></i>
+      </div>
+      <h3 id="modalProductName" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h3>
+      <p id="modalProductDescription" class="text-gray-600 dark:text-gray-300 mb-4"></p>
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">分类：</span>
+        <span id="modalProductCategory" class="text-sm font-medium text-gray-800 dark:text-white"></span>
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">所需积分：</span>
+        <span id="modalProductPoints" class="text-sm font-medium text-purple-600 dark:text-purple-400"></span>
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-sm text-gray-600 dark:text-gray-300">库存：</span>
+        <span id="modalProductStock" class="text-sm font-medium text-gray-800 dark:text-white"></span>
+      </div>
+      
+      <!-- 数量选择器 -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">兑换数量</label>
+        <div class="flex items-center justify-center space-x-3">
+          <button id="decreaseQuantity" class="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-minus text-xs"></i>
+          </button>
+          <input type="number" id="quantityInput" min="1" max="10" value="1" class="w-16 text-center border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <button id="increaseQuantity" class="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-plus text-xs"></i>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 总积分显示 -->
+      <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-300">总积分：</span>
+          <span id="totalPoints" class="text-lg font-bold text-green-600"></span>
+        </div>
+        <div class="flex justify-between items-center mt-1">
+          <span class="text-sm text-gray-600 dark:text-gray-300">我的积分：</span>
+          <span id="userPoints" class="text-sm font-medium text-gray-800 dark:text-white"></span>
+        </div>
+      </div>
+      
+      <!-- 消息提示 -->
+      <div id="modalMessage" class="mb-4 p-3 rounded-lg text-sm font-medium hidden"></div>
+      
+      <!-- 操作按钮 -->
+      <div class="flex space-x-3">
+        <button id="cancelBtn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          取消
+        </button>
+        <button id="exchangeBtn" class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+          立即兑换
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/points-exchange.js"></script>
+<script src="/test-notification-debug.js"></script>
+<script>
+// 确保通知角标管理器在积分兑换页面中正确初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('积分兑换页面加载完成，检查通知角标管理器...');
+    
+    // 延迟检查，确保所有脚本都已加载
+    setTimeout(() => {
+        if (window.notificationBadgeManager) {
+            console.log('通知角标管理器已存在');
+        } else {
+            console.log('通知角标管理器不存在，尝试初始化...');
+            if (window.initNotificationBadge) {
+                window.initNotificationBadge();
+            }
+        }
+        
+        if (window.immediateNotificationUpdate) {
+            console.log('immediateNotificationUpdate 函数已加载');
+        } else {
+            console.warn('immediateNotificationUpdate 函数未加载');
+        }
+    }, 500);
+});
+</script> 

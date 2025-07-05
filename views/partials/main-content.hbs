@@ -1,0 +1,1307 @@
+<!-- 右侧内容区域 -->
+<div class="flex flex-col min-h-0">
+    <!-- Mobile Header -->
+    <div class="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between h-16 px-4">
+            <button id="mobileMenuButton" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <span>☰</span>
+            </button>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">📚 学习追踪</h1>
+            <div class="flex items-center space-x-2">
+                <button id="mobileDarkModeToggle" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <span id="mobileDarkModeIcon">🌙</span>
+                </button>
+                <div class="w-8 h-8 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center text-white font-medium border-2 border-gray-300 dark:border-gray-600 overflow-hidden header-avatar">
+                    {{#if user.avatar}}
+                        <img src="/uploads/avatars/{{user.avatar}}" alt="用户头像" class="w-full h-full object-cover">
+                    {{else}}
+                        {{user.username.[0]}}
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop Header -->
+    <div class="hidden lg:flex items-center justify-between h-16 px-6 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center space-x-4">
+            <h1 id="pageTitle" class="text-xl font-semibold text-gray-900 dark:text-white">欢迎使用学习追踪系统</h1>
+            {{#if breadcrumbs}}
+            <nav class="flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                {{#each breadcrumbs}}
+                <span>{{this}}</span>
+                {{#unless @last}}<span>/</span>{{/unless}}
+                {{/each}}
+            </nav>
+            {{/if}}
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="desktopDarkModeToggle" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <span id="desktopDarkModeIcon">🌙</span>
+            </button>
+            <div class="relative" id="userDropdown">
+                <button id="userDropdownButton" class="flex items-center space-x-2 p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <div class="w-8 h-8 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center text-white font-medium border-2 border-gray-300 dark:border-gray-600 overflow-hidden header-avatar">
+                        {{#if user.avatar}}
+                            <img src="/uploads/avatars/{{user.avatar}}" alt="用户头像" class="w-full h-full object-cover">
+                        {{else}}
+                            {{user.username.[0]}}
+                        {{/if}}
+                    </div>
+                    <span class="hidden md:block">{{user.username}}</span>
+                </button>
+                <div id="userDropdownMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700" style="display: none;">
+                    <div class="py-2">
+                        <button id="openProfileModalBtn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            个人设置
+                        </button>
+                        <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            退出登录
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 bg-gray-50 dark:bg-gray-900 min-h-0">
+        <div id="contentArea" class="p-6">
+            <!-- 动态内容区域 -->
+            <div id="dynamicContent">
+                <!-- 动态内容将通过AJAX加载 -->
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 个人设置弹窗 -->
+<div id="profileModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4">
+    <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 32rem; width: 100%; max-height: 90vh;">
+        <!-- 弹窗主体 -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col" style="width: 100%; max-height: 90vh;">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">个人设置</h3>
+                </div>
+                <button id="closeProfileModalBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                    <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 内容区 -->
+            <form id="profileForm" class="px-6 py-6 flex-1 overflow-y-auto">
+                <div class="space-y-4">
+                    <!-- 用户头像 -->
+                    <div class="flex items-center justify-center mb-6">
+                        <div class="relative">
+                            <!-- 头像显示区域 -->
+                            <div id="avatarDisplay" class="w-20 h-20 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center text-white text-2xl font-bold border-4 border-gray-300 dark:border-gray-600 overflow-hidden">
+                                {{#if user.avatar}}
+                                    <img id="avatarImage" src="/uploads/avatars/{{user.avatar}}" alt="用户头像" class="w-full h-full object-cover">
+                                {{else}}
+                                    <span id="avatarInitial">{{user.username.[0]}}</span>
+                                {{/if}}
+                            </div>
+                            
+                            <!-- 头像上传按钮 -->
+                            <button type="button" id="changeAvatarBtn" class="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs hover:bg-blue-700 transition-colors shadow-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </button>
+                            
+                            <!-- 隐藏的文件输入框 -->
+                            <input type="file" id="avatarInput" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+                    
+                    <!-- 头像操作提示 -->
+                    <div class="text-center mb-4">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">点击相机图标上传头像，支持 JPG、PNG 格式，最大 5MB</p>
+                    </div>
+
+                    <!-- 用户名 -->
+                    <div>
+                        <label for="profileUsername" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            用户名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="profileUsername" name="username" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请输入用户名" value="{{user.username}}" autocomplete="username">
+                    </div>
+
+                    <!-- 邮箱地址 -->
+                    <div>
+                        <label for="profileEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            邮箱地址 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" id="profileEmail" name="email" required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请输入邮箱地址" value="{{user.email}}" autocomplete="email">
+                    </div>
+
+                    <!-- 当前密码 -->
+                    <div>
+                        <label for="currentPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            当前密码
+                        </label>
+                        <input type="password" id="currentPassword" name="currentPassword" autocomplete="current-password"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="如需修改密码请输入当前密码">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">只有输入当前密码才能修改密码</p>
+                    </div>
+
+                    <!-- 新密码 -->
+                    <div>
+                        <label for="newPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            新密码
+                        </label>
+                        <input type="password" id="newPassword" name="newPassword" autocomplete="new-password"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请输入新密码">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">密码长度至少6位，包含字母和数字</p>
+                    </div>
+
+                    <!-- 确认新密码 -->
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            确认新密码
+                        </label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请再次输入新密码">
+                    </div>
+
+                    <!-- 通知设置 -->
+                    <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">通知设置</h4>
+                        <div class="space-y-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="emailNotifications" name="emailNotifications" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">接收邮件通知</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="browserNotifications" name="browserNotifications" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">接收浏览器通知</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="studyReminders" name="studyReminders" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">学习提醒</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 消息显示区域 -->
+                <div id="profileMessage" class="mt-4"></div>
+                
+                <!-- 按钮区 -->
+                <div class="flex flex-col-reverse sm:flex-row gap-4 pt-6 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+                    <button type="button" id="deactivateAccountBtn" 
+                            class="w-full sm:w-auto px-4 py-2 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 bg-white dark:bg-gray-900 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200 font-medium">
+                        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        注销账户
+                    </button>
+                    <button type="button" id="cancelProfileBtn" 
+                            class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
+                        取消
+                    </button>
+                    <button type="submit" id="saveProfileBtn" 
+                            class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        保存设置
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 注销确认弹窗 -->
+<div id="deactivateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4">
+    <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 28rem; width: 100%;">
+        <!-- 弹窗主体 -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">注销账户</h3>
+                </div>
+                <button id="closeDeactivateModalBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+                    <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- 内容区 -->
+            <div class="px-6 py-6">
+                <div class="space-y-4">
+                    <!-- 警告信息 -->
+                    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <div class="flex">
+                            <svg class="w-5 h-5 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-red-800 dark:text-red-200">重要提醒</h4>
+                                <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                                    注销账户后，您的所有数据将被永久删除，包括学习记录、成就、积分等。此操作不可恢复。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 邮箱验证 -->
+                    <div id="emailVerificationSection">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            邮箱验证码 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex space-x-2">
+                            <input type="text" id="verificationCode" name="verificationCode" maxlength="6"
+                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                   placeholder="请输入6位验证码">
+                            <button type="button" id="sendVerificationCodeBtn"
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200">
+                                发送验证码
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            验证码将发送到您的注册邮箱，用于确认注销操作
+                        </p>
+                    </div>
+
+                    <!-- 确认输入 -->
+                    <div>
+                        <label for="confirmDeactivate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            确认注销 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="confirmDeactivate" name="confirmDeactivate"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                               placeholder="请输入'注销账户'确认操作">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            请输入"注销账户"以确认您要注销账户
+                        </p>
+                    </div>
+
+                    <!-- 消息显示区域 -->
+                    <div id="deactivateMessage" class="mt-4"></div>
+                </div>
+
+                <!-- 按钮区 -->
+                <div class="flex flex-col-reverse sm:flex-row gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <button type="button" id="cancelDeactivateBtn"
+                            class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
+                        取消
+                    </button>
+                    <button type="button" id="confirmDeactivateBtn"
+                            class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        确认注销
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 用户下拉菜单功能
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdownMenu');
+    if (dropdown) {
+        const isVisible = dropdown.style.display !== 'none';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+    }
+}
+
+function closeUserDropdown() {
+    const dropdown = document.getElementById('userDropdownMenu');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+}
+
+// 个人设置弹窗功能
+function showProfileModal() {
+    const modal = document.getElementById('profileModal');
+    const modalContent = modal?.querySelector('.bg-white, .dark\\:bg-gray-900');
+    
+    if (modal && modalContent) {
+        // 重置表单
+        const form = document.getElementById('profileForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // 清除消息
+        const messageDiv = document.getElementById('profileMessage');
+        if (messageDiv) {
+            messageDiv.innerHTML = '';
+        }
+        
+        // 显示弹窗
+        modal.classList.remove('hidden');
+        
+        // 添加显示动画
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        // 关闭用户下拉菜单
+        closeUserDropdown();
+    }
+}
+
+function hideProfileModal() {
+    const modal = document.getElementById('profileModal');
+    const modalContent = modal?.querySelector('.bg-white, .dark\\:bg-gray-900');
+    
+    if (modal && modalContent) {
+        // 添加关闭动画
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        // 等待动画完成后隐藏弹窗
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+}
+
+// 内容切换功能
+function showContent(contentType) {
+    const dynamicContent = document.getElementById('dynamicContent');
+    const pageTitle = document.getElementById('pageTitle');
+    
+    // 根据内容类型设置标题
+    const titles = {
+        'dashboard': '仪表板',
+        'projects': '项目管理',
+        'sessions': '学习记录',
+        'analytics': '数据分析',
+        'notifications': '通知中心',
+        'admin': '系统管理'
+    };
+    pageTitle.textContent = titles[contentType] || '学习追踪系统';
+    
+    // 通过AJAX加载对应页面内容
+    loadPageContent(contentType);
+}
+
+// 加载页面内容
+async function loadPageContent(contentType) {
+    console.log('loadPageContent 被调用，contentType:', contentType);
+    console.log('调用栈:', new Error().stack);
+    
+    const dynamicContent = document.getElementById('dynamicContent');
+    
+    try {
+        // 显示加载状态
+        dynamicContent.innerHTML = `
+            <div class="flex items-center justify-center h-64">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent mx-auto mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-400">正在加载...</p>
+                </div>
+            </div>
+        `;
+        
+        // 发送AJAX请求获取页面内容
+        let requestUrl = `/${contentType}`;
+        
+        // 处理管理端页面的路由映射
+        if (contentType === 'admin-points-exchange') {
+            requestUrl = '/admin/points-exchange';
+        } else if (contentType === 'admin-exchange-approval') {
+            requestUrl = '/admin/exchange-approval';
+        }
+        
+        console.log('发送 AJAX 请求到:', requestUrl);
+        const response = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            },
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            const content = await response.text();
+            console.log('页面内容加载成功，长度:', content.length);
+            dynamicContent.innerHTML = content;
+            
+            // 更新浏览器历史
+            const url = `/${contentType}`;
+            window.history.pushState({ contentType }, '', url);
+            
+            // 执行页面特定的初始化脚本
+            console.log('准备执行页面脚本，contentType:', contentType);
+            executePageScripts(contentType);
+            
+            // 显示成功通知
+            if (window.showNotification) {
+                window.showNotification('页面加载成功', 'success', 2000);
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}`);
+        }
+    } catch (error) {
+        console.error('加载页面内容失败:', error);
+        dynamicContent.innerHTML = `
+            <div class="flex items-center justify-center h-64">
+                <div class="text-center">
+                    <div class="text-red-500 text-4xl mb-4">❌</div>
+                    <p class="text-gray-600 dark:text-gray-400">加载失败，请重试</p>
+                    <button onclick="loadPageContent('${contentType}')" class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                        重新加载
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        if (window.showNotification) {
+            window.showNotification('页面加载失败', 'error', 5000);
+        }
+    }
+}
+
+// 执行页面特定的初始化脚本
+function executePageScripts(contentType) {
+    console.log('执行页面脚本:', contentType);
+    
+    switch(contentType) {
+        case 'admin':
+            // 系统管理页面初始化
+            loadAdminScript().then(() => {
+                if (typeof initializeAdminPage === 'function') {
+                    console.log('初始化系统管理页面...');
+                    initializeAdminPage();
+                } else {
+                    console.error('initializeAdminPage 函数未找到');
+                }
+            }).catch(error => {
+                console.error('加载 admin.js 失败:', error);
+            });
+            break;
+        case 'dashboard':
+            // 仪表板页面初始化
+            console.log('检测到 dashboard 页面，开始加载 dashboard.js...');
+            if (!window.dashboardScriptLoaded) {
+                // 确保Chart.js已加载
+                if (typeof Chart === 'undefined') {
+                    console.log('Chart.js 未加载，先加载 Chart.js...');
+                    const chartScript = document.createElement('script');
+                    chartScript.src = '/assets/lib/chart.umd.min.js';
+                    chartScript.onload = function() {
+                        console.log('Chart.js 加载成功，现在加载 dashboard.js...');
+                        loadDashboardScript();
+                    };
+                    chartScript.onerror = function() {
+                        console.error('Chart.js 加载失败');
+                        loadDashboardScript();
+                    };
+                    document.head.appendChild(chartScript);
+                } else {
+                    console.log('Chart.js 已加载，直接加载 dashboard.js...');
+                    loadDashboardScript();
+                }
+            } else {
+                if (typeof initializeDashboard === 'function') {
+                    initializeDashboard();
+                }
+            }
+            break;
+        case 'projects':
+            // 项目管理页面初始化
+            console.log('初始化项目管理页面...');
+            
+            // 确保Chart.js已加载
+            if (typeof Chart === 'undefined') {
+                console.log('Chart.js 未加载，先加载 Chart.js...');
+                const chartScript = document.createElement('script');
+                chartScript.src = '/assets/lib/chart.umd.min.js';
+                chartScript.onload = function() {
+                    console.log('Chart.js 加载成功，现在执行页面脚本...');
+                    executeProjectScripts();
+                };
+                chartScript.onerror = function() {
+                    console.error('Chart.js 加载失败，继续执行页面脚本...');
+                    executeProjectScripts();
+                };
+                document.head.appendChild(chartScript);
+            } else {
+                console.log('Chart.js 已加载，直接执行页面脚本...');
+                executeProjectScripts();
+            }
+            break;
+        case 'sessions':
+            // 学习记录页面初始化 - 需要手动加载 sessions.js
+            console.log('初始化学习记录页面...');
+            if (typeof SessionsManager !== 'undefined') {
+                // 如果 SessionsManager 已存在，直接初始化
+                if (window.sessionsManager) {
+                    console.log('清理现有 SessionsManager 实例');
+                    // 清理现有实例
+                    if (window.sessionsManager.handleEscapeKey) {
+                        document.removeEventListener('keydown', window.sessionsManager.handleEscapeKey);
+                    }
+                    window.sessionsManager = null;
+                }
+                console.log('创建新的 SessionsManager 实例');
+                window.sessionsManager = new SessionsManager();
+            } else {
+                console.log('SessionsManager 未找到，手动加载 sessions.js...');
+                loadSessionsScript().then(() => {
+                    if (typeof SessionsManager !== 'undefined') {
+                        console.log('创建新的 SessionsManager 实例');
+                        window.sessionsManager = new SessionsManager();
+                    } else {
+                        console.error('SessionsManager 仍然未找到');
+                    }
+                }).catch(error => {
+                    console.error('加载 sessions.js 失败:', error);
+                });
+            }
+            break;
+        case 'analytics':
+            // 数据分析页面初始化
+            if (typeof initializeAnalytics === 'function') {
+                console.log('初始化数据分析页面...');
+                initializeAnalytics();
+            }
+            break;
+        case 'notifications':
+            // 通知中心页面初始化
+            console.log('初始化通知中心页面...');
+            // 通知页面的 JS 在独立的 notifications.js 文件中
+            executeNotificationScripts();
+            break;
+        case 'achievements':
+            // 成就页面初始化
+            console.log('初始化成就页面...');
+            // 成就页面的 JS 已经内嵌在页面中，需要手动执行
+            executeAchievementScripts();
+            break;
+        case 'admin-points-exchange':
+            // 积分兑换管理页面初始化
+            console.log('初始化积分兑换管理页面...');
+            // 积分兑换管理页面的 JS 已经内嵌在页面中，需要手动执行
+            executeAdminPointsExchangeScripts();
+            break;
+        case 'admin-exchange-approval':
+            // 兑换审核页面初始化
+            console.log('初始化兑换审核页面...');
+            // 兑换审核页面的 JS 已经内嵌在页面中，需要手动执行
+            executeAdminExchangeApprovalScripts();
+            break;
+        default:
+            console.log('没有特定的初始化脚本:', contentType);
+    }
+}
+
+// 执行项目管理页面脚本
+function executeProjectScripts() {
+    console.log('执行项目管理页面脚本...');
+    
+    // 查找页面中的script标签并执行
+    const projectScripts = document.querySelectorAll('#dynamicContent script');
+    console.log('找到的script标签数量:', projectScripts.length);
+    
+    // 只执行一次脚本标签
+    projectScripts.forEach((script, index) => {
+        console.log(`执行第${index + 1}个script标签`);
+        try {
+            // 创建新的script元素并执行
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.head.appendChild(newScript);
+            console.log(`第${index + 1}个script标签执行完成`);
+        } catch (error) {
+            console.error(`执行第${index + 1}个script标签失败:`, error);
+        }
+    });
+    
+    // 等待一下让脚本执行完成，然后检查initializeProjects函数
+    setTimeout(() => {
+        console.log('检查ProjectsApp是否已定义:', typeof ProjectsApp);
+        console.log('检查initializeProjects是否已定义:', typeof initializeProjects);
+        
+        if (typeof ProjectsApp === 'undefined') {
+            console.error('ProjectsApp 类未定义，但不再重复执行脚本');
+        } else if (typeof initializeProjects === 'function') {
+            console.log('调用 initializeProjects 函数');
+            initializeProjects();
+        } else {
+            console.error('initializeProjects 函数未找到');
+        }
+    }, 100);
+}
+
+// 执行成就页面脚本
+function executeAchievementScripts() {
+    console.log('执行成就页面脚本...');
+    
+    // 查找页面中的script标签并执行
+    const achievementScripts = document.querySelectorAll('#dynamicContent script');
+    console.log('找到的script标签数量:', achievementScripts.length);
+    
+    // 只执行一次脚本标签
+    achievementScripts.forEach((script, index) => {
+        console.log(`执行第${index + 1}个script标签`);
+        try {
+            // 创建新的script元素并执行
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.head.appendChild(newScript);
+            console.log(`第${index + 1}个script标签执行完成`);
+        } catch (error) {
+            console.error(`执行第${index + 1}个script标签失败:`, error);
+        }
+    });
+    
+    // 等待一下让脚本执行完成，然后检查AchievementPage类
+    setTimeout(() => {
+        console.log('检查AchievementPage是否已定义:', typeof AchievementPage);
+        
+        if (typeof AchievementPage === 'undefined') {
+            console.error('AchievementPage 类未定义');
+        } else {
+            console.log('AchievementPage 类已定义，尝试创建实例');
+            try {
+                // 检查是否已经存在实例
+                if (window.achievementPage) {
+                    console.log('清理现有 AchievementPage 实例');
+                    window.achievementPage = null;
+                }
+                
+                // 创建新实例
+                window.achievementPage = new AchievementPage();
+                console.log('AchievementPage 实例创建成功');
+            } catch (error) {
+                console.error('创建 AchievementPage 实例失败:', error);
+            }
+        }
+    }, 100);
+}
+
+// 执行通知页面脚本
+function executeNotificationScripts() {
+    console.log('执行通知页面脚本...');
+    
+    // 查找页面中的script标签并执行
+    const notificationScripts = document.querySelectorAll('#dynamicContent script');
+    console.log('找到的script标签数量:', notificationScripts.length);
+    
+    // 只执行一次脚本标签
+    notificationScripts.forEach((script, index) => {
+        console.log(`执行第${index + 1}个script标签`);
+        try {
+            // 创建新的script元素并执行
+            const newScript = document.createElement('script');
+            newScript.textContent = script.textContent;
+            document.head.appendChild(newScript);
+            console.log(`第${index + 1}个script标签执行完成`);
+        } catch (error) {
+            console.error(`执行第${index + 1}个script标签失败:`, error);
+        }
+    });
+    
+    // 等待一下让脚本执行完成，然后检查NotificationsPage类
+    setTimeout(() => {
+        console.log('检查NotificationsPage是否已定义:', typeof NotificationsPage);
+        
+        if (typeof NotificationsPage === 'undefined') {
+            console.error('NotificationsPage 类未定义，尝试加载 notifications.js');
+            // 尝试加载 notifications.js 文件
+            loadExternalScript('/assets/js/notifications.js').then(() => {
+                console.log('notifications.js 加载完成，检查 NotificationsPage 类');
+                if (typeof NotificationsPage !== 'undefined') {
+                    console.log('NotificationsPage 类已定义，尝试创建实例');
+                    try {
+                        // 检查是否已经存在实例
+                        if (window.notificationsPage) {
+                            console.log('清理现有 NotificationsPage 实例');
+                            window.notificationsPage = null;
+                        }
+                        
+                        // 创建新实例
+                        window.notificationsPage = new NotificationsPage();
+                        console.log('NotificationsPage 实例创建成功');
+                    } catch (error) {
+                        console.error('创建 NotificationsPage 实例失败:', error);
+                    }
+                } else {
+                    console.error('NotificationsPage 类仍然未定义');
+                }
+            }).catch(error => {
+                console.error('加载 notifications.js 失败:', error);
+            });
+        } else {
+            console.log('NotificationsPage 类已定义，尝试创建实例');
+            try {
+                // 检查是否已经存在实例
+                if (window.notificationsPage) {
+                    console.log('清理现有 NotificationsPage 实例');
+                    window.notificationsPage = null;
+                }
+                
+                // 创建新实例
+                window.notificationsPage = new NotificationsPage();
+                console.log('NotificationsPage 实例创建成功');
+            } catch (error) {
+                console.error('创建 NotificationsPage 实例失败:', error);
+            }
+        }
+    }, 100);
+}
+
+// 加载外部JavaScript文件的辅助函数
+function loadExternalScript(src, callback) {
+    return new Promise((resolve, reject) => {
+        // 检查是否已经加载过
+        const existingScript = document.querySelector(`script[src="${src}"]`);
+        if (existingScript) {
+            console.log(`脚本已存在: ${src}`);
+            if (callback) callback();
+            resolve();
+            return;
+        }
+        
+        console.log(`加载外部脚本: ${src}`);
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => {
+            console.log(`外部脚本加载完成: ${src}`);
+            if (callback) callback();
+            resolve();
+        };
+        script.onerror = () => {
+            console.error(`外部脚本加载失败: ${src}`);
+            reject(new Error(`Failed to load ${src}`));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// 执行积分兑换管理页面脚本
+function executeAdminPointsExchangeScripts() {
+    console.log('执行积分兑换管理页面脚本...');
+    
+    // 查找页面中的script标签并执行
+    const scripts = document.querySelectorAll('#dynamicContent script');
+    console.log('找到的script标签数量:', scripts.length);
+    
+    // 处理脚本标签
+    scripts.forEach((script, index) => {
+        console.log(`处理第${index + 1}个script标签`);
+        
+        if (script.src) {
+            // 外部JavaScript文件
+            console.log(`加载外部脚本: ${script.src}`);
+            loadExternalScript(script.src, () => {
+                console.log(`外部脚本加载完成: ${script.src}`);
+                // 检查AdminPointsExchange类是否已定义
+                setTimeout(() => {
+                    console.log('检查AdminPointsExchange是否已定义:', typeof AdminPointsExchange);
+                    
+                    if (typeof AdminPointsExchange !== 'undefined') {
+                        console.log('AdminPointsExchange 类已定义，尝试创建实例');
+                        try {
+                            // 检查是否已经存在实例
+                            if (window.adminPointsExchange) {
+                                console.log('清理现有 AdminPointsExchange 实例');
+                                window.adminPointsExchange = null;
+                            }
+                            
+                            // 创建新实例
+                            window.adminPointsExchange = new AdminPointsExchange();
+                            console.log('AdminPointsExchange 实例创建成功');
+                        } catch (error) {
+                            console.error('创建 AdminPointsExchange 实例失败:', error);
+                        }
+                    } else {
+                        console.error('AdminPointsExchange 类仍未定义');
+                    }
+                }, 100);
+            });
+        } else {
+            // 内联脚本
+            try {
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                document.head.appendChild(newScript);
+                console.log(`第${index + 1}个内联脚本执行完成`);
+            } catch (error) {
+                console.error(`执行第${index + 1}个内联脚本失败:`, error);
+            }
+        }
+    });
+    
+    // 如果没有找到脚本标签，尝试手动加载
+    if (scripts.length === 0) {
+        console.log('未找到脚本标签，尝试手动加载admin-points-exchange.js');
+        loadExternalScript('/assets/js/admin-points-exchange.js', () => {
+            console.log('手动加载admin-points-exchange.js完成');
+            setTimeout(() => {
+                console.log('检查AdminPointsExchange是否已定义:', typeof AdminPointsExchange);
+                
+                if (typeof AdminPointsExchange !== 'undefined') {
+                    console.log('AdminPointsExchange 类已定义，尝试创建实例');
+                    try {
+                        // 检查是否已经存在实例
+                        if (window.adminPointsExchange) {
+                            console.log('清理现有 AdminPointsExchange 实例');
+                            window.adminPointsExchange = null;
+                        }
+                        
+                        // 创建新实例
+                        window.adminPointsExchange = new AdminPointsExchange();
+                        console.log('AdminPointsExchange 实例创建成功');
+                    } catch (error) {
+                        console.error('创建 AdminPointsExchange 实例失败:', error);
+                    }
+                } else {
+                    console.error('AdminPointsExchange 类仍未定义');
+                }
+            }, 100);
+        });
+    }
+}
+
+// 执行兑换审核页面脚本
+function executeAdminExchangeApprovalScripts() {
+    console.log('执行兑换审核页面脚本...');
+    
+    // 查找页面中的script标签并执行
+    const scripts = document.querySelectorAll('#dynamicContent script');
+    console.log('找到的script标签数量:', scripts.length);
+    
+    // 处理脚本标签
+    scripts.forEach((script, index) => {
+        console.log(`处理第${index + 1}个script标签`);
+        
+        if (script.src) {
+            // 外部JavaScript文件
+            console.log(`加载外部脚本: ${script.src}`);
+            loadExternalScript(script.src, () => {
+                console.log(`外部脚本加载完成: ${script.src}`);
+                // 检查AdminExchangeApproval类是否已定义
+                setTimeout(() => {
+                    console.log('检查AdminExchangeApproval是否已定义:', typeof AdminExchangeApproval);
+                    
+                    if (typeof AdminExchangeApproval !== 'undefined') {
+                        console.log('AdminExchangeApproval 类已定义，尝试创建实例');
+                        try {
+                            // 检查是否已经存在实例
+                            if (window.adminExchangeApproval) {
+                                console.log('清理现有 AdminExchangeApproval 实例');
+                                window.adminExchangeApproval = null;
+                            }
+                            
+                            // 创建新实例
+                            window.adminExchangeApproval = new AdminExchangeApproval();
+                            console.log('AdminExchangeApproval 实例创建成功');
+                        } catch (error) {
+                            console.error('创建 AdminExchangeApproval 实例失败:', error);
+                        }
+                    } else {
+                        console.error('AdminExchangeApproval 类仍未定义');
+                    }
+                }, 100);
+            });
+        } else {
+            // 内联脚本
+            try {
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                document.head.appendChild(newScript);
+                console.log(`第${index + 1}个内联脚本执行完成`);
+            } catch (error) {
+                console.error(`执行第${index + 1}个内联脚本失败:`, error);
+            }
+        }
+    });
+    
+    // 如果没有找到脚本标签，尝试手动加载
+    if (scripts.length === 0) {
+        console.log('未找到脚本标签，尝试手动加载admin-exchange-approval.js');
+        loadExternalScript('/assets/js/admin-exchange-approval.js', () => {
+            console.log('手动加载admin-exchange-approval.js完成');
+            setTimeout(() => {
+                console.log('检查AdminExchangeApproval是否已定义:', typeof AdminExchangeApproval);
+                
+                if (typeof AdminExchangeApproval !== 'undefined') {
+                    console.log('AdminExchangeApproval 类已定义，尝试创建实例');
+                    try {
+                        // 检查是否已经存在实例
+                        if (window.adminExchangeApproval) {
+                            console.log('清理现有 AdminExchangeApproval 实例');
+                            window.adminExchangeApproval = null;
+                        }
+                        
+                        // 创建新实例
+                        window.adminExchangeApproval = new AdminExchangeApproval();
+                        console.log('AdminExchangeApproval 实例创建成功');
+                    } catch (error) {
+                        console.error('创建 AdminExchangeApproval 实例失败:', error);
+                    }
+                } else {
+                    console.error('AdminExchangeApproval 类仍未定义');
+                    // 添加重试机制
+                    setTimeout(() => {
+                        console.log('重试检查AdminExchangeApproval是否已定义:', typeof AdminExchangeApproval);
+                        if (typeof AdminExchangeApproval !== 'undefined') {
+                            console.log('AdminExchangeApproval 类已定义，尝试创建实例');
+                            try {
+                                if (window.adminExchangeApproval) {
+                                    console.log('清理现有 AdminExchangeApproval 实例');
+                                    window.adminExchangeApproval = null;
+                                }
+                                window.adminExchangeApproval = new AdminExchangeApproval();
+                                console.log('AdminExchangeApproval 实例创建成功');
+                            } catch (error) {
+                                console.error('创建 AdminExchangeApproval 实例失败:', error);
+                            }
+                        } else {
+                            console.error('AdminExchangeApproval 类仍然未定义，可能需要检查文件路径或语法错误');
+                        }
+                    }, 500);
+                }
+            }, 100);
+        });
+    }
+}
+
+// 动态加载 dashboard.js 脚本
+function loadDashboardScript() {
+    return new Promise((resolve, reject) => {
+        // 检查是否已经加载过
+        if (typeof initializeDashboard === 'function') {
+            console.log('dashboard.js 已经加载');
+            resolve();
+            return;
+        }
+        
+        console.log('动态加载 dashboard.js...');
+        const script = document.createElement('script');
+        script.src = '/assets/js/dashboard.js';
+        script.onload = () => {
+            console.log('dashboard.js 加载成功');
+            window.dashboardScriptLoaded = true;
+            if (typeof initializeDashboard === 'function') {
+                initializeDashboard();
+            }
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('dashboard.js 加载失败');
+            reject(new Error('Failed to load dashboard.js'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// 动态加载 admin.js 脚本
+function loadAdminScript() {
+    return new Promise((resolve, reject) => {
+        // 检查是否已经加载过
+        if (typeof initializeAdminPage === 'function') {
+            console.log('admin.js 已经加载');
+            resolve();
+            return;
+        }
+        
+        console.log('动态加载 admin.js...');
+        const script = document.createElement('script');
+        script.src = '/assets/js/admin.js';
+        script.onload = () => {
+            console.log('admin.js 加载成功');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('admin.js 加载失败');
+            reject(new Error('Failed to load admin.js'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// 动态加载 sessions.js 脚本
+function loadSessionsScript() {
+    return new Promise((resolve, reject) => {
+        console.log('动态加载 sessions.js...');
+        const script = document.createElement('script');
+        script.src = '/assets/js/sessions.js';
+        script.onload = () => {
+            console.log('sessions.js 加载成功');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('sessions.js 加载失败');
+            reject(new Error('Failed to load sessions.js'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// 事件监听器
+document.addEventListener('DOMContentLoaded', function() {
+    // 关闭按钮
+    const closeBtn = document.getElementById('closeMobileMenu');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeMobileMenu);
+    }
+    
+    // 遮罩层点击关闭
+    const overlay = document.getElementById('mobileSidebarOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // 导航链接点击事件
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', handleNavClick);
+    });
+    
+    // 移动端菜单按钮事件（在main-content.hbs中处理）
+    const mobileMenuButton = document.getElementById('mobileMenuButton');
+    if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', openMobileMenu);
+    }
+    
+    // 用户下拉菜单事件
+    const userDropdownButton = document.getElementById('userDropdownButton');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    
+    if (userDropdownButton && userDropdownMenu) {
+        userDropdownButton.addEventListener('click', toggleUserDropdown);
+        
+        // 点击其他地方关闭下拉菜单
+        document.addEventListener('click', function(e) {
+            if (!userDropdownButton.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                closeUserDropdown();
+            }
+        });
+    }
+    
+    // 个人设置弹窗事件
+    // 注意：这些事件已经在 main.hbs 的 initProfileModal 函数中处理
+    // 这里不再重复绑定，避免冲突
+    
+    // 重新添加基本的弹窗显示/隐藏功能
+    const openProfileModalBtn = document.getElementById('openProfileModalBtn');
+    const closeProfileModalBtn = document.getElementById('closeProfileModalBtn');
+    const cancelProfileBtn = document.getElementById('cancelProfileBtn');
+    
+    console.log('个人设置弹窗事件绑定检查:');
+    console.log('openProfileModalBtn:', openProfileModalBtn);
+    console.log('closeProfileModalBtn:', closeProfileModalBtn);
+    console.log('cancelProfileBtn:', cancelProfileBtn);
+    
+    if (openProfileModalBtn) {
+        openProfileModalBtn.addEventListener('click', showProfileModal);
+        console.log('个人设置按钮事件已绑定');
+    }
+    
+    if (closeProfileModalBtn) {
+        closeProfileModalBtn.addEventListener('click', hideProfileModal);
+        console.log('关闭按钮事件已绑定');
+    }
+    
+    if (cancelProfileBtn) {
+        cancelProfileBtn.addEventListener('click', hideProfileModal);
+        console.log('取消按钮事件已绑定');
+    }
+    
+    // 注销弹窗事件绑定
+    const closeDeactivateModalBtn = document.getElementById('closeDeactivateModalBtn');
+    const cancelDeactivateBtn = document.getElementById('cancelDeactivateBtn');
+    const sendVerificationCodeBtn = document.getElementById('sendVerificationCodeBtn');
+    const confirmDeactivateBtn = document.getElementById('confirmDeactivateBtn');
+    
+    if (closeDeactivateModalBtn) {
+        closeDeactivateModalBtn.addEventListener('click', hideDeactivateModal);
+        console.log('关闭注销弹窗按钮事件已绑定');
+    }
+    
+    if (cancelDeactivateBtn) {
+        cancelDeactivateBtn.addEventListener('click', hideDeactivateModal);
+        console.log('取消注销按钮事件已绑定');
+    }
+    
+    if (sendVerificationCodeBtn) {
+        sendVerificationCodeBtn.addEventListener('click', sendVerificationCode);
+        console.log('发送验证码按钮事件已绑定');
+    }
+    
+    if (confirmDeactivateBtn) {
+        confirmDeactivateBtn.addEventListener('click', confirmDeactivate);
+        console.log('确认注销按钮事件已绑定');
+    }
+    
+    // 点击弹窗外部关闭
+    const deactivateModal = document.getElementById('deactivateModal');
+    if (deactivateModal) {
+        deactivateModal.addEventListener('click', (e) => {
+            if (e.target === deactivateModal) {
+                hideDeactivateModal();
+            }
+        });
+    }
+    
+    // 表单提交功能
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('表单提交事件触发');
+            
+            const submitBtn = document.getElementById('saveProfileBtn');
+            const messageDiv = document.getElementById('profileMessage');
+            const originalText = submitBtn.innerHTML;
+            
+            // 显示加载状态
+            submitBtn.innerHTML = `
+                <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                保存中...
+            `;
+            submitBtn.disabled = true;
+
+            try {
+                const formData = new FormData(profileForm);
+                const data = Object.fromEntries(formData);
+                
+                // 获取认证token
+                const token = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('token='))
+                    ?.split('=')[1];
+                
+                if (!token) {
+                    messageDiv.innerHTML = `
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            <p class="text-sm">登录已过期，请重新登录</p>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
+                
+                const response = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `
+                        <div class="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400">
+                            <p class="text-sm">${result.message || '设置保存成功！'}</p>
+                        </div>
+                    `;
+                    
+                    // 更新页面上的用户名显示
+                    const usernameElements = document.querySelectorAll('[data-username]');
+                    usernameElements.forEach(el => {
+                        el.textContent = data.username;
+                    });
+                    
+                    // 3秒后关闭弹窗
+                    setTimeout(hideProfileModal, 3000);
+                } else if (response.status === 401 || response.status === 403) {
+                    // 认证失败，清除cookie并重定向
+                    messageDiv.innerHTML = `
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            <p class="text-sm">登录已过期，正在跳转到登录页面...</p>
+                        </div>
+                    `;
+                    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                            <p class="text-sm">${result.error || '保存失败，请重试'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('保存设置失败:', error);
+                messageDiv.innerHTML = `
+                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+                        <p class="text-sm">网络错误，请重试</p>
+                    </div>
+                `;
+            } finally {
+                // 恢复按钮状态
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+        console.log('表单提交事件已绑定');
+    }
+    
+    // 主题切换事件
+    const desktopDarkModeToggle = document.getElementById('desktopDarkModeToggle');
+    const mobileDarkModeToggle = document.getElementById('mobileDarkModeToggle');
+    
+    if (desktopDarkModeToggle) {
+        desktopDarkModeToggle.addEventListener('click', window.toggleDarkMode);
+    }
+    
+    if (mobileDarkModeToggle) {
+        mobileDarkModeToggle.addEventListener('click', window.toggleDarkMode);
+    }
+    
+    // 初始化主题图标
+    const isDark = document.documentElement.classList.contains('dark');
+    if (window.updateDarkModeIcons) {
+        window.updateDarkModeIcons(isDark);
+    }
+
+    // 浏览器前进后退处理
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.contentType) {
+            showContent(event.state.contentType);
+        } else {
+            showContent('dashboard');
+        }
+    });
+});
+</script> 

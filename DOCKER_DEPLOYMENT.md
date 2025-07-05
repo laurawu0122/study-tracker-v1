@@ -1,307 +1,350 @@
-# 🐳 Docker 部署详细指南
+# Docker 部署指南
 
-本指南将帮助您使用Docker部署学习项目完成耗时趋势分析系统。
+本文档介绍如何使用 Docker Compose 一键部署学习追踪系统。
 
-## 📋 部署前准备
+## 系统要求
 
-1. **Docker环境**：确保已安装Docker和Docker Compose
-2. **项目代码**：从GitHub克隆项目
-3. **环境变量**：准备好JWT_SECRET等配置
+- Docker 20.10+
+- Docker Compose 2.0+
+- 至少 2GB 可用内存
+- 至少 10GB 可用磁盘空间
 
-## 🔧 详细部署步骤
+## 快速开始
 
-### 第一步：克隆项目
+### 1. 克隆项目
 
 ```bash
-git clone https://github.com/laurawu0122/study-tracker.git
+git clone <your-repository-url>
 cd study-tracker
 ```
 
-### 第二步：配置环境变量
+### 2. 配置环境变量
 
-1. **复制环境变量模板**
+复制环境变量模板文件：
+
 ```bash
 cp env.example .env
 ```
 
-2. **编辑.env文件**
+编辑 `.env` 文件，配置必要的环境变量：
+
 ```bash
-nano .env
-# 或者使用您喜欢的编辑器
-```
+# 数据库配置
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+DB_NAME=study_tracker
 
-### 第三步：配置必需的环境变量
+# JWT 密钥（请使用强密码）
+JWT_SECRET=your_jwt_secret_key
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_key
 
-#### 🔐 JWT_SECRET（必需）
+# 邮件配置
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_email_password
 
-**自动生成方式（推荐）：**
-```bash
-# 在终端中生成JWT_SECRET
-openssl rand -base64 32
-```
-
-**手动配置方式：**
-在 `.env` 文件中设置：
-```env
-JWT_SECRET=your-generated-jwt-secret-here
-```
-
-**示例：**
-```env
-JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-```
-
-#### 🔑 DEFAULT_ADMIN_PASSWORD（可选）
-
-**设置自定义管理员密码：**
-```env
-DEFAULT_ADMIN_PASSWORD=your-custom-admin-password
-```
-
-**如果不设置：**
-- 系统将使用默认密码：`Admin123!`
-- 建议设置一个强密码
-
-#### 📧 邮件配置（可选）
-
-如果需要邮件功能，配置以下变量：
-```env
-SMTP_HOST=smtp.qq.com
-SMTP_PORT=587
-SMTP_USER=your-email@qq.com
-SMTP_PASS=your-app-password
-```
-
-### 第四步：完整的.env文件示例
-
-```env
-# 应用配置
+# 其他配置
 NODE_ENV=production
 PORT=3001
-
-# JWT配置（必需）
-JWT_SECRET=your-generated-jwt-secret-here
-
-# 默认管理员密码（可选）
-DEFAULT_ADMIN_PASSWORD=your-custom-admin-password
-
-# 邮件配置（可选）
-SMTP_HOST=smtp.qq.com
-SMTP_PORT=587
-SMTP_USER=your-email@qq.com
-SMTP_PASS=your-app-password
-
-# 安全配置
-TRUST_PROXY=true
 ```
 
-### 第五步：SSL证书配置（可选）
+### 3. 一键部署
 
-如果需要HTTPS访问：
+#### 生产环境部署
 
 ```bash
-# 创建SSL目录
-mkdir -p ssl
+# 给脚本执行权限
+chmod +x scripts/docker-deploy.sh
+chmod +x scripts/docker-manage.sh
 
-# 生成自签名证书
-openssl req -x509 -newkey rsa:4096 \
-  -keyout ssl/key.pem \
-  -out ssl/cert.pem \
-  -days 365 \
-  -nodes \
-  -subj "/C=CN/ST=State/L=City/O=Organization/CN=localhost"
+# 部署生产环境
+./scripts/docker-deploy.sh prod
 ```
 
-### 第六步：启动服务
+#### 开发环境部署
 
 ```bash
-# 构建并启动容器
-docker-compose up -d
+# 部署开发环境
+./scripts/docker-deploy.sh dev
+```
 
-# 查看容器状态
+### 4. 访问应用
+
+部署完成后，访问以下地址：
+
+- 应用地址：http://localhost:3001
+- 默认管理员账号：admin
+- 默认密码：Admin123!（可在 .env 中修改）
+
+## 服务架构
+
+部署后包含以下服务：
+
+### 核心服务
+
+- **app**: Node.js 应用服务（端口 3001）
+- **postgres**: PostgreSQL 数据库（端口 5432）
+- **redis**: Redis 缓存服务（端口 6379）
+
+### 可选服务
+
+- **nginx**: Nginx 反向代理（端口 80/443，仅生产环境）
+
+## 日常管理
+
+### 使用管理脚本
+
+```bash
+# 查看服务状态
+./scripts/docker-manage.sh status
+
+# 查看应用日志
+./scripts/docker-manage.sh logs
+
+# 重启服务
+./scripts/docker-manage.sh restart
+
+# 停止服务
+./scripts/docker-manage.sh stop
+
+# 启动服务
+./scripts/docker-manage.sh start
+
+# 备份数据库
+./scripts/docker-manage.sh backup
+
+# 恢复数据库
+./scripts/docker-manage.sh restore backups/backup_20250101_120000.sql.gz
+
+# 清理资源
+./scripts/docker-manage.sh cleanup
+
+# 进入应用容器
+./scripts/docker-manage.sh shell
+
+# 进入数据库容器
+./scripts/docker-manage.sh db-shell
+
+# 更新应用
+./scripts/docker-manage.sh update
+```
+
+### 使用 Docker Compose 命令
+
+```bash
+# 查看服务状态
 docker-compose ps
 
 # 查看日志
-docker-compose logs -f
+docker-compose logs -f app
+
+# 重启特定服务
+docker-compose restart app
+
+# 停止所有服务
+docker-compose down
+
+# 启动所有服务
+docker-compose up -d
+
+# 重新构建镜像
+docker-compose build --no-cache
 ```
 
-### 第七步：访问应用
+## 数据持久化
 
-- **HTTP访问**: `http://localhost`
-- **HTTPS访问**: `https://localhost`（如果配置了SSL）
+### 数据卷
 
-### 第八步：登录系统
+系统使用以下数据卷确保数据持久化：
 
-- **用户名**: `admin`
-- **密码**: 
-  - 如果设置了 `DEFAULT_ADMIN_PASSWORD`，使用该密码
-  - 否则使用默认密码：`Admin123!`
+- `postgres_data`: PostgreSQL 数据库数据
+- `redis_data`: Redis 缓存数据
+- `uploads_data`: 用户上传文件
 
-**⚠️ 重要提醒：**
-- 首次登录后请立即修改默认密码
-- 定期更换JWT_SECRET
-- 妥善保管环境变量文件
+### 备份策略
 
-## 🔍 Docker配置说明
+#### 自动备份
 
-### docker-compose.yml 文件解析
+建议设置定时任务进行自动备份：
 
-```yaml
-version: '3.8'
-services:
-  app:
-    build: .
-    ports:
-      - "80:3001"      # HTTP端口映射
-      - "443:3001"     # HTTPS端口映射
-    volumes:
-      - ./data:/app/data  # 数据持久化
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - .env            # 环境变量文件
-```
-
-### Dockerfile 说明
-
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3001
-CMD ["npm", "start"]
-```
-
-## 🐛 常见问题解决
-
-### 1. 容器启动失败
-
-**错误信息：** "Container failed to start"
-
-**解决方案：**
-1. 检查环境变量配置
-2. 确认JWT_SECRET已设置
-3. 查看容器日志：`docker-compose logs`
-
-### 2. 端口冲突
-
-**错误信息：** "Port already in use"
-
-**解决方案：**
 ```bash
-# 修改docker-compose.yml中的端口映射
-ports:
-  - "8080:3001"  # 使用其他端口
+# 添加到 crontab
+0 2 * * * cd /path/to/study-tracker && ./scripts/docker-manage.sh backup
 ```
 
-### 3. 数据持久化问题
-
-**问题：** 重启容器后数据丢失
-
-**解决方案：**
-1. 确认数据卷映射正确
-2. 检查data目录权限
-3. 备份重要数据
-
-### 4. SSL证书问题
-
-**错误信息：** "SSL certificate error"
-
-**解决方案：**
-1. 确认SSL证书文件存在
-2. 检查证书有效期
-3. 使用有效的SSL证书
-
-## 🔧 高级配置
-
-### 自定义域名
-
-1. 修改 `docker-compose.yml`
-2. 配置反向代理（如Nginx）
-3. 设置SSL证书
-
-### 数据备份
+#### 手动备份
 
 ```bash
 # 备份数据库
-docker exec -it study-tracker-app cp /app/data/studytracker.db /backup/
+./scripts/docker-manage.sh backup
 
-# 恢复数据库
-docker exec -it study-tracker-app cp /backup/studytracker.db /app/data/
+# 备份文件会保存在 ./backups/ 目录
 ```
 
-### 性能优化
+## 监控和日志
 
-1. **资源限制**
+### 健康检查
+
+所有服务都配置了健康检查：
+
+- 应用服务：HTTP 健康检查
+- 数据库：PostgreSQL 连接检查
+- Redis：Redis 连接检查
+
+### 日志管理
+
+```bash
+# 查看应用日志
+docker-compose logs -f app
+
+# 查看数据库日志
+docker-compose logs -f postgres
+
+# 查看 Redis 日志
+docker-compose logs -f redis
+
+# 查看所有服务日志
+docker-compose logs -f
+```
+
+### 资源监控
+
+```bash
+# 查看资源使用情况
+docker stats
+
+# 查看服务状态和资源使用
+./scripts/docker-manage.sh status
+```
+
+## 故障排除
+
+### 常见问题
+
+#### 1. 端口冲突
+
+如果端口被占用，修改 `docker-compose.yml` 中的端口映射：
+
+```yaml
+ports:
+  - "3002:3001"  # 改为其他端口
+```
+
+#### 2. 数据库连接失败
+
+检查数据库服务状态：
+
+```bash
+docker-compose logs postgres
+docker-compose exec postgres pg_isready -U postgres
+```
+
+#### 3. 应用启动失败
+
+查看应用日志：
+
+```bash
+docker-compose logs app
+```
+
+#### 4. 内存不足
+
+增加 Docker 内存限制或优化应用配置。
+
+### 重置环境
+
+如果需要完全重置环境：
+
+```bash
+# 停止并删除所有容器和卷
+docker-compose down -v
+
+# 删除所有镜像
+docker rmi $(docker images -q study-tracker-app)
+
+# 重新部署
+./scripts/docker-deploy.sh prod
+```
+
+## 安全配置
+
+### 生产环境安全建议
+
+1. **修改默认密码**：更改所有默认密码
+2. **使用强密钥**：生成强 JWT 密钥
+3. **配置 HTTPS**：使用 Nginx 配置 SSL 证书
+4. **限制端口访问**：只开放必要端口
+5. **定期更新**：保持镜像和依赖更新
+
+### 环境变量安全
+
+- 不要在代码中硬编码敏感信息
+- 使用环境变量管理配置
+- 定期轮换密钥和密码
+
+## 性能优化
+
+### 资源限制
+
+在 `docker-compose.yml` 中添加资源限制：
+
 ```yaml
 services:
   app:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
           cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
 ```
 
-2. **日志管理**
-```yaml
-services:
-  app:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-```
+### 缓存优化
 
-## 📊 监控和维护
+- 使用 Redis 缓存热点数据
+- 配置适当的缓存策略
+- 定期清理过期缓存
 
-### 查看容器状态
+## 扩展部署
+
+### 多实例部署
+
+使用 Docker Swarm 或 Kubernetes 进行多实例部署：
 
 ```bash
-# 查看所有容器
-docker-compose ps
+# 初始化 Swarm
+docker swarm init
 
-# 查看资源使用
-docker stats
-
-# 查看日志
-docker-compose logs -f app
+# 部署服务
+docker stack deploy -c docker-compose.yml study-tracker
 ```
 
-### 更新部署
+### 负载均衡
 
-```bash
-# 拉取最新代码
-git pull
+配置 Nginx 负载均衡：
 
-# 重新构建并启动
-docker-compose up -d --build
+```nginx
+upstream app_servers {
+    server app1:3001;
+    server app2:3001;
+    server app3:3001;
+}
 ```
 
-### 停止服务
+## 联系支持
 
-```bash
-# 停止所有服务
-docker-compose down
+如果遇到问题，请：
 
-# 停止并删除数据卷
-docker-compose down -v
-```
-
-## 🆘 获取帮助
-
-如果遇到问题：
-
-1. **查看日志**：`docker-compose logs -f`
-2. **检查配置**：确认 `.env` 文件设置正确
-3. **重启服务**：`docker-compose restart`
-4. **重新构建**：`docker-compose up -d --build`
+1. 查看日志文件
+2. 检查系统资源
+3. 参考故障排除部分
+4. 提交 Issue 到项目仓库
 
 ---
 
-🎉 **恭喜！** 您的学习项目完成耗时趋势分析系统已成功部署到Docker！
-
-现在您可以通过 `http://localhost` 或 `https://localhost` 访问您的应用了。 
+**注意**：生产环境部署前，请确保已正确配置所有安全设置和环境变量。 

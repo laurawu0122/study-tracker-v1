@@ -1,24 +1,76 @@
 const nodemailer = require('nodemailer');
+const { db } = require('../database/db');
 
-// 邮件配置
-const emailConfig = {
-    host: process.env.SMTP_HOST || 'smtp.qq.com', // 默认使用QQ邮箱
-    port: process.env.SMTP_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.SMTP_USER || 'your-email@qq.com', // 发件人邮箱
-        pass: process.env.SMTP_PASS || 'your-app-password' // 邮箱授权码
+// 从数据库获取邮件配置
+async function getEmailConfig() {
+    try {
+        const configs = await db('system_config')
+            .whereIn('key', [
+                'smtp_enabled',
+                'smtp_host',
+                'smtp_port',
+                'smtp_user',
+                'smtp_pass',
+                'smtp_from_name',
+                'smtp_from_email',
+                'smtp_secure',
+                'email_verification_enabled'
+            ])
+            .select('*');
+
+        const config = {};
+        configs.forEach(item => {
+            let value = item.value;
+            
+            // 根据类型转换值
+            switch (item.type) {
+                case 'boolean':
+                    value = value === 'true';
+                    break;
+                case 'number':
+                    value = parseInt(value) || 0;
+                    break;
+            }
+            
+            config[item.key] = value;
+        });
+
+        // 如果SMTP未启用，返回null
+        if (!config.smtp_enabled) {
+            return null;
+        }
+
+        return {
+            host: config.smtp_host,
+            port: config.smtp_port,
+            secure: config.smtp_secure,
+            auth: {
+                user: config.smtp_user,
+                pass: config.smtp_pass
+            },
+            fromName: config.smtp_from_name,
+            fromEmail: config.smtp_from_email,
+            emailVerificationEnabled: config.email_verification_enabled
+        };
+    } catch (error) {
+        console.error('获取邮件配置失败:', error);
+        return null;
     }
-};
+}
 
 // 创建邮件传输器
-let transporter = null;
-
-function createTransporter() {
-    if (!transporter) {
-        transporter = nodemailer.createTransporter(emailConfig);
+async function createTransporter() {
+    const emailConfig = await getEmailConfig();
+    if (!emailConfig) {
+        throw new Error('邮件服务未配置或未启用');
     }
-    return transporter;
+    
+    return nodemailer.createTransport({
+        host: emailConfig.host,
+        port: emailConfig.port,
+        secure: emailConfig.secure,
+        auth: emailConfig.auth
+    });
 }
 
 // 生成6位数字验证码
@@ -26,26 +78,121 @@ function generateVerificationCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// 发送验证码邮件
-async function sendVerificationEmail(to, code) {
+// 存储验证码到数据库
+async function storeVerificationCode(email, code, type = 'registration') {
     try {
-        const mailTransporter = createTransporter();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10分钟后过期
+        
+        await db('email_verifications').insert({
+            email: email,
+            verification_code: code,
+            type: type, // 支持 registration 和 reset 类型
+            expires_at: expiresAt,
+            created_at: new Date()
+        });
+        
+        return true;
+    } catch (error) {
+        console.error('存储验证码失败:', error);
+        return false;
+    }
+}
+
+// 验证邮箱验证码
+async function verifyCode(email, code, type = 'registration') {
+    try {
+        console.log('🔍 开始验证验证码:', { email, code, type });
+        
+        const verification = await db('email_verifications')
+            .where({
+                email: email,
+                verification_code: code,
+                type: type, // 支持 registration 和 reset 类型
+                used: false
+            })
+            .where('expires_at', '>', new Date())
+            .first();
+        
+        console.log('🔍 验证码查询结果:', verification);
+        
+        if (!verification) {
+            console.log('❌ 验证码无效或已过期');
+            return { valid: false, message: '验证码无效或已过期' };
+        }
+        
+        // 标记验证码为已使用
+        await db('email_verifications')
+            .where('id', verification.id)
+            .update({
+                used: true,
+                used_at: new Date()
+            });
+        
+        console.log('✅ 验证码验证成功');
+        return { valid: true, message: '验证码验证成功' };
+    } catch (error) {
+        console.error('❌ 验证码验证失败:', error);
+        return { valid: false, message: '验证码验证失败' };
+    }
+}
+
+// 检查邮箱是否已注册
+async function isEmailRegistered(email) {
+    try {
+        const user = await db('users').where('email', email).first();
+        return !!user;
+    } catch (error) {
+        console.error('检查邮箱注册状态失败:', error);
+        return false;
+    }
+}
+
+// 发送验证码邮件
+async function sendVerificationEmail(to, code, type = 'registration') {
+    try {
+        console.log('📧 开始发送验证码邮件:', { to, code, type });
+        
+        const emailConfig = await getEmailConfig();
+        console.log('📧 邮件配置:', emailConfig);
+        
+        if (!emailConfig) {
+            throw new Error('邮件服务未配置或未启用');
+        }
+        
+        if (!emailConfig.emailVerificationEnabled) {
+            throw new Error('邮箱验证功能未启用');
+        }
+        
+        console.log('📧 创建邮件传输器...');
+        const mailTransporter = await createTransporter();
+        
+        // 根据类型设置不同的邮件内容
+        let subject, purpose, description;
+        if (type === 'reset') {
+            subject = '学习追踪器 - 密码重置验证码';
+            purpose = '重置密码';
+            description = '您正在重置学习追踪器的账户密码。为了确保账户安全，请输入以下验证码完成密码重置：';
+        } else {
+            subject = '学习追踪器 - 邮箱验证码';
+            purpose = '完成注册';
+            description = '感谢您注册学习追踪器！为了确保您的账户安全，请输入以下验证码完成注册：';
+        }
         
         const mailOptions = {
-            from: `"学习追踪器" <${emailConfig.auth.user}>`,
+            from: `"${emailConfig.fromName}" <${emailConfig.fromEmail}>`,
             to: to,
-            subject: '学习追踪器 - 邮箱验证码',
+            subject: subject,
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
                         <h1 style="margin: 0; font-size: 24px;">📚 学习追踪器</h1>
-                        <p style="margin: 10px 0 0 0; opacity: 0.9;">邮箱验证码</p>
+                        <p style="margin: 10px 0 0 0; opacity: 0.9;">${purpose}验证码</p>
                     </div>
                     
                     <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
                         <h2 style="color: #333; margin-bottom: 20px;">您好！</h2>
                         <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                            感谢您注册学习追踪器！为了确保您的账户安全，请输入以下验证码完成注册：
+                            ${description}
                         </p>
                         
                         <div style="background: white; border: 2px dashed #667eea; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0;">
@@ -70,32 +217,86 @@ async function sendVerificationEmail(to, code) {
             `
         };
 
+        console.log('📧 发送邮件...');
         const info = await mailTransporter.sendMail(mailOptions);
-        console.log('验证码邮件发送成功:', info.messageId);
+        console.log('✅ 验证码邮件发送成功:', info.messageId);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('❌ 发送验证码邮件失败:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// 清理过期的验证码
+async function cleanupExpiredCodes() {
+    try {
+        await db('email_verifications')
+            .where('expires_at', '<', new Date())
+            .del();
+        console.log('已清理过期验证码');
+    } catch (error) {
+        console.error('清理过期验证码失败:', error);
+    }
+}
+
+// 通用发送邮件函数
+async function sendEmail({ to, subject, html, text }) {
+    try {
+        const emailConfig = await getEmailConfig();
+        if (!emailConfig) {
+            throw new Error('邮件服务未配置或未启用');
+        }
+        
+        const mailTransporter = await createTransporter();
+        
+        const mailOptions = {
+            from: `"${emailConfig.fromName}" <${emailConfig.fromEmail}>`,
+            to: to,
+            subject: subject,
+            html: html,
+            text: text
+        };
+
+        const info = await mailTransporter.sendMail(mailOptions);
+        console.log('邮件发送成功:', info.messageId);
         return true;
     } catch (error) {
-        console.error('发送验证码邮件失败:', error);
+        console.error('发送邮件失败:', error);
         return false;
     }
 }
 
 // 验证邮件配置
-function validateEmailConfig() {
-    const requiredFields = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
-    const missingFields = requiredFields.filter(field => !process.env[field]);
-    
-    if (missingFields.length > 0) {
-        console.warn('⚠️  邮件配置不完整，以下环境变量未设置:');
-        missingFields.forEach(field => console.warn(`   - ${field}`));
-        console.warn('📧 邮箱验证功能将不可用，请配置邮件服务器信息。');
+async function validateEmailConfig() {
+    try {
+        const emailConfig = await getEmailConfig();
+        if (!emailConfig) {
+            console.warn('⚠️  邮件服务未配置或未启用');
+            console.warn('📧 邮箱验证功能将不可用，请在系统管理中配置SMTP设置。');
+            return false;
+        }
+        
+        if (!emailConfig.emailVerificationEnabled) {
+            console.warn('⚠️  邮箱验证功能未启用');
+            console.warn('📧 请在系统管理中启用邮箱验证功能。');
+            return false;
+        }
+        
+        console.log('✅ 邮件配置验证通过');
+        return true;
+    } catch (error) {
+        console.error('验证邮件配置失败:', error);
         return false;
     }
-    
-    return true;
 }
 
 module.exports = {
     sendVerificationEmail,
+    sendEmail,
     generateVerificationCode,
+    storeVerificationCode,
+    verifyCode,
+    isEmailRegistered,
+    cleanupExpiredCodes,
     validateEmailConfig
 }; 

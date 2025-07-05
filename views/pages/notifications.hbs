@@ -1,0 +1,837 @@
+{{!-- 通知中心页面 --}}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900" id="notificationsContainer">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">通知中心</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">查看和管理您的通知，获取学习洞察</p>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsCards">
+            <!-- 统计卡片会动态插入这里 -->
+        </div>
+
+        <!-- 学习洞察 -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8" id="insightsSection">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">学习洞察</h3>
+            </div>
+            <div class="p-6" id="insightsContent">
+                <!-- 洞察内容会动态插入这里 -->
+            </div>
+        </div>
+
+        <!-- 通知管理区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 通知列表 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                    <!-- 工具栏 -->
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">通知列表</h3>
+                            <div class="flex items-center space-x-4">
+                                <!-- 过滤选择器 -->
+                                <select id="filterType" class="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <option value="all">全部类型</option>
+                                    <option value="urgent">紧急</option>
+                                    <option value="upcoming">即将到期</option>
+                                    <option value="info">信息</option>
+                                    <option value="success">成功</option>
+                                    <option value="warning">警告</option>
+                                </select>
+                                
+                                <!-- 未读过滤 -->
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" id="unreadOnly" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                                    <span class="ml-2 text-gray-700 dark:text-gray-300">仅未读</span>
+                                </label>
+                                
+                                <!-- 操作按钮 -->
+                                <div class="flex space-x-2">
+                                    <button id="markAllRead" class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                        全部已读
+                                    </button>
+                                    <button id="clearAll" class="text-sm text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                                        清空全部
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+            </div>
+
+            <!-- 加载状态 -->
+            <div id="loadingState" class="flex items-center justify-center py-8" style="display: none;">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                <span class="ml-2 text-gray-600 dark:text-gray-400">加载中...</span>
+            </div>
+
+            <!-- 空状态 -->
+                    <div id="emptyState" class="text-center py-12" style="display: none;">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h6v-2H4v2zM4 11h6V9H4v2zM4 7h6V5H4v2z"></path>
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">暂无通知</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">您目前没有任何通知</p>
+            </div>
+
+            <!-- 通知列表 -->
+                    <div id="notificationsList" class="divide-y divide-gray-200 dark:divide-gray-700" style="display: none;">
+                <!-- 通知项会动态插入这里 -->
+                    </div>
+
+                    <!-- 分页 -->
+                    <div id="pagination" class="px-6 py-4 border-t border-gray-200 dark:border-gray-700" style="display: none;">
+                        <!-- 分页控件会动态插入这里 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知设置 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">通知设置</h3>
+                    </div>
+                    <div class="p-6">
+                        <form id="settingsForm" class="space-y-6">
+                            <!-- 项目提醒 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">项目提醒</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">项目截止日期提醒</p>
+                                </div>
+                                <input type="checkbox" id="projectReminders" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 进度提醒 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">进度提醒</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">学习进度提醒</p>
+                                </div>
+                                <input type="checkbox" id="progressReminders" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 学习目标 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">学习目标</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">学习目标达成提醒</p>
+                                </div>
+                                <input type="checkbox" id="studyGoals" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 周报提醒 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">周报提醒</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">每周学习报告</p>
+                                </div>
+                                <input type="checkbox" id="weeklyReports" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 邮件通知 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">邮件通知</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">重要通知邮件提醒</p>
+                                </div>
+                                <input type="checkbox" id="emailNotifications" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 浏览器通知 -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-900 dark:text-white">浏览器通知</label>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">浏览器推送通知</p>
+                                </div>
+                                <input type="checkbox" id="browserNotifications" class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500">
+                            </div>
+
+                            <!-- 每日提醒时间 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">每日提醒时间</label>
+                                <input type="time" id="dailyReminderTime" class="w-full text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+
+                            <!-- 保存按钮 -->
+                            <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
+                                保存设置
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 通知应用
+class NotificationsApp {
+    constructor() {
+        this.notifications = [];
+        this.stats = {};
+        this.insights = [];
+        this.settings = {};
+        this.currentPage = 1;
+        this.loading = false;
+        
+        this.init();
+    }
+    
+    async init() {
+        console.log('开始初始化通知应用...');
+        
+        try {
+            // 先绑定事件，确保事件监听器已经设置
+            this.bindEvents();
+            
+            // 然后加载数据
+            await Promise.all([
+                this.loadStats(),
+                this.loadInsights(),
+                this.loadSettings(),
+                this.loadNotifications()
+            ]);
+            
+            console.log('通知应用初始化完成');
+        } catch (error) {
+            console.error('初始化通知应用失败:', error);
+        }
+    }
+    
+    // 加载统计数据
+    async loadStats() {
+        try {
+            const response = await fetch('/api/notifications/stats');
+            if (response.ok) {
+                this.stats = await response.json();
+                this.renderStats();
+            }
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+        }
+    }
+    
+    // 渲染统计卡片
+    renderStats() {
+        const container = document.getElementById('statsCards');
+        container.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">未读通知</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">${this.stats.unread || 0}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">今日通知</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">${this.stats.today || 0}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">总通知数</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">${this.stats.total || 0}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">即将到期</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">${this.stats.upcoming || 0}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 加载学习洞察
+    async loadInsights() {
+        try {
+            const response = await fetch('/api/notifications/insights');
+            if (response.ok) {
+                const data = await response.json();
+                this.insights = data.insights;
+                this.renderInsights(data);
+            }
+        } catch (error) {
+            console.error('加载学习洞察失败:', error);
+        }
+    }
+    
+    // 渲染学习洞察
+    renderInsights(data) {
+        const container = document.getElementById('insightsContent');
+        
+        if (this.insights.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-gray-500 dark:text-gray-400">暂无学习洞察</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                ${this.insights.map(insight => `
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                ${this.getInsightIcon(insight.type)}
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-gray-900 dark:text-white">${insight.title}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${insight.message}</p>
+                                <button class="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 mt-2">
+                                    ${insight.action}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.totalMinutes}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">本周学习(分钟)</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.averageMinutes}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">平均时长(分钟)</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.sessionCount}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">学习次数</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.topProject || '无'}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">专注项目</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 获取洞察图标
+    getInsightIcon(type) {
+        const icons = {
+            success: '<div class="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>',
+            warning: '<div class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div>',
+            info: '<div class="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center"><svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>'
+        };
+        return icons[type] || icons.info;
+    }
+    
+    // 加载通知设置
+    async loadSettings() {
+        try {
+            console.log('开始加载通知设置...');
+            const response = await fetch('/api/notifications/settings');
+            console.log('加载设置响应状态:', response.status);
+            
+            if (response.ok) {
+                this.settings = await response.json();
+                console.log('加载到的设置:', this.settings);
+                
+                // 确保DOM元素已经准备好后再渲染
+                setTimeout(() => {
+                    this.renderSettings();
+                }, 100);
+            } else {
+                console.error('加载设置失败，状态码:', response.status);
+                const errorText = await response.text();
+                console.error('错误详情:', errorText);
+            }
+        } catch (error) {
+            console.error('加载通知设置失败:', error);
+        }
+    }
+    
+    // 渲染通知设置
+    renderSettings() {
+        console.log('渲染通知设置，当前设置:', this.settings);
+        
+        // 检查设置对象是否存在
+        if (!this.settings) {
+            console.warn('设置对象不存在，使用默认值');
+            this.settings = {
+                project_reminders: true,
+                progress_reminders: true,
+                study_goals: true,
+                weekly_reports: true,
+                email_notifications: false,
+                browser_notifications: true,
+                daily_reminder_time: '09:00'
+            };
+        }
+        
+        // 安全地设置复选框状态，确保元素存在且设置值有效
+        const elements = {
+            'projectReminders': this.settings.project_reminders,
+            'progressReminders': this.settings.progress_reminders,
+            'studyGoals': this.settings.study_goals,
+            'weeklyReports': this.settings.weekly_reports,
+            'emailNotifications': this.settings.email_notifications,
+            'browserNotifications': this.settings.browser_notifications
+        };
+        
+        console.log('准备设置的复选框状态:', elements);
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                const boolValue = Boolean(value);
+                element.checked = boolValue;
+                console.log(`✓ 设置 ${id}: ${boolValue} (原始值: ${value})`);
+            } else {
+                console.error(`✗ 找不到元素: ${id}`);
+            }
+        });
+        
+        // 设置时间输入
+        const timeElement = document.getElementById('dailyReminderTime');
+        if (timeElement) {
+            const timeValue = this.settings.daily_reminder_time || '09:00';
+            // 处理时间格式，确保是 HH:MM 格式
+            const formattedTime = timeValue.includes(':') ? timeValue.split(':').slice(0, 2).join(':') : '09:00';
+            timeElement.value = formattedTime;
+            console.log(`✓ 设置 dailyReminderTime: ${formattedTime} (原始值: ${timeValue})`);
+        } else {
+            console.error('✗ 找不到元素: dailyReminderTime');
+        }
+        
+        console.log('渲染设置完成');
+    }
+    
+    // 加载通知列表
+    async loadNotifications() {
+        this.showLoading();
+        try {
+            const filterType = document.getElementById('filterType').value;
+            const unreadOnly = document.getElementById('unreadOnly').checked;
+            
+            let url = `/api/notifications?page=${this.currentPage}&limit=10`;
+            if (filterType !== 'all') url += `&type=${filterType}`;
+            if (unreadOnly) url += `&unread=true`;
+            
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                this.notifications = data.notifications;
+                this.renderNotifications();
+                this.renderPagination(data.pagination);
+            } else {
+                this.showError('加载通知失败');
+            }
+        } catch (error) {
+            console.error('加载通知失败:', error);
+            this.showError('网络错误，请稍后重试');
+        } finally {
+            this.hideLoading();
+        }
+    }
+    
+    // 渲染通知列表
+    renderNotifications() {
+        if (this.notifications.length === 0) {
+            this.showEmptyState();
+        } else {
+            this.showNotificationsList();
+            this.renderNotificationsList();
+        }
+    }
+    
+    // 渲染通知列表项
+    renderNotificationsList() {
+        const list = document.getElementById('notificationsList');
+        list.innerHTML = '';
+        
+        this.notifications.forEach(notification => {
+            const item = this.createNotificationItem(notification);
+            list.appendChild(item);
+        });
+    }
+    
+    // 创建通知项
+    createNotificationItem(notification) {
+        const li = document.createElement('li');
+        li.className = `px-6 py-4 ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`;
+        
+        const typeIcon = this.getNotificationIcon(notification.type);
+        
+        li.innerHTML = `
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    ${typeIcon}
+                </div>
+                <div class="ml-4 flex-1">
+                    <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">${notification.title}</p>
+                        <div class="flex items-center space-x-2">
+                            ${!notification.read ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">未读</span>' : ''}
+                            <button onclick="notificationsApp.deleteNotification(${notification.id})" class="text-gray-400 hover:text-red-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${notification.message}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">${this.formatDateTime(notification.created_at)}</p>
+                </div>
+            </div>
+        `;
+        
+        // 添加点击事件标记已读
+        if (!notification.read) {
+            li.addEventListener('click', () => this.markAsRead(notification.id));
+            li.style.cursor = 'pointer';
+        }
+        
+        return li;
+    }
+    
+    // 获取通知图标
+    getNotificationIcon(type) {
+        const icons = {
+            urgent: '<div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div>',
+            upcoming: '<div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>',
+            success: '<div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>',
+            warning: '<div class="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div>',
+            info: '<div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>'
+        };
+        return icons[type] || icons.info;
+    }
+    
+    // 渲染分页
+    renderPagination(pagination) {
+        const container = document.getElementById('pagination');
+        if (pagination.pages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    显示第 ${(pagination.page - 1) * pagination.limit + 1} 到 ${Math.min(pagination.page * pagination.limit, pagination.total)} 条，共 ${pagination.total} 条
+                </div>
+                <div class="flex space-x-2">
+                    ${pagination.page > 1 ? `<button onclick="notificationsApp.changePage(${pagination.page - 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">上一页</button>` : ''}
+                    ${pagination.page < pagination.pages ? `<button onclick="notificationsApp.changePage(${pagination.page + 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">下一页</button>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    // 切换页面
+    changePage(page) {
+        this.currentPage = page;
+        this.loadNotifications();
+    }
+    
+    // 标记已读
+    async markAsRead(id) {
+        try {
+            const response = await fetch(`/api/notifications/${id}/read`, {
+                method: 'PUT'
+            });
+            if (response.ok) {
+                await this.loadNotifications();
+                await this.loadStats();
+            }
+        } catch (error) {
+            console.error('标记已读失败:', error);
+        }
+    }
+    
+    // 删除通知
+    async deleteNotification(id) {
+        if (!confirm('确定要删除这条通知吗？')) return;
+        
+        try {
+            const response = await fetch(`/api/notifications/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                await this.loadNotifications();
+                await this.loadStats();
+            }
+        } catch (error) {
+            console.error('删除通知失败:', error);
+        }
+    }
+    
+    // 标记全部已读
+    async markAllAsRead() {
+        try {
+            const response = await fetch('/api/notifications/read-all', {
+                method: 'PUT'
+            });
+            if (response.ok) {
+                await this.loadNotifications();
+                await this.loadStats();
+            }
+        } catch (error) {
+            console.error('标记全部已读失败:', error);
+        }
+    }
+    
+    // 清空全部通知
+    async clearAllNotifications() {
+        if (!confirm('确定要清空所有通知吗？此操作不可恢复。')) return;
+        
+        try {
+            const response = await fetch('/api/notifications/clear-all', {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                await this.loadNotifications();
+                await this.loadStats();
+            }
+        } catch (error) {
+            console.error('清空通知失败:', error);
+        }
+    }
+    
+    // 保存设置
+    async saveSettings() {
+        console.log('saveSettings 被调用');
+        
+        // 安全地获取表单元素的值
+        const getElementValue = (id, isCheckbox = false) => {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`找不到元素: ${id}`);
+                return isCheckbox ? false : '';
+            }
+            return isCheckbox ? element.checked : element.value;
+        };
+        
+        const settings = {
+            project_reminders: getElementValue('projectReminders', true),
+            progress_reminders: getElementValue('progressReminders', true),
+            study_goals: getElementValue('studyGoals', true),
+            weekly_reports: getElementValue('weeklyReports', true),
+            email_notifications: getElementValue('emailNotifications', true),
+            browser_notifications: getElementValue('browserNotifications', true),
+            daily_reminder_time: getElementValue('dailyReminderTime', false)
+        };
+        
+        console.log('准备保存的设置:', settings);
+        
+        try {
+            const response = await fetch('/api/notifications/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            console.log('保存设置响应状态:', response.status);
+            
+            if (response.ok) {
+                console.log('设置保存成功');
+                const result = await response.json();
+                console.log('服务器返回的设置:', result);
+                
+                // 更新本地设置对象
+                this.settings = result;
+                
+                this.showSuccess('设置已保存');
+                
+                // 重新渲染设置以确保UI同步
+                this.renderSettings();
+            } else {
+                console.error('保存设置失败，状态码:', response.status);
+                const errorText = await response.text();
+                console.error('错误详情:', errorText);
+                this.showError('保存设置失败');
+            }
+        } catch (error) {
+            console.error('保存设置失败:', error);
+            this.showError('网络错误，请稍后重试');
+        }
+    }
+    
+    // 绑定事件
+    bindEvents() {
+        // 过滤事件
+        document.getElementById('filterType').addEventListener('change', () => {
+            this.currentPage = 1;
+            this.loadNotifications();
+        });
+        
+        document.getElementById('unreadOnly').addEventListener('change', () => {
+            this.currentPage = 1;
+            this.loadNotifications();
+        });
+        
+        // 操作按钮事件
+        document.getElementById('markAllRead').addEventListener('click', () => this.markAllAsRead());
+        document.getElementById('clearAll').addEventListener('click', () => this.clearAllNotifications());
+        
+        // 设置表单事件 - 修复重定向问题
+        document.getElementById('settingsForm').addEventListener('submit', (e) => {
+            e.preventDefault(); // 阻止表单默认提交行为
+            this.saveSettings();
+        });
+    }
+    
+    // 显示状态控制
+    showLoading() {
+        document.getElementById('loadingState').style.display = 'flex';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('notificationsList').style.display = 'none';
+        document.getElementById('pagination').style.display = 'none';
+    }
+    
+    hideLoading() {
+        document.getElementById('loadingState').style.display = 'none';
+    }
+    
+    showEmptyState() {
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('notificationsList').style.display = 'none';
+        document.getElementById('pagination').style.display = 'none';
+    }
+    
+    showNotificationsList() {
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('notificationsList').style.display = 'block';
+    }
+    
+    // 工具方法
+    formatDateTime(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) { // 1分钟内
+            return '刚刚';
+        } else if (diff < 3600000) { // 1小时内
+            return `${Math.floor(diff / 60000)}分钟前`;
+        } else if (diff < 86400000) { // 1天内
+            return `${Math.floor(diff / 3600000)}小时前`;
+        } else if (diff < 604800000) { // 1周内
+            return `${Math.floor(diff / 86400000)}天前`;
+        } else {
+            return date.toLocaleDateString('zh-CN');
+        }
+    }
+    
+    // 通知方法
+    showSuccess(message) {
+        // 创建一个简单的成功提示，不会导致页面重定向
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 显示动画
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+    
+    showError(message) {
+        // 创建一个简单的错误提示，不会导致页面重定向
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // 显示动画
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+}
+
+// 初始化应用
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM加载完成，开始初始化通知应用...');
+    
+    // 确保所有必要的元素都存在
+    const requiredElements = [
+        'projectReminders', 'progressReminders', 'studyGoals', 
+        'weeklyReports', 'emailNotifications', 'browserNotifications', 
+        'dailyReminderTime', 'settingsForm'
+    ];
+    
+    const missingElements = requiredElements.filter(id => !document.getElementById(id));
+    if (missingElements.length > 0) {
+        console.error('缺少必要的DOM元素:', missingElements);
+        return;
+    }
+    
+    console.log('所有必要的DOM元素都存在，创建通知应用实例...');
+    window.notificationsApp = new NotificationsApp();
+});
+</script> 

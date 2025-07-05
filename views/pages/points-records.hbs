@@ -1,0 +1,82 @@
+{{!-- 积分明细页面 --}}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="container mx-auto px-4 py-8">
+    <!-- 页面标题 -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
+        ⭐ 积分明细
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300">
+        查看你的积分获取和使用记录
+      </p>
+    </div>
+
+    <!-- 积分统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2" id="totalPoints">0</div>
+        <div class="text-gray-600 dark:text-gray-300">总积分</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2" id="availablePoints">0</div>
+        <div class="text-gray-600 dark:text-gray-300">可用积分</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-red-600 dark:text-red-400 mb-2" id="usedPoints">0</div>
+        <div class="text-gray-600 dark:text-gray-300">已用积分</div>
+      </div>
+    </div>
+
+    <!-- 筛选器 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+          <input type="text" id="searchInput" placeholder="搜索记录..." autocomplete="off" 
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white">
+        </div>
+        <div class="flex gap-2">
+          <select id="typeFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white">
+            <option value="">全部类型</option>
+            <option value="earned">获得积分</option>
+            <option value="used">使用积分</option>
+            <option value="bonus">奖励积分</option>
+            <option value="expired">过期积分</option>
+          </select>
+          <button id="refreshBtn" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 记录列表 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h4 class="text-lg font-medium text-gray-900 dark:text-white">积分记录</h4>
+      </div>
+      <div id="recordsList" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- 动态加载记录 -->
+      </div>
+      
+      <!-- 分页 -->
+      <div id="pagination" class="hidden">
+        <!-- 分页控件 -->
+      </div>
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loadingState" class="text-center py-8 hidden">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+      <p class="mt-2 text-gray-600 dark:text-gray-300">加载中...</p>
+    </div>
+
+    <!-- 空状态 -->
+    <div id="emptyState" class="text-center py-8 hidden">
+      <div class="text-6xl mb-4">📊</div>
+      <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">暂无积分记录</h3>
+      <p class="text-gray-600 dark:text-gray-300">开始学习获得积分吧！</p>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/points-records.js"></script> 

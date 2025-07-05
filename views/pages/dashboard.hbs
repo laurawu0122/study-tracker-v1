@@ -1,0 +1,340 @@
+<style>
+    /* 强制筛选器对齐和间距 */
+    .filter-container {
+        gap: 2rem !important;
+    }
+    
+    /* 移动端筛选器间距优化 */
+    @media (max-width: 768px) {
+        .filter-container {
+            gap: 1rem !important;
+        }
+    }
+    
+    #dateFilter, #projectFilter, #timeRangeFilter {
+        height: 40px !important;
+        line-height: 1 !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+    }
+    
+    .filter-item {
+        flex: 1;
+        margin-right: 2rem;
+    }
+    
+    .filter-item:last-child {
+        margin-right: 0;
+    }
+    
+    /* 移动端表格优化 */
+    @media (max-width: 768px) {
+        .mobile-table {
+            font-size: 0.75rem;
+            min-width: 600px;
+            width: 100%;
+        }
+        
+        .mobile-table th,
+        .mobile-table td {
+            padding: 0.5rem 0.25rem;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        
+        .table-wrapper {
+            max-width: 100vw;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
+        }
+        
+        .table-wrapper::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f7fafc;
+            border-radius: 3px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+        
+        .data-table-section {
+            padding: 1rem;
+        }
+        
+        #dataTableSection {
+            margin: 0 -1rem;
+            border-radius: 0;
+        }
+        
+        #dataTableSection > div {
+            padding: 1rem;
+        }
+    }
+    
+    /* 移动端分页优化 */
+    @media (max-width: 640px) {
+        .mobile-pagination {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+    }
+    
+    /* 确保表格不会溢出 */
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Excel导入区域 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">📊 Excel在线导入</h3>
+            <a href="/excel_templates/学习项目记录示例.csv" download 
+               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm text-center sm:text-left">
+                📥 下载模板
+            </a>
+        </div>
+        
+        <!-- 文件上传区域 -->
+        <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 sm:p-6 text-center" id="uploadArea">
+            <div class="space-y-4">
+                <div class="text-3xl sm:text-4xl">📁</div>
+                <div>
+                    <p class="text-base sm:text-lg font-medium text-gray-900 dark:text-white">拖拽Excel文件到此处或点击上传</p>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">支持 .xlsx 和 .xls 格式</p>
+                </div>
+                <input type="file" id="excelFile" accept=".xlsx,.xls" class="hidden">
+                <button id="uploadBtn" class="bg-primary-600 hover:bg-primary-700 text-white px-4 sm:px-6 py-2 rounded-lg text-sm sm:text-base">
+                    选择文件
+                </button>
+            </div>
+        </div>
+        
+        <!-- 上传进度 -->
+        <div id="uploadProgress" class="mt-4 hidden">
+            <div class="flex items-center space-x-2">
+                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div id="progressBar" class="bg-primary-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="progressText" class="text-sm text-gray-600 dark:text-gray-400">0%</span>
+            </div>
+        </div>
+        
+        <!-- 上传结果 -->
+        <div id="uploadResult" class="mt-4 hidden">
+            <div id="uploadMessage" class="p-3 rounded-lg"></div>
+        </div>
+    </div>
+
+    <!-- 数据筛选区域 -->
+    <div id="filterSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">🔍 数据筛选</h3>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-2">
+                <span class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">共 <span id="totalRecords">0</span> 条记录</span>
+                <button id="clearFilters" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm">
+                    清除筛选
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-8 filter-container">
+            <!-- 日期筛选 -->
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">选择日期</label>
+                <input type="date" id="dateFilter" class="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            
+            <!-- 项目名称筛选 -->
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">项目名称</label>
+                <select id="projectFilter" class="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">全部项目</option>
+                </select>
+            </div>
+            
+            <!-- 时间范围筛选 -->
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">时间范围</label>
+                <select id="timeRangeFilter" class="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white">
+                    <option value="">全部时间</option>
+                    <option value="today">今天</option>
+                    <option value="week">本周</option>
+                    <option value="month">本月</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- 筛选状态显示 -->
+        <div id="filterStatus" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-blue-600 dark:text-blue-400">🔍</span>
+                    <span class="text-sm text-blue-700 dark:text-blue-300">当前筛选条件：</span>
+                    <span id="filterStatusText" class="text-sm font-medium text-blue-800 dark:text-blue-200"></span>
+                </div>
+                <button id="clearFilterStatus" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm">
+                    清除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据表格区域 -->
+    <div id="dataTableSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+        <div class="p-4 sm:p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 导入数据预览</h3>
+            
+            <!-- 表格 -->
+            <div class="table-wrapper overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 mobile-table">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">日期</th>
+                            <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">学习项目名称</th>
+                            <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">项目开始时间</th>
+                            <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">项目结束时间</th>
+                            <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">项目完成时间(分钟)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- 数据行会动态插入这里 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="flex items-center justify-between mt-4 mobile-pagination">
+                <div class="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
+                    显示第 <span id="startRecord">1</span> - <span id="endRecord">10</span> 条，
+                    共 <span id="filteredRecords">0</span> 条记录
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="prevPageBtn" disabled class="px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed text-sm">上一页</button>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                        第 <span id="currentPage">1</span> / <span id="totalPages">1</span> 页
+                    </span>
+                    <button id="nextPageBtn" disabled class="px-3 py-1 rounded border disabled:opacity-50 disabled:cursor-not-allowed text-sm">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <span class="text-2xl">📊</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">总项目数</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="filteredProjectCount">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <span class="text-2xl">⏱️</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">总学习时间</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="filteredTotalTime">0分钟</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                    <span class="text-2xl">📅</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均每日</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="filteredAvgDaily">0分钟</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+            <div class="flex items-center">
+                <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                    <span class="text-2xl">📈</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">筛选日期范围</p>
+                    <p class="text-lg font-bold text-gray-900 dark:text-white" id="filteredDateRange">全部时间</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 gap-6">
+        <!-- Chart Analysis Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">图表分析统计</h3>
+                <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <!-- 图表类型选择器 -->
+                    <select id="chartTypeSelector" class="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 hover:border-gray-400 dark:hover:border-gray-500">
+                        <option value="line">折线图 - 项目完成时间趋势</option>
+                        <option value="pie">饼图 - 项目时间占比</option>
+                    </select>
+                    
+                    <!-- 项目名称选择器（仅饼图时显示） -->
+                    <select id="projectChartSelector" class="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white transition-colors duration-200 hover:border-gray-400 dark:hover:border-gray-500 hidden">
+                        <option value="">全部项目</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 图表容器 -->
+            <div class="relative">
+                <div id="chartLoading" class="absolute inset-0 bg-white dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 flex items-center justify-center z-10 hidden">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                </div>
+                <canvas id="mainChart" class="w-full h-64 sm:h-80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 确保Chart.js在dashboard页面中可用 -->
+<script src="/assets/lib/chart.umd.min.js"></script>
+<script>
+    // 确保 Chart.js 加载完成后再初始化 dashboard
+    window.addEventListener('load', function() {
+        if (typeof Chart !== 'undefined') {
+            console.log('Chart.js 已加载，初始化 dashboard...');
+            // 延迟一点时间确保所有资源都加载完成
+            setTimeout(() => {
+                if (typeof initializeDashboard === 'function') {
+                    initializeDashboard();
+                }
+            }, 100);
+        } else {
+            console.error('Chart.js 加载失败');
+        }
+    });
+</script>
+<script src="/assets/js/dashboard.js"></script> 

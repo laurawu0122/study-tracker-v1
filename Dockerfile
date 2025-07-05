@@ -4,24 +4,30 @@ FROM node:18-alpine
 # 设置工作目录
 WORKDIR /app
 
+# 安装系统依赖
+RUN apk add --no-cache \
+    postgresql-client \
+    bash \
+    curl
+
 # 复制package.json和package-lock.json
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci --only=production
+RUN npm ci --only=production && npm cache clean --force
 
-# 复制应用程序代码
+# 复制应用代码
 COPY . .
 
-# 创建数据目录
-RUN mkdir -p data
-
 # 创建非root用户
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
 
-# 更改文件所有权
-RUN chown -R nodejs:nodejs /app
+# 创建必要的目录并设置权限
+RUN mkdir -p uploads/avatars && \
+    chown -R nodejs:nodejs /app
+
+# 切换到非root用户
 USER nodejs
 
 # 暴露端口
@@ -29,7 +35,7 @@ EXPOSE 3001
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+    CMD curl -f http://localhost:3001/ || exit 1
 
-# 启动应用程序
-CMD ["node", "server.js"] 
+# 启动应用
+CMD ["npm", "start"] 

@@ -1,0 +1,516 @@
+{{!-- 成就页面 --}}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+  <div class="container mx-auto px-4 py-8">
+    <!-- 页面标题 -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">
+        🏆 成就徽章
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300">
+        记录你的学习里程碑，展示你的成长轨迹
+      </p>
+    </div>
+
+    <!-- 成就统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2" id="totalAchievements">0</div>
+        <div class="text-gray-600 dark:text-gray-300">总成就数</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2" id="completedAchievements">0</div>
+        <div class="text-gray-600 dark:text-gray-300">已完成</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-2" id="completionRate">0%</div>
+        <div class="text-gray-600 dark:text-gray-300">完成率</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2" id="totalPoints">0</div>
+        <div class="text-gray-600 dark:text-gray-300">总积分</div>
+      </div>
+    </div>
+
+    <!-- 分类标签 -->
+    <div class="mb-8">
+      <div id="categoryTabs" class="flex flex-wrap gap-3 justify-center">
+        <button class="category-tab active px-6 py-3 rounded-full bg-blue-600 text-white font-medium transition-all duration-300" data-category="all">
+          🏆 全部
+        </button>
+      </div>
+    </div>
+
+    <!-- 成就展示区域 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="achievementsGrid">
+      <!-- 动态加载成就卡片 -->
+    </div>
+
+    <!-- 加载状态 -->
+    <div id="loadingState" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-300">加载成就中...</p>
+    </div>
+
+    <!-- 空状态 -->
+    <div id="emptyState" class="text-center py-12 hidden">
+      <div class="text-6xl mb-4">🏆</div>
+      <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">还没有获得成就</h3>
+      <p class="text-gray-600 dark:text-gray-300 mb-6">继续学习，获得你的第一个成就吧！</p>
+      <a href="/dashboard" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300">
+        <span>开始学习</span>
+        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 成就详情模态框 -->
+<div id="achievementModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 transform transition-all duration-300">
+    <div class="text-center">
+      <div id="modalIcon" class="text-6xl mb-4"></div>
+      <h3 id="modalTitle" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h3>
+      <p id="modalDescription" class="text-gray-600 dark:text-gray-300 mb-4"></p>
+      <div id="modalProgress" class="mb-4">
+        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
+          <span>进度</span>
+          <span id="progressText">0/0</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+      <div id="modalPoints" class="text-sm text-gray-600 dark:text-gray-300 mb-4"></div>
+      <button onclick="closeAchievementModal()" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
+        关闭
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 成就获得通知 -->
+<div id="achievementNotification" class="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50 max-w-sm">
+  <div class="flex items-center">
+    <div class="text-2xl mr-3">🎉</div>
+    <div>
+      <div class="font-semibold">恭喜获得新成就！</div>
+      <div id="notificationMessage" class="text-sm opacity-90"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 防止重复声明
+if (typeof window.AchievementPage === 'undefined') {
+  window.AchievementPage = class AchievementPage {
+    constructor() {
+      this.achievements = [];
+      this.categories = [];
+      this.currentCategory = 'all';
+      this.TRIGGER_TYPE_TO_TAB = {
+        total_duration: '学习时长',
+        session_duration: '学习时长',
+        focus_duration: '学习时长',
+        total_hours: '学习时长',
+        efficiency_rate: '学习效率',
+        efficiency_improvement: '学习效率',
+        efficiency: '学习效率',
+        daily_frequency: '学习频率',
+        weekly_frequency: '学习频率',
+        monthly_frequency: '学习频率',
+        consecutive_days: '学习频率',
+        project_completion: '项目完成',
+        project_rating_streak: '项目完成',
+        milestone: '特殊成就',
+        innovation: '特殊成就',
+        mastery: '特殊成就',
+        late_night_study: '特殊成就',
+        // 其它类型可继续补充
+      };
+      this.init();
+    }
+
+    async init() {
+      try {
+        console.log('成就页面初始化开始...');
+        await this.loadCategories();
+        await this.loadAllAchievements();
+        await this.loadUserAchievements();
+        this.setupEventListeners();
+        this.loadStats();
+        console.log('成就页面初始化完成');
+      } catch (error) {
+        console.error('成就页面初始化失败:', error);
+      }
+    }
+
+    async loadCategories() {
+      try {
+        console.log('加载成就分类...');
+        const response = await fetch('/api/achievements/categories', {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('成就分类响应:', result);
+        
+        if (result.success) {
+          this.categories = result.data;
+        } else {
+          console.error('加载成就分类失败:', result.error);
+        }
+      } catch (error) {
+        console.error('加载成就分类失败:', error);
+      }
+    }
+
+    async loadAllAchievements() {
+      try {
+        const response = await fetch('/api/achievements/all', {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        if (result.success) {
+          this.allAchievements = result.data;
+          this.renderCategoryTabs();
+        } else {
+          this.allAchievements = [];
+          this.renderCategoryTabs();
+        }
+      } catch (error) {
+        console.error('加载所有成就定义失败:', error);
+        this.allAchievements = [];
+        this.renderCategoryTabs();
+      }
+    }
+
+    async loadUserAchievements() {
+      try {
+        const response = await fetch('/api/achievements/user', {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        if (result.success) {
+          this.userAchievements = result.data;
+        } else {
+          this.userAchievements = [];
+        }
+        this.mergeAchievements();
+        this.renderAchievements();
+        this.hideLoading();
+      } catch (error) {
+        console.error('加载用户成就失败:', error);
+        this.userAchievements = [];
+        this.mergeAchievements();
+        this.renderAchievements();
+        this.hideLoading();
+      }
+    }
+
+    mergeAchievements() {
+      // 合并所有成就定义和用户成就，标记is_completed
+      // 修复：显示所有成就，不仅仅是用户已获得的
+      const userMap = {};
+      (this.userAchievements || []).forEach(u => { userMap[u.achievement_id] = u; });
+      
+      // 确保显示所有成就定义，包括用户未获得的
+      this.achievements = (this.allAchievements || []).map(a => {
+        const userAch = userMap[a.id];
+        return {
+          ...a,
+          is_completed: !!userAch,
+          current_progress: userAch ? userAch.current_progress : 0
+        };
+      });
+      
+      console.log('合并后的成就数量:', this.achievements.length);
+      console.log('用户成就数量:', this.userAchievements ? this.userAchievements.length : 0);
+    }
+
+    renderCategoryTabs() {
+      const container = document.getElementById('categoryTabs');
+      if (!container) return;
+      const allTab = container.querySelector('[data-category="all"]');
+      container.innerHTML = '';
+      if (allTab) container.appendChild(allTab);
+      // 统计方式分组
+      const tabMap = {};
+      (this.allAchievements || []).forEach(a => {
+        const tabName = this.TRIGGER_TYPE_TO_TAB[a.trigger_type] || '特殊成就';
+        if (!tabMap[tabName]) tabMap[tabName] = true;
+      });
+      Object.keys(tabMap).forEach(tabName => {
+        const tab = document.createElement('button');
+        tab.className = 'category-tab px-6 py-3 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-600';
+        tab.setAttribute('data-category', tabName);
+        tab.textContent = tabName;
+        container.appendChild(tab);
+      });
+    }
+
+    renderAchievements() {
+      const container = document.getElementById('achievementsGrid');
+      if (!container) return;
+      container.innerHTML = '';
+      let filteredAchievements = this.currentCategory === 'all'
+        ? this.achievements
+        : this.achievements.filter(a => {
+            const tabName = this.TRIGGER_TYPE_TO_TAB[a.trigger_type] || '特殊成就';
+            return tabName === this.currentCategory;
+          });
+      // 用名称+描述+图标三元组去重
+      const seenKeys = new Set();
+      filteredAchievements = filteredAchievements.filter(a => {
+        const key = `${a.achievement_name}||${a.achievement_description}||${a.achievement_icon}`;
+        if (seenKeys.has(key)) return false;
+        seenKeys.add(key);
+        return true;
+      });
+      if (filteredAchievements.length === 0) {
+        this.showEmptyState();
+        return;
+      }
+      filteredAchievements.forEach(achievement => {
+        const card = this.createAchievementCard(achievement);
+        container.appendChild(card);
+      });
+    }
+
+    createAchievementCard(achievement) {
+      const card = document.createElement('div');
+      // 已完成高亮，未完成灰色
+      const isCompleted = achievement.is_completed;
+      card.className = 'achievement-card bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center transform hover:scale-105 transition-all duration-300 cursor-pointer ' +
+        (isCompleted ? 'badge-animate-pop badge-glow' : 'opacity-50 grayscale');
+      card.setAttribute('data-achievement-id', achievement.id);
+
+      const progress = achievement.current_progress || 0;
+      // 从 criteria_config 中获取目标值，如果没有则默认为1
+      let targetValue = 1;
+      try {
+        if (achievement.criteria_config && achievement.criteria_config !== 'undefined' && achievement.criteria_config !== 'null') {
+          const conditions = typeof achievement.criteria_config === 'string' 
+            ? JSON.parse(achievement.criteria_config) 
+            : achievement.criteria_config;
+          
+          switch (achievement.trigger_type) {
+            case 'total_duration':
+              targetValue = conditions.target_minutes || 600;
+              break;
+            case 'consecutive_days':
+              targetValue = conditions.target_days || 7;
+              break;
+            case 'project_completion':
+              targetValue = conditions.target_count || 1;
+              break;
+            default:
+              targetValue = 1;
+          }
+        }
+      } catch (e) {
+        console.error('解析成就配置失败:', e);
+        targetValue = 1;
+      }
+      
+      const progressPercent = isCompleted ? 100 : Math.min((progress / targetValue) * 100, 100);
+
+      // 图标class：已完成加动画和高光，未完成加淡入
+      let iconHtml = '';
+      if (achievement.achievement_icon && achievement.achievement_icon.endsWith('.svg')) {
+        iconHtml = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-16 w-16 mb-4 badge-glow bg-transparent" />`;
+      } else {
+        iconHtml = `<i class="${achievement.achievement_icon} text-6xl mb-4 ${isCompleted ? 'badge-animate-pop badge-glow' : 'badge-fade-in opacity-50'}"></i>`;
+      }
+
+      card.innerHTML = `
+        ${iconHtml}
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">${achievement.achievement_name}</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">${achievement.achievement_description}</p>
+        <div class="progress-container mb-4">
+          <div class="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
+            <span>进度</span>
+            <span>${progress}/${targetValue}</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div class="progress-bar bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-gray-600 dark:text-gray-300">${achievement.category_name}</span>
+          <span class="text-yellow-600 dark:text-yellow-400 font-semibold">+${achievement.points} 积分</span>
+        </div>
+        ${isCompleted ? '<div class="mt-2 text-xs text-green-600 dark:text-green-400">✓ 已完成</div>' : ''}
+      `;
+
+      card.addEventListener('click', () => this.showAchievementModal(achievement));
+      return card;
+    }
+
+    showAchievementModal(achievement) {
+      const modal = document.getElementById('achievementModal');
+      const icon = document.getElementById('modalIcon');
+      const title = document.getElementById('modalTitle');
+      const description = document.getElementById('modalDescription');
+      const progressText = document.getElementById('progressText');
+      const progressBar = document.getElementById('progressBar');
+      const points = document.getElementById('modalPoints');
+
+      // 修复：弹窗icon支持SVG和icon class
+      if (achievement.achievement_icon && achievement.achievement_icon.endsWith('.svg')) {
+        icon.innerHTML = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-20 w-20 mb-2 badge-glow" />`;
+      } else {
+        icon.innerHTML = `<i class="${achievement.achievement_icon} text-6xl badge-glow"></i>`;
+      }
+      
+      title.textContent = achievement.achievement_name;
+      description.textContent = achievement.achievement_description;
+      
+      const progress = achievement.current_progress || 0;
+      // 从 criteria_config 中获取目标值，如果没有则默认为1
+      let targetValue = 1;
+      try {
+        if (achievement.criteria_config && achievement.criteria_config !== 'undefined' && achievement.criteria_config !== 'null') {
+          const conditions = typeof achievement.criteria_config === 'string' 
+            ? JSON.parse(achievement.criteria_config) 
+            : achievement.criteria_config;
+          
+          switch (achievement.trigger_type) {
+            case 'total_duration':
+              targetValue = conditions.target_minutes || 600;
+              break;
+            case 'consecutive_days':
+              targetValue = conditions.target_days || 7;
+              break;
+            case 'project_completion':
+              targetValue = conditions.target_count || 1;
+              break;
+            default:
+              targetValue = 1;
+          }
+        }
+      } catch (e) {
+        console.error('解析成就配置失败:', e);
+        targetValue = 1;
+      }
+      
+      const progressPercent = achievement.is_completed ? 100 : Math.min((progress / targetValue) * 100, 100);
+      
+      progressText.textContent = `${progress}/${targetValue}`;
+      progressBar.style.width = `${progressPercent}%`;
+      points.textContent = `获得积分: ${achievement.points}`;
+
+      modal.classList.remove('hidden');
+    }
+
+    updateStats(stats) {
+      const totalEl = document.getElementById('totalAchievements');
+      const completedEl = document.getElementById('completedAchievements');
+      const rateEl = document.getElementById('completionRate');
+      const pointsEl = document.getElementById('totalPoints');
+      
+      if (totalEl) totalEl.textContent = stats.total_achievements || 0;
+      if (completedEl) completedEl.textContent = stats.completed_achievements || 0;
+      if (rateEl) rateEl.textContent = `${stats.completion_rate || 0}%`;
+      if (pointsEl) pointsEl.textContent = stats.total_points || 0;
+    }
+
+    setupEventListeners() {
+      const container = document.getElementById('categoryTabs');
+      if (!container) {
+        console.error('找不到分类标签容器');
+        return;
+      }
+      // 分类标签点击事件
+      container.addEventListener('click', (e) => {
+        if (e.target.classList.contains('category-tab')) {
+          // 更新活动状态
+          document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.classList.remove('active', 'bg-blue-600', 'text-white');
+            tab.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+          });
+          e.target.classList.add('active', 'bg-blue-600', 'text-white');
+          e.target.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+          // 更新当前分类
+          this.currentCategory = e.target.getAttribute('data-category'); // 现在是 name
+          this.renderAchievements();
+        }
+      });
+    }
+
+    hideLoading() {
+      const loadingEl = document.getElementById('loadingState');
+      if (loadingEl) {
+        loadingEl.classList.add('hidden');
+      }
+    }
+
+    showEmptyState() {
+      const emptyEl = document.getElementById('emptyState');
+      if (emptyEl) {
+        emptyEl.classList.remove('hidden');
+      }
+    }
+
+    showNotification(message) {
+      const notification = document.getElementById('achievementNotification');
+      const messageEl = document.getElementById('notificationMessage');
+      
+      if (notification && messageEl) {
+        messageEl.textContent = message;
+        notification.classList.remove('translate-x-full');
+        
+        setTimeout(() => {
+          notification.classList.add('translate-x-full');
+        }, 3000);
+      }
+    }
+
+    loadStats() {
+      // 计算统计数据
+      const totalAchievements = this.achievements.length;
+      const completedAchievements = this.achievements.filter(a => a.is_completed).length;
+      const completionRate = totalAchievements > 0 ? Math.round((completedAchievements / totalAchievements) * 100) : 0;
+      const totalPoints = this.achievements
+        .filter(a => a.is_completed)
+        .reduce((sum, a) => sum + (a.points || 0), 0);
+
+      // 更新统计显示
+      this.updateStats({
+        total_achievements: totalAchievements,
+        completed_achievements: completedAchievements,
+        completion_rate: completionRate,
+        total_points: totalPoints
+      });
+    }
+  }
+}
+
+// 全局函数
+function closeAchievementModal() {
+  const modal = document.getElementById('achievementModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// 页面加载完成后初始化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM加载完成，初始化成就页面');
+    new window.AchievementPage();
+  });
+} else {
+  console.log('DOM已加载，直接初始化成就页面');
+  new window.AchievementPage();
+}
+</script> 

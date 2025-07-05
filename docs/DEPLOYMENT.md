@@ -348,7 +348,9 @@ kill -9 <PID>
 # 修复文件权限
 chmod 755 scripts/
 chmod 644 .env
-chown -R $USER:$USER data/
+
+# 检查PostgreSQL服务状态
+sudo systemctl status postgresql
 ```
 
 #### 3. 内存不足

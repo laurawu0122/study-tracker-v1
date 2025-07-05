@@ -1,0 +1,313 @@
+{{!-- 数据分析页面 --}}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900" id="analyticsContainer">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 页面标题 -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">数据分析</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">深入了解您的学习趋势和效率</p>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">总项目数</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalProjects">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">完成率</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="completionRate">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">总学习时长</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalHours">0h</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">平均效率</p>
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="avgEfficiency">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- 项目完成趋势图 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">项目完成趋势</h3>
+                <div class="h-64">
+                    <canvas id="completionTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 分类分布饼图 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">项目分类分布</h3>
+                <div class="h-64">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 详细分析 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 难度分布 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">难度等级分布</h3>
+                <div class="h-64">
+                    <canvas id="difficultyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 月度学习时长 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">月度学习时长</h3>
+                <div class="h-64">
+                    <canvas id="monthlyHoursChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 数据分析应用
+class AnalyticsApp {
+    constructor() {
+        this.stats = {};
+        this.charts = {};
+        
+        this.init();
+    }
+    
+    init() {
+        this.loadAnalytics();
+    }
+    
+    async loadAnalytics() {
+        try {
+            const response = await fetch('/api/analytics/overview');
+            if (response.ok) {
+                const data = await response.json();
+                this.stats = data.stats;
+                this.updateStats();
+                this.renderCharts(data);
+            } else {
+                this.showError('加载分析数据失败');
+            }
+        } catch (error) {
+            console.error('加载分析数据失败:', error);
+            this.showError('网络错误，请稍后重试');
+        }
+    }
+    
+    updateStats() {
+        document.getElementById('totalProjects').textContent = this.stats.totalProjects || 0;
+        document.getElementById('completionRate').textContent = (this.stats.completionRate || 0) + '%';
+        document.getElementById('totalHours').textContent = (this.stats.totalHours || 0) + 'h';
+        document.getElementById('avgEfficiency').textContent = (this.stats.avgEfficiency || 0) + '%';
+    }
+    
+    renderCharts(data) {
+        this.renderCompletionTrendChart(data.completionTrend);
+        this.renderCategoryChart(data.categoryDistribution);
+        this.renderDifficultyChart(data.difficultyDistribution);
+        this.renderMonthlyHoursChart(data.monthlyHours);
+    }
+    
+    renderCompletionTrendChart(data) {
+        const ctx = document.getElementById('completionTrendChart');
+        if (!ctx) return;
+        
+        this.charts.completionTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.month),
+                datasets: [{
+                    label: '完成项目数',
+                    data: data.map(d => d.completed),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCategoryChart(data) {
+        const ctx = document.getElementById('categoryChart');
+        if (!ctx) return;
+        
+        const colors = [
+            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+        ];
+        
+        this.charts.category = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.category),
+                datasets: [{
+                    data: data.map(d => d.count),
+                    backgroundColor: colors.slice(0, data.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    renderDifficultyChart(data) {
+        const ctx = document.getElementById('difficultyChart');
+        if (!ctx) return;
+        
+        const colors = [
+            '#10B981', '#34D399', '#F59E0B', '#F97316', '#EF4444'
+        ];
+        
+        this.charts.difficulty = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.difficulty),
+                datasets: [{
+                    label: '项目数量',
+                    data: data.map(d => d.count),
+                    backgroundColor: colors.slice(0, data.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderMonthlyHoursChart(data) {
+        const ctx = document.getElementById('monthlyHoursChart');
+        if (!ctx) return;
+        
+        this.charts.monthlyHours = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.month),
+                datasets: [{
+                    label: '学习时长 (小时)',
+                    data: data.map(d => d.hours),
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // 通知方法
+    showError(message) {
+        if (window.notificationSystem) {
+            window.notificationSystem.show(message, 'error');
+        } else {
+            alert(message);
+        }
+    }
+}
+
+// 初始化应用
+document.addEventListener('DOMContentLoaded', function() {
+    window.analyticsApp = new AnalyticsApp();
+});
+</script> 

@@ -1,0 +1,331 @@
+<!-- Desktop Sidebar -->
+<div class="hidden lg:flex lg:flex-shrink-0">
+    <div class="flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+        <!-- Logo -->
+        <div class="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white" id="sidebarSystemName">📚 学习追踪</h1>
+        </div>
+        
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="/dashboard" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'dashboard')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="dashboard">
+                <span class="mr-3">📊</span>
+                仪表板
+            </a>
+            
+            <a href="/projects" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'projects')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="projects">
+                <span class="mr-3">📁</span>
+                项目管理
+            </a>
+            
+            <a href="/sessions" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'sessions')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="sessions">
+                <span class="mr-3">⏱️</span>
+                学习记录
+            </a>
+            
+            <a href="/notifications" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'notifications')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="notifications">
+                <span class="mr-3">🔔</span>
+                通知中心
+                <span id="notificationBadge" class="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold hidden">
+                    <span id="notificationCount">0</span>
+                </span>
+            </a>
+            
+            <a href="/achievements" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'achievements')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="achievements">
+                <span class="mr-3">🏆</span>
+                成就徽章
+            </a>
+
+            <!-- 积分兑换相关链接 -->
+            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <a href="/points-exchange" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'points-exchange')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="points-exchange">
+                    <span class="mr-3">🎁</span>
+                    积分兑换
+                </a>
+                
+                <a href="/exchange-records" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'exchange-records')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="exchange-records">
+                    <span class="mr-3">📋</span>
+                    兑换记录
+                </a>
+                
+                <a href="/points-records" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'points-records')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="points-records">
+                    <span class="mr-3">⭐</span>
+                    积分明细
+                </a>
+            </div>
+            
+            {{#if (eq user.role 'admin')}}
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h3 class="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  管理功能
+                </h3>
+                <a href="/admin" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'admin')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="admin">
+                    <span class="mr-3">⚙️</span>
+                    系统管理
+                </a>
+                <a href="/admin/points-exchange" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'admin-points-exchange')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="admin-points-exchange">
+                    <span class="mr-3">🎁</span>
+                    积分兑换管理
+                </a>
+                <a href="/admin/exchange-approval" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'admin-exchange-approval')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="admin-exchange-approval">
+                    <span class="mr-3">📋</span>
+                    兑换审核
+                </a>
+            </div>
+            {{/if}}
+        </nav>
+        
+        <!-- User Menu -->
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center text-white font-medium border-2 border-gray-300 dark:border-gray-600 overflow-hidden sidebar-avatar">
+                    {{#if user.avatar}}
+                        <img src="/uploads/avatars/{{user.avatar}}" alt="用户头像" class="w-full h-full object-cover">
+                    {{else}}
+                        {{user.username.[0]}}
+                    {{/if}}
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{user.username}}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{user.email}}</p>
+                </div>
+                <button onclick="logout()" class="ml-2 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 group" title="退出登录">
+                    <svg class="w-6 h-6 transition-colors duration-200 group-hover:text-red-600 dark:group-hover:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="mobileSidebarOverlay" class="fixed inset-0 z-40 lg:hidden" style="display: none;">
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-75"></div>
+</div>
+
+<!-- Mobile Sidebar -->
+<div id="mobileSidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 transform transition-transform duration-300 ease-in-out lg:hidden -translate-x-full">
+    <div class="flex flex-col h-full">
+        <div class="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-700">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white" id="mobileSidebarSystemName">📚 学习追踪</h1>
+            <button id="closeMobileMenu" class="ml-auto p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <span>✕</span>
+            </button>
+        </div>
+        
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            <a href="/dashboard" class="mobile-nav-link nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'dashboard')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}" data-content="dashboard">
+                <span class="mr-3">📊</span>
+                仪表板
+            </a>
+            
+            <a href="/projects" class="mobile-nav-link nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'projects')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}" data-content="projects">
+                <span class="mr-3">📁</span>
+                项目管理
+            </a>
+            
+            <a href="/sessions" class="mobile-nav-link nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'sessions')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}" data-content="sessions">
+                <span class="mr-3">⏱️</span>
+                学习记录
+            </a>
+            
+            <a href="/notifications" class="mobile-nav-link nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'notifications')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}" data-content="notifications">
+                <span class="mr-3">🔔</span>
+                通知中心
+                <span id="mobileNotificationBadge" class="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold hidden">
+                    <span id="mobileNotificationCount">0</span>
+                </span>
+            </a>
+            
+            <a href="/achievements" 
+                class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'achievements')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                data-content="achievements">
+                <span class="mr-3">🏆</span>
+                成就徽章
+            </a>
+
+            <!-- 积分兑换相关链接 -->
+            <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                <a href="/points-exchange" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'points-exchange')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="points-exchange">
+                    <span class="mr-3">🎁</span>
+                    积分兑换
+                </a>
+                
+                <a href="/exchange-records" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'exchange-records')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="exchange-records">
+                    <span class="mr-3">📋</span>
+                    兑换记录
+                </a>
+                
+                <a href="/points-records" 
+                    class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 {{#if (eq currentPage 'points-records')}}bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300{{else}}text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700{{/if}}"
+                    data-content="points-records">
+                    <span class="mr-3">⭐</span>
+                    积分明细
+                </a>
+            </div>
+        </nav>
+        
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center text-white font-medium border-2 border-gray-300 dark:border-gray-600 overflow-hidden mobile-sidebar-avatar">
+                    {{#if user.avatar}}
+                        <img src="/uploads/avatars/{{user.avatar}}" alt="用户头像" class="w-full h-full object-cover">
+                    {{else}}
+                        {{user.username.[0]}}
+                    {{/if}}
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">{{user.username}}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{user.email}}</p>
+                </div>
+                <button onclick="logout()" class="ml-2 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 group" title="退出登录">
+                    <svg class="w-6 h-6 transition-colors duration-200 group-hover:text-red-600 dark:group-hover:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 移动端菜单控制
+function openMobileMenu() {
+    document.getElementById('mobileSidebarOverlay').style.display = 'block';
+    document.getElementById('mobileSidebar').classList.remove('-translate-x-full');
+}
+
+function closeMobileMenu() {
+    document.getElementById('mobileSidebarOverlay').style.display = 'none';
+    document.getElementById('mobileSidebar').classList.add('-translate-x-full');
+}
+
+// 导航链接点击处理
+function handleNavClick(e) {
+    e.preventDefault();
+    const link = e.currentTarget;
+    const contentType = link.getAttribute('data-content');
+    
+    // 更新URL但不刷新页面
+    const href = link.getAttribute('href');
+    window.history.pushState({contentType}, '', href);
+    
+    // 显示对应内容
+    if (typeof showContent === 'function') {
+        showContent(contentType);
+    }
+    
+    // 更新导航链接的激活状态
+    updateNavActiveState(contentType);
+    
+    // 移动端关闭菜单
+    if (window.innerWidth < 1024) {
+        closeMobileMenu();
+    }
+}
+
+// 更新导航激活状态
+function updateNavActiveState(activeContent) {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        const contentType = link.getAttribute('data-content');
+        if (contentType === activeContent) {
+            link.classList.add('bg-primary-100', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+            link.classList.remove('text-gray-600', 'hover:bg-gray-100', 'dark:text-gray-400', 'dark:hover:bg-gray-700');
+        } else {
+            link.classList.remove('bg-primary-100', 'text-primary-700', 'dark:bg-primary-900', 'dark:text-primary-300');
+            link.classList.add('text-gray-600', 'hover:bg-gray-100', 'dark:text-gray-400', 'dark:hover:bg-gray-700');
+        }
+    });
+}
+
+// 退出登录函数
+function logout() {
+    if (confirm('确定要退出登录吗？')) {
+        fetch('/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+        })
+        .then(response => {
+            if (response.ok) {
+                // 清除本地存储
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // 重定向到登录页面
+                window.location.href = '/login';
+            } else {
+                console.error('退出登录失败');
+                alert('退出登录失败，请重试');
+            }
+        })
+        .catch(error => {
+            console.error('退出登录错误:', error);
+            alert('退出登录失败，请重试');
+        });
+    }
+}
+
+// 事件监听器
+document.addEventListener('DOMContentLoaded', function() {
+    // 移动端菜单按钮
+    const mobileMenuButton = document.getElementById('mobileMenuButton');
+    if (mobileMenuButton) {
+        mobileMenuButton.addEventListener('click', openMobileMenu);
+    }
+    
+    // 关闭移动端菜单
+    const closeMobileMenuButton = document.getElementById('closeMobileMenu');
+    if (closeMobileMenuButton) {
+        closeMobileMenuButton.addEventListener('click', closeMobileMenu);
+    }
+    
+    // 移动端菜单遮罩点击关闭
+    const mobileSidebarOverlay = document.getElementById('mobileSidebarOverlay');
+    if (mobileSidebarOverlay) {
+        mobileSidebarOverlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // 导航链接点击事件
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', handleNavClick);
+    });
+    
+    // 移动端导航链接点击事件
+    const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+    mobileNavLinks.forEach(link => {
+        link.addEventListener('click', handleNavClick);
+    });
+});
+</script> 

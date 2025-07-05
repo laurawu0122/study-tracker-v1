@@ -1,0 +1,175 @@
+<!-- 用户管理内容 -->
+<div class="space-y-6">
+  <!-- 页面标题 -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">👥 用户管理</h3>
+    <div class="mt-4 sm:mt-0">
+      <button id="addUserBtn" class="inline-flex items-center px-4 py-2 bg-white border-2 border-blue-600 hover:bg-blue-50 text-blue-600 hover:text-blue-700 font-bold rounded-lg text-sm transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        添加用户
+      </button>
+    </div>
+  </div>
+
+  <!-- 搜索和筛选 -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1">
+        <input type="text" id="userSearch" placeholder="搜索用户名或邮箱..." 
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               autocomplete="off">
+      </div>
+      <div class="flex gap-2">
+        <select id="roleFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-black bg-white dark:bg-gray-800">
+          <option value="">所有角色</option>
+          <option value="admin">管理员</option>
+          <option value="user">普通用户</option>
+        </select>
+        <select id="statusFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black dark:text-black bg-white dark:bg-gray-800">
+          <option value="">所有状态</option>
+          <option value="active">活跃</option>
+          <option value="inactive">非活跃</option>
+        </select>
+        <button id="searchBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200 flex items-center gap-2" onclick="handleSearchClick()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          查询
+        </button>
+        <button id="resetBtn" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md font-medium transition-colors duration-200 flex items-center gap-2" onclick="handleResetClick()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          重置
+        </button>
+        <button id="refreshUsersBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors duration-200 flex items-center gap-2" onclick="handleRefreshUsersClick()" title="刷新用户列表，获取最新登录信息">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          刷新
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 用户列表 -->
+  <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用户</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">角色</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">状态</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">注册时间</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">最后登录</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <!-- 用户数据将通过JavaScript动态加载 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 分页 -->
+  <div id="pagination" class="mt-4">
+    <!-- 分页信息将通过JavaScript动态加载 -->
+  </div>
+</div>
+
+<!-- 现代化添加用户模态框（大众dashboard风格） -->
+<div id="userModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden">
+  <div class="relative w-full max-w-md mx-2 sm:mx-auto">
+    <!-- 弹窗主体 -->
+    <div id="modalContent" class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0">
+      <!-- 头部 -->
+      <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+          </div>
+          <h3 id="userModalTitle" class="text-lg font-bold text-gray-900 dark:text-white">添加新用户</h3>
+        </div>
+        <button id="closeUserModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
+          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <!-- 内容区 -->
+      <form id="userForm" class="px-6 py-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">用户名</label>
+          <input type="text" id="username" name="username" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="请输入用户名" autocomplete="username">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">邮箱地址</label>
+          <input type="email" id="email" name="email" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="请输入邮箱地址" autocomplete="email">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">密码</label>
+          <input type="password" id="password" name="password" autocomplete="new-password" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="请输入密码">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">用户角色</label>
+          <select id="role" name="role" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <option value="user">普通用户</option>
+            <option value="admin">管理员</option>
+          </select>
+        </div>
+        
+        <!-- 积分管理（仅管理员可见） -->
+        <div id="pointsManagementSection" class="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+              <span class="text-yellow-600 dark:text-yellow-400 text-sm">⭐</span>
+            </div>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">积分管理</h4>
+            <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full">管理员专用</span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">当前可用积分</label>
+              <div id="currentPoints" class="text-lg font-bold text-yellow-600 dark:text-yellow-400">0</div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">积分调整</label>
+              <input type="number" id="pointsAdjustment" name="pointsAdjustment" 
+                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" 
+                     placeholder="输入调整数量" min="-999999" max="999999">
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">正数增加，负数减少</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">调整后积分</label>
+              <div id="adjustedPoints" class="text-lg font-bold text-green-600 dark:text-green-400">0</div>
+            </div>
+          </div>
+          
+          <div class="mt-3">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">调整原因</label>
+            <input type="text" id="pointsReason" name="pointsReason" 
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" 
+                   placeholder="请输入积分调整原因（必填）">
+          </div>
+        </div>
+        <!-- 按钮区 -->
+        <div class="flex flex-col-reverse sm:flex-row gap-4 pt-2">
+          <button type="button" id="cancelUserBtn" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">取消</button>
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            创建用户
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div> 
