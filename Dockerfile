@@ -4,8 +4,9 @@ FROM node:18-alpine
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖
-RUN apk add --no-cache \
+# 安装系统依赖（使用国内镜像源）
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache \
     postgresql-client \
     bash \
     curl
