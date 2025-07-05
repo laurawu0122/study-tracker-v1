@@ -25,11 +25,11 @@ services:
     ports:
       - "6379:6379"
 
-  # 应用服务（使用简化Dockerfile）
+  # 应用服务
   app:
     build:
       context: .
-      dockerfile: Dockerfile.simple
+      dockerfile: Dockerfile
     container_name: study-tracker-app
     restart: unless-stopped
     environment:

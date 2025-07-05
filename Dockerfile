@@ -16,6 +16,9 @@ COPY . .
 # 创建必要的目录
 RUN mkdir -p uploads/avatars logs
 
+# 设置脚本执行权限
+RUN chmod +x scripts/start-app.sh
+
 # 构建CSS文件
 RUN npm run build:css || echo "CSS构建失败，使用默认样式"
 
