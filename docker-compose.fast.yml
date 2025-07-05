@@ -1,0 +1,90 @@
+version: '2.4'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: study-tracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-study_tracker}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - study-tracker-network
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: study-tracker-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - study-tracker-network
+
+  # 应用服务（使用预构建镜像）
+  app:
+    image: laurawu0122/study-tracker:latest
+    container_name: study-tracker-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-3001}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-study_tracker}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-Admin123!}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+      SESSION_SECURE_COOKIES: ${SESSION_SECURE_COOKIES:-true}
+      SESSION_HTTP_ONLY: ${SESSION_HTTP_ONLY:-true}
+      SESSION_SAME_SITE: ${SESSION_SAME_SITE:-strict}
+      PASSWORD_MIN_LENGTH: ${PASSWORD_MIN_LENGTH:-8}
+      PASSWORD_REQUIRE_UPPERCASE: ${PASSWORD_REQUIRE_UPPERCASE:-true}
+      PASSWORD_REQUIRE_LOWERCASE: ${PASSWORD_REQUIRE_LOWERCASE:-true}
+      PASSWORD_REQUIRE_NUMBERS: ${PASSWORD_REQUIRE_NUMBERS:-true}
+      PASSWORD_REQUIRE_SPECIAL_CHARS: ${PASSWORD_REQUIRE_SPECIAL_CHARS:-true}
+      MAX_LOGIN_ATTEMPTS: ${MAX_LOGIN_ATTEMPTS:-5}
+      LOCKOUT_DURATION_MINUTES: ${LOCKOUT_DURATION_MINUTES:-15}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-5242880}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-image/jpeg,image/png,image/gif,application/pdf}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_SECURITY_EVENTS: ${LOG_SECURITY_EVENTS:-true}
+    volumes:
+      - uploads_data:/app/uploads
+      - ./logs:/app/logs
+    ports:
+      - "${PORT:-3001}:3001"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - study-tracker-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  study-tracker-network:
+    driver: bridge 
