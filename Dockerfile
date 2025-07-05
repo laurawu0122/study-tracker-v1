@@ -17,7 +17,7 @@ COPY . .
 RUN mkdir -p uploads/avatars logs
 
 # 设置脚本执行权限
-RUN chmod +x scripts/start-app.sh
+RUN chmod +x scripts/start-app.sh scripts/start-simple.sh
 
 # 构建CSS文件
 RUN npm run build:css || echo "CSS构建失败，使用默认样式"
@@ -26,4 +26,5 @@ RUN npm run build:css || echo "CSS构建失败，使用默认样式"
 EXPOSE 3001
 
 # 启动应用
-CMD ["./scripts/start-app.sh"] 
+ENTRYPOINT []
+CMD ["./scripts/start-simple.sh"] 
