@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.3'
 
 services:
   # PostgreSQL 数据库
@@ -87,10 +87,8 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - postgres
+      - redis
     networks:
       - study-tracker-dev-network
     command: npm run dev
