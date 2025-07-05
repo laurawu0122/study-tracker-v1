@@ -27,7 +27,7 @@ services:
 
   # 应用服务（使用预构建镜像）
   app:
-    image: laurawu0122/study-tracker:latest
+    image: richarvin/study-tracker:latest
     container_name: study-tracker-app
     restart: unless-stopped
     environment:

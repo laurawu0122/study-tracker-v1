@@ -11,7 +11,7 @@ mkdir -p logs uploads/avatars
 
 # 3. 拉取镜像
 echo "📦 拉取预构建镜像..."
-docker pull laurawu0122/study-tracker:latest
+docker pull richarvin/study-tracker:latest
 
 # 4. 启动服务
 echo "🚀 启动服务..."
