@@ -75,56 +75,58 @@
 - 至少 2GB 可用内存
 - 至少 10GB 可用磁盘空间
 
-#### 快速部署
+#### 超简单部署
 
-1. **克隆项目**
+**方式一：一键部署（推荐）**
 ```bash
-git clone https://github.com/your-username/study-tracker.git
+curl -sSL https://raw.githubusercontent.com/laurawu0122/study-tracker/main/deploy.sh | bash
+```
+
+**方式二：手动部署**
+```bash
+# 1. 克隆项目
+git clone https://github.com/laurawu0122/study-tracker.git
 cd study-tracker
-```
 
-2. **配置环境变量**
-```bash
-# 复制环境变量模板
+# 2. 配置环境变量（可选）
 cp env.example .env
-
-# 编辑配置文件，设置数据库密码、JWT密钥等
 nano .env
+
+# 3. 一键部署
+./deploy.sh
 ```
 
-3. **一键部署**
+**方式三：开发环境**
 ```bash
-# 给脚本执行权限
-chmod +x scripts/docker-deploy.sh scripts/docker-manage.sh
-
-# 生产环境部署
-./scripts/docker-deploy.sh prod
-
-# 或开发环境部署
-./scripts/docker-deploy.sh dev
+# 使用开发配置
+cp docker-compose.dev.yml docker-compose.yml
+docker-compose up -d --build
 ```
 
 4. **访问应用**
 - 应用地址：http://localhost:3001
 - 默认管理员账号：admin
-- 默认密码：Admin123!（可在 .env 中修改）
+- 默认密码：Admin123!
 
 #### Docker 管理命令
 ```bash
 # 查看服务状态
-./scripts/docker-manage.sh status
+docker-compose ps
 
 # 查看应用日志
-./scripts/docker-manage.sh logs
-
-# 备份数据库
-./scripts/docker-manage.sh backup
+docker-compose logs -f app
 
 # 重启服务
-./scripts/docker-manage.sh restart
+docker-compose restart
 
 # 停止服务
-./scripts/docker-manage.sh stop
+docker-compose down
+
+# 备份数据库
+docker-compose exec postgres pg_dump -U postgres study_tracker > backup.sql
+
+# 清理资源
+docker system prune -f
 ```
 
 #### 使用 npm 脚本

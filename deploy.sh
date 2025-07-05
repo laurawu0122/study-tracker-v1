@@ -1,24 +1,31 @@
 #!/bin/bash
 
-# 超简单一键部署脚本
-echo "🚀 开始部署学习追踪系统..."
+echo "🚀 超简单部署学习追踪系统..."
 
-# 1. 下载 docker-compose.yml
-curl -o docker-compose.yml https://raw.githubusercontent.com/laurawu0122/study-tracker/main/docker-compose.fast.yml
+# 1. 克隆项目
+if [ ! -d "study-tracker" ]; then
+    git clone https://github.com/laurawu0122/study-tracker.git
+fi
+cd study-tracker
 
-# 2. 下载环境变量模板
-curl -o .env https://raw.githubusercontent.com/laurawu0122/study-tracker/main/env.example
+# 2. 使用超简单配置
+cp docker-compose.ultra-simple.yml docker-compose.yml
 
-# 3. 创建必要目录
+# 3. 创建目录
 mkdir -p logs uploads/avatars
 
-# 4. 构建应用镜像（如果预构建镜像不存在）
-echo "🔨 构建应用镜像..."
-docker build -t laurawu0122/study-tracker:latest .
+# 4. 启动服务（使用简化Dockerfile）
+echo "🔨 构建并启动服务..."
+docker-compose up -d --build
 
-# 5. 启动服务
-echo "🚀 启动服务..."
-docker-compose up -d
+# 5. 等待服务就绪
+echo "⏳ 等待服务启动..."
+sleep 30
+
+# 6. 初始化数据库
+echo "🗄️ 初始化数据库..."
+docker-compose exec -T app npm run db:migrate 2>/dev/null || echo "迁移跳过"
+docker-compose exec -T app npm run db:seed 2>/dev/null || echo "种子跳过"
 
 echo "✅ 部署完成！"
 echo "🌐 访问地址: http://localhost:3001"
