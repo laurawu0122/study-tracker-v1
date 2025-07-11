@@ -9,17 +9,26 @@ class ExchangeRecordsPage {
     this.currentPage = 1;
     this.totalPages = 1;
     this.totalRecords = 0;
+    this.autoRefreshInterval = null;
     
     this.init();
   }
 
   async init() {
-    await this.loadRecords();
+    await this.loadRecords(false); // 初始加载显示通知
     this.bindEvents();
+    
+    // 设置定时自动刷新（每30秒刷新一次）
+    this.autoRefreshInterval = setInterval(() => {
+      console.log('定时刷新兑换记录...');
+      this.loadRecords(true); // 静默刷新，不显示通知
+    }, 30000);
   }
 
-  async loadRecords() {
+  async loadRecords(silent = false) {
     this.showLoading(true);
+    this.showUpdatingIndicator(true);
+    
     try {
       const params = new URLSearchParams({
         page: this.currentPage,
@@ -28,7 +37,7 @@ class ExchangeRecordsPage {
       if (this.currentFilters.status) params.append('status', this.currentFilters.status);
       if (this.currentFilters.search) params.append('search', this.currentFilters.search);
 
-      const response = await fetch(`/api/points-exchange/exchange-records?${params}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/exchange-records?${params}` : `/api/points-exchange/exchange-records?${params}`, {
         headers: {
           'Authorization': `Bearer ${this.getToken()}`
         },
@@ -44,13 +53,18 @@ class ExchangeRecordsPage {
         this.renderPagination();
       } else {
         console.error('加载兑换记录失败:', data.error);
-        this.showNotification('加载兑换记录失败', 'error');
+        if (!silent) {
+          this.showNotification('加载兑换记录失败', 'error');
+        }
       }
     } catch (error) {
       console.error('加载兑换记录失败:', error);
-      this.showNotification('加载兑换记录失败', 'error');
+      if (!silent) {
+        this.showNotification('加载兑换记录失败', 'error');
+      }
     } finally {
       this.showLoading(false);
+      this.showUpdatingIndicator(false);
     }
   }
 
@@ -88,17 +102,58 @@ class ExchangeRecordsPage {
         <div class="text-sm text-gray-700 dark:text-gray-300">
           显示第 ${(this.currentPage - 1) * 10 + 1} 到 ${Math.min(this.currentPage * 10, this.totalRecords)} 条，共 ${this.totalRecords} 条
         </div>
-        <div class="flex space-x-2">
-          ${this.currentPage > 1 ? `<button onclick="exchangeRecordsPage.changePage(${this.currentPage - 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">上一页</button>` : ''}
-          ${this.currentPage < this.totalPages ? `<button onclick="exchangeRecordsPage.changePage(${this.currentPage + 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">下一页</button>` : ''}
+        <div class="flex items-center space-x-2">
+          <button id="prevBtn" 
+                  class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-page="${this.currentPage - 1}"
+                  ${this.currentPage <= 1 ? 'disabled' : ''}>
+            上一页
+          </button>
+          <span class="text-sm text-gray-700 dark:text-gray-300">
+            第 ${this.currentPage} 页，共 ${this.totalPages} 页
+          </span>
+          <button id="nextBtn" 
+                  class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-page="${this.currentPage + 1}"
+                  ${this.currentPage >= this.totalPages ? 'disabled' : ''}>
+            下一页
+          </button>
         </div>
       </div>
     `;
+    
+    // 绑定分页事件
+    this.bindPaginationEvents();
+  }
+
+  bindPaginationEvents() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(e.target.getAttribute('data-page'));
+        if (page && page >= 1 && page !== this.currentPage) {
+          this.changePage(page);
+        }
+      });
+    }
+    
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(e.target.getAttribute('data-page'));
+        if (page && page <= this.totalPages && page !== this.currentPage) {
+          this.changePage(page);
+        }
+      });
+    }
   }
 
   changePage(page) {
     this.currentPage = page;
-    this.loadRecords();
+    this.loadRecords(false); // 显示通知
   }
 
   createRecordItem(record) {
@@ -182,25 +237,36 @@ class ExchangeRecordsPage {
     }
   }
 
+  showUpdatingIndicator(show) {
+    const indicator = document.getElementById('autoRefreshIndicator');
+    if (!indicator) return;
+    
+    if (show) {
+      indicator.classList.remove('hidden');
+      indicator.querySelector('span').textContent = '更新中...';
+    } else {
+      indicator.querySelector('span').textContent = '自动更新中';
+    }
+  }
+
   bindEvents() {
     // 搜索功能
     document.getElementById('searchInput').addEventListener('input', (e) => {
       this.currentFilters.search = e.target.value;
       this.currentPage = 1; // 重置到第一页
-      this.loadRecords(); // 直接请求后端
+      this.loadRecords(false); // 直接请求后端，显示通知
     });
 
     // 状态筛选
     document.getElementById('statusFilter').addEventListener('change', (e) => {
       this.currentFilters.status = e.target.value;
       this.currentPage = 1; // 重置到第一页
-      this.loadRecords();
+      this.loadRecords(false); // 显示通知
     });
 
     // 刷新按钮
     document.getElementById('refreshBtn').addEventListener('click', () => {
-      this.currentPage = 1; // 重置到第一页
-      this.loadRecords();
+      this.refreshData();
     });
   }
 
@@ -216,6 +282,39 @@ class ExchangeRecordsPage {
   hideEmptyState() {
     document.getElementById('emptyState').classList.add('hidden');
   }
+
+  async refreshData() {
+    console.log('手动刷新兑换记录...');
+    this.currentPage = 1; // 重置到第一页
+    await this.loadRecords(false); // 显示错误通知
+    this.showNotification('数据已刷新', 'success');
+  }
+
+  // 清理定时器
+  destroy() {
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
+    }
+  }
+
+  showNotification(message, type = 'info') {
+    // 简单的通知显示
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 transition-all duration-300 ${
+      type === 'success' ? 'bg-green-500' : 
+      type === 'error' ? 'bg-red-500' : 
+      'bg-blue-500'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // 3秒后自动移除
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  }
 }
 
 // 页面加载完成后初始化
@@ -227,4 +326,11 @@ if (document.readyState === 'loading') {
   });
 } else {
   exchangeRecordsPage = new ExchangeRecordsPage();
-} 
+}
+
+// 页面卸载时清理定时器
+window.addEventListener('beforeunload', () => {
+  if (exchangeRecordsPage) {
+    exchangeRecordsPage.destroy();
+  }
+}); 

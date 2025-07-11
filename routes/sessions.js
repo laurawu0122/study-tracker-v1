@@ -516,7 +516,7 @@ router.post('/', authenticateToken, validateSession, async (req, res) => {
     // 触发成就检查
     try {
       const durationHours = duration / 60;
-      await achievementService.checkAndUpdateAchievements(req.user.id, 'total_duration', {
+      await achievementService.checkAndUpdateAchievements(req.user.id, 'total_hours', {
         session_id: sessionId,
         duration_minutes: duration,
         project_name: projectName
@@ -601,13 +601,37 @@ router.post('/', authenticateToken, validateSession, async (req, res) => {
 // Get project names for dropdown
 router.get('/projects/list', authenticateToken, async (req, res) => {
   try {
-    // 从项目表获取项目列表，而不是从学习记录表
-    const projects = await db('study_projects')
+    // 获取用户自己的项目
+    const userProjects = await db('study_projects')
       .where('user_id', req.user.id)
       .select('id', 'name')
       .orderBy('name');
 
-    res.json({ projects }); // 直接返回对象数组
+    // 如果是普通用户，还需要获取所有管理员创建的项目
+    let allProjects = [...userProjects];
+    
+    if (req.user.role !== 'admin') {
+      // 动态获取所有管理员ID
+      const adminIds = await db('users').where('role', 'admin').pluck('id');
+      const adminProjects = await db('study_projects')
+        .whereIn('user_id', adminIds)
+        .select('id', 'name')
+        .orderBy('name');
+      
+      // 合并项目列表，去重
+      const existingNames = new Set(userProjects.map(p => p.name));
+      adminProjects.forEach(project => {
+        if (!existingNames.has(project.name)) {
+          allProjects.push(project);
+          existingNames.add(project.name);
+        }
+      });
+      
+      // 重新排序
+      allProjects.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    res.json({ projects: allProjects });
 
   } catch (error) {
     console.error('获取项目列表错误:', error);

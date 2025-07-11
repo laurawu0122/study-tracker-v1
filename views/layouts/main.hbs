@@ -65,7 +65,24 @@
         .loading.show {
             display: block;
         }
+        @keyframes pulse {
+            0% {
+                transform: scale(0.2) rotate(360deg);
+            }
+            50% {
+                transform: scale(0.25) rotate(360deg);
+            }
+            100% {
+                transform: scale(0.2) rotate(360deg);
+            }
+        }
+        .exchange-animation {
+            animation: pulse 0.3s ease-in-out;
+        }
     </style>
+    <script>
+      window.isDemo = {{#if isDemo}}true{{else}}false{{/if}};
+    </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <!-- 加载状态 - 只在初始化时显示 -->
@@ -109,6 +126,10 @@
         <!-- 通知会动态插入这里 -->
     </div>
 
+    <!-- 统一事件管理器 -->
+    <script src="/assets/js/event-manager.js"></script>
+    <script src="/assets/js/admin-event-manager.js"></script>
+    
     <script src="/assets/js/main.js"></script>
     <script src="/assets/js/points-navigation.js"></script>
     <script src="/assets/js/admin-achievements.js"></script>
@@ -117,8 +138,8 @@
     <script src="/assets/js/avatar-updater.js"></script>
 
     <!-- 全局版权信息 -->
-    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-      <div class="w-full px-6">
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 w-full">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="text-gray-600 dark:text-gray-400 text-sm">
             © 2025 <a href="http://www.richarvin.com" target="_blank" class="text-black dark:text-white font-bold no-underline">知行笔记</a>. All rights reserved.

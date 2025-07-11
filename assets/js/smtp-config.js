@@ -1,5 +1,20 @@
 // SMTP邮箱配置相关函数
 
+// 步骤C：统一处理 demo 模式下的 API 路径前缀
+function getApiUrl(path) {
+  if (window.isDemo) {
+    if (path.startsWith('/api/')) {
+      return '/demo' + path;
+    }
+  }
+  return path;
+}
+
+// 防止重复加载
+if (window.emailProviders) {
+    console.log('SMTP配置已加载过，跳过重复加载');
+} else {
+
 // 邮箱服务提供商配置
 const emailProviders = {
   qq: {
@@ -108,7 +123,7 @@ function setupSmtpEventListeners() {
 // 加载SMTP配置
 async function loadSmtpConfig() {
   try {
-    const response = await fetch('/api/admin/smtp-config', {
+    const response = await fetch(getApiUrl('/api/admin/smtp-config'), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -180,7 +195,7 @@ async function saveSmtpConfig() {
       email_rate_limit: parseInt(document.getElementById('emailRateLimit')?.value) || 60
     };
     
-    const response = await fetch('/api/admin/smtp-config', {
+    const response = await fetch(getApiUrl('/api/admin/smtp-config'), {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -212,7 +227,7 @@ async function testSmtpConnection() {
       smtp_secure: document.getElementById('smtpSecure')?.value === 'true'
     };
     
-    const response = await fetch('/api/admin/smtp-config/test-connection', {
+    const response = await fetch(getApiUrl('/api/admin/smtp-config/test-connection'), {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -345,4 +360,8 @@ document.addEventListener('DOMContentLoaded', function() {
       showSmtpStatus('这是一个测试弹窗，用于验证弹窗功能是否正常工作', 'info');
     }, 1000);
   }
-}); 
+});
+
+// 导出到全局
+window.emailProviders = emailProviders;
+} 

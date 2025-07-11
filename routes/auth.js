@@ -130,7 +130,7 @@ router.post('/register', validateRegistration, async (req, res) => {
             logSecurityEvent('verification_code_failed', { email, code: verificationCode }, req);
             if (req.headers['hx-request']) {
                 return res.status(400).send(`
-                    <div class="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 text-sm">
+                    <div class="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 dark:bg-red-900/30 dark:border-red-600 dark:text-red-300 text-sm font-medium">
                         ${verificationResult.message}
                     </div>
                 `);
@@ -150,7 +150,7 @@ router.post('/register', validateRegistration, async (req, res) => {
             logSecurityEvent('registration_duplicate_user', { username, email }, req);
             if (req.headers['hx-request']) {
                 return res.status(409).send(`
-                    <div class="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200 text-sm">
+                    <div class="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 dark:bg-red-900/30 dark:border-red-600 dark:text-red-300 text-sm font-medium">
                         用户名或邮箱已存在
                     </div>
                 `);
@@ -239,8 +239,54 @@ router.post('/login', validateLogin, async (req, res) => {
         const { username, password } = req.body;
         const clientIP = req.ip || req.connection.remoteAddress;
 
-        // 检查IP是否被锁定
-        if (isIPLocked(clientIP)) {
+        // 管理员账号永不锁定 - 跳过所有锁定检查
+        if (username === 'admin') {
+            const user = await db('users')
+                .where('username', 'admin')
+                .first();
+            if (!user) {
+                return res.status(401).json({ error: '管理员账号不存在' });
+            }
+            const isValidPassword = await comparePassword(password, user.password_hash);
+            if (!isValidPassword) {
+                logSecurityEvent('login_failed_invalid_password', { username, ip: clientIP }, req);
+                return res.status(401).json({ error: '密码错误，请检查后重试' });
+            }
+            // 管理员登录成功，清除失败记录
+            clearLoginFailures(clientIP);
+            const userData = { id: user.id, username: user.username, role: user.role };
+            const tokens = generateTokenPair(userData);
+            await db('users')
+                .where('id', user.id)
+                .update({ last_login_at: new Date() });
+            logSecurityEvent('login_success', { userId: user.id, username: user.username, ip: clientIP }, req);
+            const cookieOptions = {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 15 * 60 * 1000 // 15分钟
+            };
+            res.cookie('token', tokens.accessToken, cookieOptions);
+            res.cookie('refreshToken', tokens.refreshToken, {
+                ...cookieOptions,
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7天
+            });
+            if (req.headers['hx-request']) {
+                return res.status(200).send(`
+                    <script>
+                        window.location.href = '/dashboard';
+                    </script>
+                `);
+            }
+            return res.json({ 
+                message: '登录成功',
+                user: userData,
+                tokens
+            });
+        }
+
+        // 非管理员账号才检查IP锁定
+        if (isIPLocked(clientIP, username)) {
             const remainingTime = getRemainingLockoutTime(clientIP);
             logSecurityEvent('login_attempt_blocked', { ip: clientIP, remainingTime }, req);
             return res.status(429).json({ 
@@ -257,13 +303,13 @@ router.post('/login', validateLogin, async (req, res) => {
             .first();
 
         if (!user) {
-            recordLoginFailure(clientIP);
+            recordLoginFailure(clientIP, username);
             logSecurityEvent('login_failed_invalid_user', { username, ip: clientIP }, req);
             return res.status(401).json({ error: '用户名不存在，请检查用户名或邮箱' });
         }
         
         if (!user.is_active) {
-            recordLoginFailure(clientIP);
+            recordLoginFailure(clientIP, username);
             logSecurityEvent('login_failed_inactive_user', { username, ip: clientIP }, req);
             return res.status(401).json({ error: '账户已被禁用，请联系管理员' });
         }
@@ -271,7 +317,7 @@ router.post('/login', validateLogin, async (req, res) => {
         // 验证密码
         const isValidPassword = await comparePassword(password, user.password_hash);
         if (!isValidPassword) {
-            recordLoginFailure(clientIP);
+            recordLoginFailure(clientIP, username);
             logSecurityEvent('login_failed_invalid_password', { username, ip: clientIP }, req);
             return res.status(401).json({ error: '密码错误，请检查后重试' });
         }
@@ -307,13 +353,8 @@ router.post('/login', validateLogin, async (req, res) => {
 
         if (req.headers['hx-request']) {
             return res.status(200).send(`
-                <div class="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-200 text-sm">
-                    登录成功！正在跳转...
-                </div>
                 <script>
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1500);
+                    window.location.href = '/dashboard';
                 </script>
             `);
         }
@@ -338,6 +379,13 @@ router.post('/refresh', async (req, res) => {
 
         if (!refreshToken) {
             return res.status(401).json({ error: '刷新令牌缺失' });
+        }
+
+        // 检查 refreshToken 是否在黑名单中
+        const { isTokenBlacklisted } = require('../middleware/auth');
+        if (isTokenBlacklisted(refreshToken)) {
+            logSecurityEvent('token_refresh_blocked_blacklisted', { ip: req.ip }, req);
+            return res.status(401).json({ error: '刷新令牌已被撤销' });
         }
 
         // 验证刷新token
@@ -387,6 +435,12 @@ router.post('/refresh', async (req, res) => {
 // 用户登出
 router.post('/logout', authenticateToken, logout, (req, res) => {
     try {
+        // 获取 refreshToken 并加入黑名单
+        const refreshToken = req.cookies?.refreshToken;
+        if (refreshToken) {
+            blacklistToken(refreshToken);
+        }
+
         // 清除cookie
         res.clearCookie('token');
         res.clearCookie('refreshToken');

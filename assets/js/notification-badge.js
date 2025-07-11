@@ -1,3 +1,8 @@
+// 防止重复加载
+if (window.NotificationBadgeManager) {
+    console.log('NotificationBadgeManager 已经加载过，跳过重复加载');
+} else {
+
 // 通知角标管理服务
 class NotificationBadgeManager {
   constructor() {
@@ -63,6 +68,11 @@ class NotificationBadgeManager {
   }
 
   async updateBadgeCount() {
+    if (window.isDemo) {
+      this.setBadgeCount(0);
+      return;
+    }
+
     try {
       const response = await fetch('/api/notifications/unread-count', {
         method: 'GET',
@@ -252,7 +262,7 @@ function initNotificationBadge() {
 // DOM加载完成时初始化
 document.addEventListener('DOMContentLoaded', () => {
   // 检查是否在通知页面，如果是则不显示角标
-  if (window.location.pathname.includes('/notifications')) {
+  if (window.location.pathname && window.location.pathname.includes('/notifications')) {
     console.log('当前在通知页面，跳过角标初始化');
     return;
   }
@@ -305,4 +315,6 @@ window.addEventListener('focus', () => {
     console.log('窗口获得焦点，更新通知角标');
     window.notificationBadgeManager.triggerUpdate();
   }
-}); 
+});
+
+} // <-- Close duplicate load guard 

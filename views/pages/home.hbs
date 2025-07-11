@@ -46,7 +46,7 @@
             <div class="bg-white rounded-xl p-6 shadow-lg">
                 <div class="text-2xl mb-4">📱</div>
                 <h3 class="text-xl font-semibold mb-2">响应式设计</h3>
-                <p class="text-gray-600">完美适配桌面和移动设备</p>
+                <p class="text-gray-600">完美适配桌面和移动平板设备</p>
             </div>
         </div>
     </div>
@@ -56,7 +56,7 @@
         <div class="max-w-7xl mx-auto px-4">
             <div class="text-center">
                 <p class="text-gray-600 text-sm">
-                    © 2025 知行笔记. All rights reserved.
+                    © 2025 <a href="http://www.richarvin.com" target="_blank" class="text-black font-bold no-underline">知行笔记</a>. All rights reserved.
                 </p>
             </div>
         </div>
@@ -230,7 +230,7 @@
 
     // 演示按钮
     document.getElementById('demoBtn').addEventListener('click', () => {
-        alert('演示功能：\n- 数据仪表板\n- 项目管理\n- 时间追踪\n- 趋势分析');
+        window.location.href = '/demo';
     });
 
     // 点击背景关闭弹窗
@@ -285,7 +285,7 @@
                 console.log('无法解析错误响应:', e);
             }
             
-            messageTarget.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${errorMessage}</div>`;
+            messageTarget.innerHTML = `<div class="text-red-700 dark:text-red-400 text-sm">${errorMessage}</div>`;
         }
     });
 
@@ -437,7 +437,7 @@
         const email = document.getElementById('forgotPasswordEmail').value;
         if (!email) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">请先输入邮箱地址</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">请先输入邮箱地址</div>';
             return;
         }
 
@@ -472,13 +472,13 @@
                 }, 1000);
             } else {
                 document.getElementById('forgotPasswordMessage').innerHTML = 
-                    `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${data.error || '发送失败，请稍后重试'}</div>`;
+                    `<div class="text-red-700 dark:text-red-400 text-sm">${data.error || '发送失败，请稍后重试'}</div>`;
                 this.disabled = false;
                 this.textContent = '发送验证码';
             }
         } catch (error) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">网络错误，请稍后重试</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">网络错误，请稍后重试</div>';
             this.disabled = false;
             this.textContent = '发送验证码';
         }
@@ -496,20 +496,20 @@
         // 前端验证
         if (!email || !verificationCode || !newPassword || !confirmNewPassword) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">请完整填写所有信息</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">请完整填写所有信息</div>';
             return;
         }
         
         if (newPassword.length < 8) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">密码长度至少为8位</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">密码长度至少为8位</div>';
             return;
         }
         
         // 验证密码一致性
         if (newPassword !== confirmNewPassword) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">两次输入的密码不一致</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">两次输入的密码不一致</div>';
             return;
         }
 
@@ -546,11 +546,11 @@
             } else {
                 const errorMessage = data.error || data.details?.map(d => d.msg).join(', ') || '重置失败，请稍后重试';
                 document.getElementById('forgotPasswordMessage').innerHTML = 
-                    `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">${errorMessage}</div>`;
+                    `<div class="text-red-700 dark:text-red-400 text-sm">${errorMessage}</div>`;
             }
         } catch (error) {
             document.getElementById('forgotPasswordMessage').innerHTML = 
-                '<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">网络错误，请稍后重试</div>';
+                '<div class="text-red-700 dark:text-red-400 text-sm">网络错误，请稍后重试</div>';
         }
     });
 
@@ -577,10 +577,23 @@
     }
 
     // 初始化密码切换功能
-    document.addEventListener('DOMContentLoaded', function() {
+    function initHomePage() {
+        // 防止重复初始化
+        if (window.homePageInitialized) {
+            return;
+        }
+        window.homePageInitialized = true;
+        
         initPasswordToggles();
         checkPasswordMatch();
-    });
+    }
+    
+    // 如果DOM已经加载完成，立即初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHomePage);
+    } else {
+        initHomePage();
+    }
     
 
     </script>

@@ -1,56 +1,89 @@
-version: '2.4'
+version: '3.8'
 
 services:
+  # 主应用服务
+  app:
+    build: .
+    container_name: study-tracker-app-prod
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_password}
+      - DB_NAME=${DB_NAME:-study_tracker_prod}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-Admin123!}
+      - TRUST_PROXY=true
+      - SESSION_SECURE_COOKIES=true
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3001}
+      - LOG_LEVEL=warn
+      - EMAIL_HOST=${EMAIL_HOST}
+      - EMAIL_PORT=${EMAIL_PORT}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - study-tracker-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # PostgreSQL 数据库
   postgres:
     image: postgres:15-alpine
-    container_name: study-tracker-db
+    container_name: study-tracker-postgres-prod
     restart: unless-stopped
     environment:
-      POSTGRES_DB: study_tracker
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${DB_NAME:-study_tracker_prod}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - study-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-study_tracker_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Redis 缓存
-  redis:
-    image: redis:7-alpine
-    container_name: study-tracker-redis
+  # Nginx 反向代理（可选）
+  nginx:
+    image: nginx:alpine
+    container_name: study-tracker-nginx
     restart: unless-stopped
-    volumes:
-      - redis_data:/data
     ports:
-      - "6379:6379"
-
-  # 应用服务（使用预构建镜像）
-  app:
-    image: richarvin/study-tracker:latest
-    container_name: study-tracker-app
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: study_tracker
-      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
-      JWT_REFRESH_SECRET: your-super-secret-refresh-jwt-key-change-this-in-production
-      DEFAULT_ADMIN_PASSWORD: Admin123!
+      - "80:80"
+      - "443:443"
     volumes:
-      - uploads_data:/app/uploads
-      - ./logs:/app/logs
-    ports:
-      - "3001:3001"
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - postgres
-      - redis
+      - app
+    networks:
+      - study-tracker-network
 
 volumes:
   postgres_data:
-  redis_data:
-  uploads_data: 
+    driver: local
+
+networks:
+  study-tracker-network:
+    driver: bridge 

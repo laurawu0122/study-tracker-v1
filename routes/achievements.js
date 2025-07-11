@@ -115,23 +115,7 @@ router.post('/check', authenticateToken, async (req, res) => {
   }
 });
 
-// 测试成就检查
-router.post('/test-check', authenticateToken, async (req, res) => {
-  try {
-    const { triggerType, data } = req.body;
-    
-    await achievementService.checkAndUpdateAchievements(req.user.id, triggerType, data);
-    
-    res.json({ 
-      message: '成就检查完成',
-      triggerType,
-      data 
-    });
-  } catch (error) {
-    console.error('测试成就检查失败:', error);
-    res.status(500).json({ error: '成就检查失败' });
-  }
-});
+
 
 // 获取所有成就定义（管理员用）
 router.get('/all', authenticateToken, async (req, res) => {

@@ -71,6 +71,7 @@ class AchievementService {
     
     switch (criteriaType) {
       case 'total_duration':
+      case 'total_hours':
         return await this.checkTotalDurationCondition(userId, config);
       case 'consecutive_days':
         return await this.checkConsecutiveDaysCondition(userId, config);
@@ -87,7 +88,14 @@ class AchievementService {
    * 检查总学习时长条件
    */
   async checkTotalDurationCondition(userId, config) {
-    const targetMinutes = config.target_minutes || 600; // 默认10小时
+    // 支持两种配置方式：hours（小时）和 target_minutes（分钟）
+    let targetMinutes;
+    if (config.hours) {
+      targetMinutes = config.hours * 60; // 将小时转换为分钟
+    } else {
+      targetMinutes = config.target_minutes || 600; // 默认10小时
+    }
+    
     const totalMinutes = await this.getUserTotalMinutes(userId);
     return totalMinutes >= targetMinutes;
   }
@@ -188,11 +196,15 @@ class AchievementService {
       .insert({
         user_id: userId,
         achievement_id: achievement.id,
-        progress_data: JSON.stringify(completionData)
+        is_completed: true,
+        completed_at: new Date(),
+        completion_data: JSON.stringify(completionData)
       })
       .onConflict(['user_id', 'achievement_id'])
       .merge({
-        progress_data: JSON.stringify(completionData)
+        is_completed: true,
+        completed_at: new Date(),
+        completion_data: JSON.stringify(completionData)
       });
 
     // 发送通知
@@ -208,6 +220,8 @@ class AchievementService {
     switch (criteriaType) {
       case 'total_duration':
         return config.target_minutes || 600;
+      case 'total_hours':
+        return (config.hours || 1) * 60; // 将小时转换为分钟
       case 'consecutive_days':
         return config.target_days || 7;
       case 'project_completion':
@@ -234,11 +248,13 @@ class AchievementService {
       .insert({
         user_id: userId,
         achievement_id: achievement.id,
-        progress_data: JSON.stringify(progressData)
+        current_progress: currentProgress,
+        completion_data: JSON.stringify(progressData)
       })
       .onConflict(['user_id', 'achievement_id'])
       .merge({
-        progress_data: JSON.stringify(progressData)
+        current_progress: currentProgress,
+        completion_data: JSON.stringify(progressData)
       });
   }
 
@@ -251,6 +267,7 @@ class AchievementService {
     
     switch (criteriaType) {
       case 'total_duration':
+      case 'total_hours':
         const totalMinutes = await this.getUserTotalMinutes(userId);
         return totalMinutes;
       case 'consecutive_days':
@@ -305,7 +322,7 @@ class AchievementService {
         'achievement_categories.name as category_name',
         'achievement_categories.icon as category_icon'
       )
-      .orderBy('user_achievements.earned_at', 'desc');
+      .orderBy('user_achievements.completed_at', 'desc');
   }
 
   /**
@@ -345,11 +362,12 @@ class AchievementService {
           'ua.id',
           'ua.user_id',
           'ua.achievement_id',
-          'ua.status',
-          'ua.earned_at',
+          'ua.is_completed',
+          'ua.current_progress',
+          'ua.completed_at',
           'ua.created_at',
           'ua.updated_at',
-          'ua.progress_data',
+          'ua.completion_data',
           'a.name as achievement_name',
           'a.description as achievement_description',
           'a.icon as achievement_icon',
@@ -373,7 +391,7 @@ class AchievementService {
       }
 
       const achievements = await query
-        .orderBy('ua.earned_at', 'desc')
+        .orderBy('ua.completed_at', 'desc')
         .orderBy('ua.created_at', 'desc')
         .limit(limit)
         .offset(offset);
@@ -470,6 +488,7 @@ class AchievementService {
         'achievement_categories.name as category_name',
         'achievement_categories.icon as category_icon'
       )
+      .where('achievements.is_active', true)
       .orderBy('achievement_categories.sort_order', 'asc')
       .orderBy('achievements.level', 'asc')
       .orderBy('achievements.sort_order', 'asc');

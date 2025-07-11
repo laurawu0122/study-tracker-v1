@@ -1,3 +1,223 @@
+// 防止重复加载
+if (window.mainJsLoaded) {
+    console.log('main.js 已经加载过，跳过重复加载');
+} else {
+    window.mainJsLoaded = true;
+
+// 检测是否在无痕模式下运行
+function isIncognitoMode() {
+    try {
+        // 尝试访问localStorage
+        const test = 'test';
+        localStorage.setItem(test, test);
+        localStorage.removeItem(test);
+        return false;
+    } catch (e) {
+        return true;
+    }
+}
+
+// 全局无痕模式检测
+window.isIncognitoMode = isIncognitoMode;
+
+// 全局Demo模式模态框函数
+window.showDemoModeModal = function(title = '演示模式', message = '这是演示系统，禁止提交任何数据。您可以浏览和体验所有功能，但无法保存或修改数据。') {
+    return new Promise((resolve) => {
+        // 检查是否已存在模态框，如果存在则先移除
+        const existingModal = document.getElementById('demoModeModal');
+        if (existingModal) {
+            document.body.removeChild(existingModal);
+        }
+        
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.id = 'demoModeModal';
+        
+        modal.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 transform transition-all duration-300 scale-95 opacity-0">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
+                        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">${title}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">${message}</p>
+                    <div class="flex justify-center">
+                        <button id="demoModeOkBtn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300 font-medium">
+                            我知道了
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // 添加动画效果
+        setTimeout(() => {
+            const modalContent = modal.querySelector('.rounded-lg');
+            if (modalContent) {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }
+        }, 10);
+
+        // 绑定事件
+        const okBtn = modal.querySelector('#demoModeOkBtn');
+        
+        const cleanup = () => {
+            const modalContent = modal.querySelector('.rounded-lg');
+            if (modalContent) {
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+            }
+            
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    document.body.removeChild(modal);
+                }
+            }, 300);
+        };
+
+        okBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(true);
+        });
+
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                cleanup();
+                resolve(true);
+            }
+        });
+
+        // ESC键关闭
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                cleanup();
+                resolve(true);
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+    });
+};
+
+// 全局Demo模式提交拦截函数
+window.interceptDemoModeSubmit = function(event, customMessage = null) {
+    if (window.isDemo) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const message = customMessage || '这是演示系统，禁止提交任何数据。您可以浏览和体验所有功能，但无法保存或修改数据。';
+        window.showDemoModeModal('演示模式', message);
+        
+        return false;
+    }
+    return true;
+};
+
+// 演示模式API拦截函数
+window.interceptDemoModeAPI = function(url, method, customMessage = null) {
+    if (!window.isDemo) return true;
+    
+    // 定义需要拦截的敏感操作
+    const sensitiveOperations = [
+        // 数据修改操作
+        { path: '/api/sessions', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/projects', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/achievements', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/points-exchange/exchanges', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/points-exchange/products', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/points-exchange/categories', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/points-exchange/points-rules', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/admin/users', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/admin/achievements', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/admin/achievement-categories', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/admin/config', methods: ['POST', 'PUT'] },
+        { path: '/api/admin/smtp-config', methods: ['POST', 'PUT'] },
+        { path: '/api/admin/data', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/upload', methods: ['POST'] },
+        { path: '/api/data/import', methods: ['POST'] },
+        { path: '/api/data/export', methods: ['POST'] },
+        { path: '/api/data/backup', methods: ['POST'] },
+        { path: '/api/data/clean', methods: ['POST', 'DELETE'] },
+        { path: '/api/data/reset', methods: ['POST', 'DELETE'] },
+        { path: '/api/notifications', methods: ['POST', 'PUT', 'DELETE'] },
+        { path: '/api/notifications/settings', methods: ['POST', 'PUT'] },
+        { path: '/api/notifications/clear-all', methods: ['DELETE'] },
+        { path: '/api/user/profile', methods: ['POST', 'PUT'] },
+        { path: '/api/user/avatar', methods: ['POST'] },
+        { path: '/api/auth/register', methods: ['POST'] },
+        { path: '/api/auth/login', methods: ['POST'] },
+        { path: '/api/auth/logout', methods: ['POST'] },
+        { path: '/api/auth/change-password', methods: ['POST'] },
+        { path: '/api/auth/reset-password', methods: ['POST'] },
+        { path: '/api/auth/verify-email', methods: ['POST'] }
+    ];
+
+    // 检查是否为敏感操作
+    const isSensitiveOperation = sensitiveOperations.some(operation => {
+        return url.includes(operation.path) && operation.methods.includes(method);
+    });
+
+    if (isSensitiveOperation) {
+        const message = customMessage || '这是演示系统，禁止执行此操作。您可以浏览和体验所有功能，但无法保存或修改数据。';
+        window.showDemoModeModal('演示模式', message);
+        return false;
+    }
+    
+    return true;
+};
+
+// 演示模式按钮拦截配置 - 保留用于特殊情况的按钮拦截
+window.demoModeBlockedButtons = [
+    // 保留一些特殊的按钮拦截，比如文件上传按钮
+    { selector: '[data-action="upload-achievement-icon"]', actionName: '上传图标' },
+    { selector: '[data-action="select-product-image"]', actionName: '选择图片' },
+    { selector: '[data-action="add-product-image"]', actionName: '选择图片' },
+    { selector: '[data-action="download-template"]', actionName: '下载模版' },
+    { selector: '[data-action="download-achievement-icon"]', actionName: '下载图标' }
+];
+
+// 全局演示模式按钮拦截函数 - 只拦截特殊按钮
+window.initDemoModeButtonInterception = function() {
+    if (!window.isDemo) return;
+    
+    // 移除旧的全局拦截器
+    document.removeEventListener('submit', window.globalDemoSubmitHandler);
+    document.removeEventListener('click', window.globalDemoClickHandler);
+    
+    // 创建新的精确拦截器 - 只拦截特殊按钮
+    window.globalDemoClickHandler = function(e) {
+        const target = e.target;
+        
+        // 排除演示模式弹窗的按钮
+        if (target.closest('#demoModeModal') || target.id === 'demoModeOkBtn') {
+            return;
+        }
+        
+        // 检查是否匹配被拦截的特殊按钮
+        for (const buttonConfig of window.demoModeBlockedButtons) {
+            if (target.matches(buttonConfig.selector) || target.closest(buttonConfig.selector)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const message = `这是演示系统，禁止执行"${buttonConfig.actionName}"操作。您可以浏览和体验所有功能，但无法保存或修改数据。`;
+                window.showDemoModeModal('演示模式', message);
+                
+                return false;
+            }
+        }
+    };
+    
+    // 绑定事件监听器
+    document.addEventListener('click', window.globalDemoClickHandler, true);
+    
+    console.log('✅ 演示模式特殊按钮拦截已初始化');
+};
+
 // 全局系统名称更新函数
 window.updateSystemNameDisplay = function(systemName) {
     console.log('全局更新系统名称显示:', systemName);
@@ -39,7 +259,8 @@ window.updateSystemNameDisplay = function(systemName) {
 // 页面加载时初始化系统名称
 window.initSystemName = async function() {
     try {
-        const response = await fetch('/api/admin/config', {
+        const url = window.isDemo ? '/demo/api/admin/config' : '/api/admin/config';
+        const response = await fetch(url, {
             credentials: 'include',
             headers: {
                 'Content-Type': 'application/json'
@@ -121,7 +342,11 @@ try {
     // 主题切换
     window.toggleDarkMode = function() {
         document.documentElement.classList.toggle('dark');
-        localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        try {
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        } catch (error) {
+            console.warn('无法保存主题设置到localStorage（可能是无痕模式）:', error);
+        }
         updateDarkModeIcons(document.documentElement.classList.contains('dark'));
     };
     function updateDarkModeIcons(isDark) {
@@ -132,9 +357,15 @@ try {
     }
     window.updateDarkModeIcons = updateDarkModeIcons;
     function initDarkMode() {
-        const savedMode = localStorage.getItem('darkMode');
-        if (savedMode === 'true') document.documentElement.classList.add('dark');
-        updateDarkModeIcons(document.documentElement.classList.contains('dark'));
+        try {
+            const savedMode = localStorage.getItem('darkMode');
+            if (savedMode === 'true') document.documentElement.classList.add('dark');
+            updateDarkModeIcons(document.documentElement.classList.contains('dark'));
+        } catch (error) {
+            console.warn('无法访问localStorage（可能是无痕模式）:', error);
+            // 在无痕模式下使用默认主题
+            updateDarkModeIcons(false);
+        }
     }
     // 个人设置弹窗功能
     function initProfileModal() {
@@ -199,7 +430,9 @@ try {
         try {
             changeAvatarBtn.disabled = true;
             changeAvatarBtn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>`;
-            const response = await fetch('/api/users/avatar', { method: 'POST', credentials: 'include', body: formData });
+            // 根据环境确定API前缀
+            const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+            const response = await fetch(`${apiPrefix}/users/avatar`, { method: 'POST', credentials: 'include', body: formData });
             const result = await response.json();
             if (response.ok && result.success) {
                 window.showNotification('头像上传成功', 'success');
@@ -301,7 +534,8 @@ try {
             modal.classList.add('hidden');
         }
     }
-    document.addEventListener('DOMContentLoaded', function() {
+    // 个人设置弹窗初始化函数
+    function initProfileModalHandlers() {
         setTimeout(function() {
             const loadingScreen = document.getElementById('loadingScreen');
             const mainContent = document.getElementById('mainContent');
@@ -336,7 +570,7 @@ try {
                 console.log('注销账户按钮事件已绑定');
             }
         }, 500);
-    });
+    }
     
     // 处理个人设置表单提交
     async function handleProfileSubmit(e) {
@@ -398,9 +632,7 @@ try {
             if (!finalToken) {
                 console.error('没有找到任何有效的token');
                 messageDiv.innerHTML = `
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                        <p class="text-sm">登录已过期，请重新登录</p>
-                    </div>
+                    <div class="text-red-700 dark:text-red-400 text-sm">登录已过期，请重新登录</div>
                 `;
                 setTimeout(() => {
                     window.location.href = '/login';
@@ -408,9 +640,11 @@ try {
                 return;
             }
             
-            console.log('发送个人设置更新请求到 /api/users/profile');
+            // 根据环境确定API前缀
+            const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+            console.log('发送个人设置更新请求到', `${apiPrefix}/users/profile`);
             
-            const response = await fetch('/api/users/profile', {
+            const response = await fetch(`${apiPrefix}/users/profile`, {
                 method: 'PUT',
                 credentials: 'include', // 确保发送cookie
                 headers: {
@@ -438,16 +672,21 @@ try {
                     el.textContent = data.username;
                 });
                 
-                // 3秒后关闭弹窗
-                setTimeout(hideProfileModal, 3000);
+                // demo环境：1.5秒后跳转到/demo
+                if (result.demo === true || window.isDemo) {
+                    setTimeout(() => {
+                        window.location.href = '/demo';
+                    }, 1500);
+                } else {
+                    // 3秒后关闭弹窗
+                    setTimeout(hideProfileModal, 3000);
+                }
             } else if (response.status === 401 || response.status === 403) {
                 // 认证失败，清除cookie并重定向
                 console.error('认证失败，状态码:', response.status);
                 console.error('错误详情:', result);
                 messageDiv.innerHTML = `
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                        <p class="text-sm">登录已过期，正在跳转到登录页面...</p>
-                    </div>
+                    <div class="text-red-700 dark:text-red-400 text-sm">登录已过期，正在跳转到登录页面...</div>
                 `;
                 document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                 document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -458,18 +697,14 @@ try {
                 console.error('保存失败，状态码:', response.status);
                 console.error('错误详情:', result);
                 messageDiv.innerHTML = `
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                        <p class="text-sm">${result.error || '保存失败，请重试'}</p>
-                    </div>
+                    <div class="text-red-700 dark:text-red-400 text-sm">${result.error || '保存失败，请重试'}</div>
                 `;
             }
         } catch (error) {
             console.error('保存设置失败:', error);
             console.error('错误堆栈:', error.stack);
             messageDiv.innerHTML = `
-                <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                    <p class="text-sm">网络错误，请重试</p>
-                </div>
+                <div class="text-red-700 dark:text-red-400 text-sm">网络错误，请重试</div>
             `;
         } finally {
             // 恢复按钮状态
@@ -483,7 +718,9 @@ try {
             console.log('=== 加载通知设置开始 ===');
             console.log('document.cookie:', document.cookie);
             
-            const response = await fetch('/api/users/notification-settings', {
+            // 根据环境确定API前缀
+            const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+            const response = await fetch(`${apiPrefix}/users/notification-settings`, {
                 method: 'GET',
                 credentials: 'include'
             });
@@ -586,14 +823,14 @@ try {
             
             if (!token) {
                 messageDiv.innerHTML = `
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                        <p class="text-sm">登录已过期，请重新登录</p>
-                    </div>
+                    <div class="text-red-700 dark:text-red-400 text-sm">登录已过期，请重新登录</div>
                 `;
                 return;
             }
             
-            const response = await fetch('/api/users/send-deactivation-code', {
+            // 根据环境确定API前缀
+            const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+            const response = await fetch(`${apiPrefix}/users/send-deactivation-code`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -694,14 +931,14 @@ try {
             
             if (!token) {
                 messageDiv.innerHTML = `
-                    <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-                        <p class="text-sm">登录已过期，请重新登录</p>
-                    </div>
+                    <div class="text-red-700 dark:text-red-400 text-sm">登录已过期，请重新登录</div>
                 `;
                 return;
             }
             
-            const response = await fetch('/api/users/deactivate-account', {
+            // 根据环境确定API前缀
+            const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+            const response = await fetch(`${apiPrefix}/users/deactivate-account`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -818,7 +1055,9 @@ try {
                     }
                 }, 1000);
                 try {
-                    const response = await fetch('/api/auth/send-verification', {
+                    // 根据环境确定API前缀
+                    const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+                    const response = await fetch(`${apiPrefix}/auth/send-verification`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -882,7 +1121,9 @@ try {
                 registerForm.querySelector('button[type="submit"]').disabled = true;
                 registerForm.querySelector('button[type="submit"]').textContent = '注册中...';
                 try {
-                    const response = await fetch('/api/auth/register', {
+                    // 根据环境确定API前缀
+                    const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+                    const response = await fetch(`${apiPrefix}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username, email, verificationCode: code, password, confirmPassword })
@@ -914,16 +1155,8 @@ try {
     // 暴露到全局作用域
     window.initRegisterModal = initRegisterModal;
     
-    // 在DOM加载完成后初始化
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            initRegisterModal();
-            // 初始化系统名称
-            if (window.initSystemName) {
-                window.initSystemName();
-            }
-        });
-    } else {
+    // 注册弹窗初始化函数
+    function initRegisterModalHandlers() {
         initRegisterModal();
         // 初始化系统名称
         if (window.initSystemName) {
@@ -1036,7 +1269,7 @@ class DynamicScriptManager {
           await this.initializeNotifications();
           break;
         default:
-          console.log(`未知页面类型: ${pageType}`);
+          console.log(`未识别的页面类型: ${pageType}`);
       }
 
       console.log(`页面初始化完成: ${pageType}`);
@@ -1263,7 +1496,14 @@ window.enhancedNavigate = async function(url, pageType) {
       // 主布局页面
       const currentMainContent = document.querySelector('#dynamicContent');
       if (currentMainContent) {
-        currentMainContent.innerHTML = html;
+        // 修复：只插入 mainContent/dynamicContent 内部内容，避免整个页面嵌套
+        const newMainContent = doc.querySelector('#mainContent') || doc.querySelector('#dynamicContent');
+        if (newMainContent) {
+          currentMainContent.innerHTML = newMainContent.innerHTML;
+        } else {
+          // 兼容旧逻辑
+          currentMainContent.innerHTML = html;
+        }
       } else {
         throw new Error('无法找到动态内容区域');
       }
@@ -1330,9 +1570,14 @@ function showErrorMessage(message) {
   }
 }
 
-// 页面加载完成后的初始化
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM加载完成，初始化动态脚本管理器');
+// 页面加载完成后的统一初始化
+function initializeApp() {
+  console.log('DOM加载完成，开始统一初始化');
+  
+  // 检测无痕模式
+  if (window.isIncognitoMode()) {
+    console.log('检测到无痕模式，使用兼容性设置');
+  }
   
   // 初始化系统名称
   if (window.initSystemName) {
@@ -1354,8 +1599,35 @@ document.addEventListener('DOMContentLoaded', function() {
     initRegisterModal();
   }
   
-  console.log('动态脚本管理器初始化完成');
-});
+  // 初始化个人设置弹窗处理器
+  if (typeof initProfileModalHandlers === 'function') {
+    initProfileModalHandlers();
+  }
+  
+  // 初始化注册弹窗处理器
+  if (typeof initRegisterModalHandlers === 'function') {
+    initRegisterModalHandlers();
+  }
+  
+  // 初始化演示模式按钮拦截
+  if (window.isDemo && typeof window.initDemoModeButtonInterception === 'function') {
+    window.initDemoModeButtonInterception();
+  }
+  
+  console.log('统一初始化完成');
+}
+
+// 确保只绑定一次DOMContentLoaded事件，防止在无痕模式下重复绑定
+if (!window.appInitialized) {
+  window.appInitialized = true;
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    // DOM已经加载完成，立即初始化
+    initializeApp();
+  }
+}
 
 // 导出到全局
 window.DynamicScriptManager = DynamicScriptManager;
@@ -1378,4 +1650,195 @@ window.logout = async function() {
     } catch (e) {
         window.showNotification && window.showNotification('退出登录失败', 'error');
     }
-}; 
+};
+
+// 全局token管理
+window.tokenManager = {
+    isRefreshing: false,
+    refreshPromise: null,
+    // 检查token是否即将过期（提前5分钟刷新）
+    isTokenExpiringSoon() {
+        const token = this.getToken();
+        if (!token) return true;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            const expiresIn = payload.exp - now;
+            return expiresIn < 300; // 5分钟 = 300秒
+        } catch (error) {
+            console.warn('Token解析失败（可能是无痕模式）:', error);
+            return true;
+        }
+    },
+    getToken() {
+        try {
+            return document.cookie
+                .split('; ')
+                .find(row => row.startsWith('token='))
+                ?.split('=')[1];
+        } catch (error) {
+            console.warn('无法读取Cookie（可能是无痕模式）:', error);
+            return null;
+        }
+    },
+    async refreshToken() {
+        if (this.isRefreshing) return this.refreshPromise;
+        this.isRefreshing = true;
+        this.refreshPromise = (async () => {
+            try {
+                // 避免递归：不要用fetch拦截器
+                // 根据环境确定API前缀
+                const apiPrefix = window.isDemo ? '/demo/api' : '/api';
+                const response = await window.originalFetch(`${apiPrefix}/auth/refresh`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 刷新token成功，cookie已自动更新
+                        this.isRefreshing = false;
+                        this.refreshPromise = null;
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.error('刷新token失败:', e);
+            }
+            this.isRefreshing = false;
+            this.refreshPromise = null;
+            return false;
+        })();
+        return this.refreshPromise;
+    },
+    async checkAndRefreshToken() {
+        // 禁用自动token刷新功能
+        return true;
+        
+        /*
+        // 在登录页面不进行token检查，避免无限循环
+        const currentPath = window.location.pathname;
+        const isLoginPage = currentPath === '/' || currentPath === '/login' || currentPath.includes('home');
+        
+        if (isLoginPage) {
+            return true;
+        }
+        
+        if (this.isTokenExpiringSoon()) {
+            return await this.refreshToken();
+        }
+        return true;
+        */
+    }
+};
+
+// 禁用自动token刷新 - 注释掉fetch拦截器
+/*
+// 拦截所有fetch请求，自动处理token过期
+if (!window.originalFetch) {
+    window.originalFetch = window.fetch;
+}
+window.fetch = async function(resource, config) {
+    // 排除刷新token自身的请求，避免递归
+    if (typeof resource === 'string' && resource.includes('/api/auth/refresh')) {
+        return window.originalFetch(resource, config);
+    }
+    
+    // 在登录页面不进行token检查，避免无限循环
+    const currentPath = window.location.pathname;
+    const isLoginPage = currentPath === '/' || currentPath === '/login' || currentPath.includes('home');
+    
+    if (!isLoginPage) {
+        try {
+            // 检查并刷新token
+            await window.tokenManager.checkAndRefreshToken();
+        } catch (error) {
+            console.warn('Token检查失败（可能是无痕模式）:', error);
+        }
+    }
+    
+    // 执行原始fetch请求
+    const response = await window.originalFetch(resource, config);
+    
+    // 如果请求返回401，尝试刷新token后重试一次
+    if (response.status === 401) {
+        try {
+            const refreshSuccess = await window.tokenManager.refreshToken();
+            if (refreshSuccess) {
+                return await window.originalFetch(resource, config);
+            } else {
+                // 刷新失败，跳转到登录页
+                document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                document.cookie = 'refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                window.location.href = '/';
+            }
+        } catch (error) {
+            console.warn('Token刷新失败（可能是无痕模式）:', error);
+            // 在无痕模式下，直接跳转到登录页
+            window.location.href = '/';
+        }
+    }
+    return response;
+};
+*/
+
+// 演示模式下的通知系统
+window.demoModeNotification = function(message, type = 'info', customTitle = null) {
+    if (!window.isDemo) return;
+    
+    const titles = {
+        'success': '操作成功',
+        'error': '操作失败',
+        'warning': '警告',
+        'info': '提示信息'
+    };
+    
+    const title = customTitle || titles[type] || '演示模式';
+    const iconMap = {
+        'success': '✅',
+        'error': '❌',
+        'warning': '⚠️',
+        'info': 'ℹ️'
+    };
+    
+    const icon = iconMap[type] || 'ℹ️';
+    const fullMessage = `${icon} ${message}\n\n这是演示系统，此操作仅作展示用途。`;
+    
+    window.showDemoModeModal(title, fullMessage);
+};
+
+// 演示模式下的alert替换
+window.demoModeAlert = function(message) {
+    if (window.isDemo) {
+        window.demoModeNotification(message, 'info', '演示模式');
+    } else {
+        // 生产环境中静默处理，不显示alert
+        console.log('Alert (静默处理):', message);
+    }
+};
+
+// 演示模式下的showToast替换
+window.demoModeShowToast = function(message, type = 'info', duration = 3000) {
+    if (window.isDemo) {
+        window.demoModeNotification(message, type);
+    } else {
+        // 生产环境中静默处理，不显示任何通知
+        console.log('Toast (静默处理):', message, type);
+    }
+};
+
+// 全局替换alert函数 - 在演示模式下使用演示模式版本，在生产环境下静默处理
+// 保存原始的alert函数
+window.originalAlert = window.alert;
+
+// 替换为统一版本
+window.alert = function(message) {
+    window.demoModeAlert(message);
+};
+
+if (window.isDemo) {
+    console.log('✅ 演示模式：已替换alert函数为演示模式版本');
+} else {
+    console.log('✅ 生产环境：已替换alert函数为静默处理版本');
+}
+} 

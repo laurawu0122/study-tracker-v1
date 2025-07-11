@@ -3,11 +3,42 @@ const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const session = require('express-session');
 const exphbs = require('express-handlebars');
 const moment = require('moment');
 const cookieParser = require('cookie-parser');
 const fileUpload = require('express-fileupload');
+const net = require('net');
+const logger = require('./utils/logger');
 require('dotenv').config();
+
+// 端口占用检测函数
+function isPortInUse(port) {
+    return new Promise((resolve) => {
+        const server = net.createServer();
+        server.listen(port, () => {
+            server.once('close', () => {
+                resolve(false);
+            });
+            server.close();
+        });
+        server.on('error', () => {
+            resolve(true);
+        });
+    });
+}
+
+// 优雅退出函数
+function gracefulExit(message, code = 1) {
+    logger.error(`服务器启动失败: ${message}`);
+    console.error(`\n❌ ${message}`);
+    console.log('💡 解决方案:');
+    console.log('   1. 检查是否有其他进程占用端口 3001');
+    console.log('   2. 运行: lsof -ti:3001 | xargs kill -9');
+    console.log('   3. 或者修改环境变量 PORT 使用其他端口');
+    console.log('   4. 生产环境建议使用 PM2: pm2 start server.js --name study-tracker\n');
+    process.exit(code);
+}
 
 const db = require('./database/db');
 const authRoutes = require('./routes/auth');
@@ -20,6 +51,9 @@ const { router: notificationRoutes } = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 const achievementRoutes = require('./routes/achievements');
 const pointsExchangeRoutes = require('./routes/points-exchange');
+const uploadRoutes = require('./routes/upload');
+const demoRoutes = require('./routes/demo');
+const { demoMockMiddleware } = require('./middleware/demo-mock');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -78,6 +112,29 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Cookie parser
 app.use(cookieParser());
 
+// Session middleware for import rate limiting
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-super-secret-session-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// File upload middleware - 只对特定路由启用
+const fileUploadMiddleware = fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    abortOnLimit: true,
+    responseOnLimit: '文件大小超过限制',
+    createParentPath: true,
+    useTempFiles: true,
+    tempFileDir: '/tmp/',
+    debug: false // 关闭调试模式，减少日志输出
+});
+
 // Trust proxy for production
 if (process.env.TRUST_PROXY === 'true') {
     app.set('trust proxy', 1);
@@ -88,6 +145,7 @@ app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use('/excel_templates', express.static(path.join(__dirname, 'excel_templates')));
 app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads/avatars')));
 app.use('/uploads/products', express.static(path.join(__dirname, 'uploads/products')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Favicon route
 app.get('/favicon.ico', (req, res) => {
@@ -151,17 +209,36 @@ app.use(async (req, res, next) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
+// 项目路由 - 需要文件上传功能（导入Excel）
+app.use('/api/projects', fileUploadMiddleware, projectRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
+// 数据路由 - 需要文件上传功能（仪表板Excel解析）
 app.use('/api/data', dataRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/admin', adminRoutes);
+// 管理员路由 - 需要文件上传功能
+app.use('/api/admin', fileUploadMiddleware, adminRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/points-exchange', pointsExchangeRoutes);
+app.use('/api/upload', uploadRoutes);
 
-// Health check endpoint
+// Demo API 路由 - 必须在所有 /demo/api/* 路由之前
+app.use('/demo/api', demoMockMiddleware);
+// 不再注册 /demo/api/* 的真实路由，demo模式下只走 mock
+
+app.use('/demo', demoRoutes);
+
+// Health check endpoints
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        version: '2.0.0'
+    });
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -395,6 +472,7 @@ app.get('/admin', async (req, res) => {
         return res.status(403).render('pages/error', {
             title: '权限不足',
             description: '您没有访问此页面的权限',
+            status: '403',
             error: '需要管理员权限才能访问系统管理页面'
         });
     }
@@ -462,6 +540,7 @@ app.get('/admin/points-exchange', async (req, res) => {
         return res.status(403).render('pages/error', {
             title: '权限不足',
             description: '您没有访问此页面的权限',
+            status: '403',
             error: '需要管理员权限才能访问积分兑换管理页面'
         });
     }
@@ -499,6 +578,7 @@ app.get('/admin/exchange-approval', async (req, res) => {
         return res.status(403).render('pages/error', {
             title: '权限不足',
             description: '您没有访问此页面的权限',
+            status: '403',
             error: '需要管理员权限才能访问兑换审核页面'
         });
     }
@@ -511,7 +591,7 @@ app.get('/admin/exchange-approval', async (req, res) => {
             );
             res.send(html);
         } catch (error) {
-            console.error('加载兑换审核页面失败:', error);
+            logger.error('加载兑换审核页面失败', { error: error.message, stack: error.stack });
             res.status(500).send('加载失败');
         }
         return;
@@ -543,7 +623,8 @@ app.get('/points-exchange', async (req, res) => {
       title: '积分兑换',
       description: '用学习积分兑换虚拟商品',
       currentPage: 'points-exchange',
-      pageTitle: '积分兑换'
+      pageTitle: '积分兑换',
+      isDemo: false // 自动注入 isDemo 变量，正式环境为 false
     });
     return;
   }
@@ -551,7 +632,8 @@ app.get('/points-exchange', async (req, res) => {
     title: '积分兑换',
     description: '用学习积分兑换虚拟商品',
     currentPage: 'points-exchange',
-    pageTitle: '积分兑换'
+    pageTitle: '积分兑换',
+    isDemo: false // 自动注入 isDemo 变量，正式环境为 false
   });
 });
 
@@ -566,7 +648,8 @@ app.get('/exchange-records', async (req, res) => {
       title: '兑换记录',
       description: '查看兑换历史',
       currentPage: 'exchange-records',
-      pageTitle: '兑换记录'
+      pageTitle: '兑换记录',
+      isDemo: false
     });
     return;
   }
@@ -574,7 +657,8 @@ app.get('/exchange-records', async (req, res) => {
     title: '兑换记录',
     description: '查看兑换历史',
     currentPage: 'exchange-records',
-    pageTitle: '兑换记录'
+    pageTitle: '兑换记录',
+    isDemo: false
   });
 });
 
@@ -589,7 +673,8 @@ app.get('/points-records', async (req, res) => {
       title: '积分明细',
       description: '查看积分记录',
       currentPage: 'points-records',
-      pageTitle: '积分明细'
+      pageTitle: '积分明细',
+      isDemo: false
     });
     return;
   }
@@ -597,13 +682,20 @@ app.get('/points-records', async (req, res) => {
     title: '积分明细',
     description: '查看积分记录',
     currentPage: 'points-records',
-    pageTitle: '积分明细'
+    pageTitle: '积分明细',
+    isDemo: false
   });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('服务器错误:', err);
+    logger.error('服务器错误', { 
+        error: err.message, 
+        stack: err.stack, 
+        url: req.url, 
+        method: req.method,
+        user: req.user?.id 
+    });
     
     // 如果是API请求，返回JSON错误
     if (req.path.startsWith('/api/')) {
@@ -632,35 +724,98 @@ app.use((req, res) => {
     res.status(404).render('pages/error', {
         title: '页面未找到',
         description: '请求的页面不存在',
-        error: '404 - 页面未找到'
+        status: '404',
+        error: '404 - 页面未找到',
+        layout: false  // 不使用布局，直接渲染404页面
     });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        console.log('Process terminated');
-        process.exit(0);
+// 测试403错误页面
+app.get('/test-403', (req, res) => {
+    res.status(403).render('pages/error', {
+        title: '权限不足',
+        description: '您没有访问此页面的权限',
+        status: '403',
+        error: '需要管理员权限才能访问此页面'
     });
 });
 
-// Start server
-const server = app.listen(PORT, async () => {
+
+// 启动服务器前检查端口占用
+async function startServer() {
     try {
-        await db.initializeDatabase();
-        console.log(`数据库连接成功`);
-        console.log(`数据库初始化完成`);
-        console.log(`服务器运行在 http://localhost:${PORT}`);
-        console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
-        console.log(`部署平台: ${process.env.VERCEL ? 'Vercel' : process.env.DOCKER ? 'Docker' : 'Local'}`);
-        
-        // 启动定时任务服务
-        const scheduler = require('./services/scheduler');
-        scheduler.start();
-        console.log('定时任务服务已启动');
+        // 检查端口是否被占用
+        const portInUse = await isPortInUse(PORT);
+        if (portInUse) {
+            gracefulExit(`端口 ${PORT} 已被占用，无法启动服务器`);
+        }
+
+        // 启动服务器
+        const server = app.listen(PORT, async () => {
+            try {
+                await db.initializeDatabase();
+                logger.info('数据库连接成功');
+                logger.info('数据库初始化完成');
+                logger.info(`服务器运行在 http://localhost:${PORT}`);
+                logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+                logger.info(`部署平台: ${process.env.VERCEL ? 'Vercel' : 'Local'}`);
+                
+                console.log(`✅ 数据库连接成功`);
+                console.log(`✅ 数据库初始化完成`);
+                console.log(`🚀 服务器运行在 http://localhost:${PORT}`);
+                console.log(`🌍 环境: ${process.env.NODE_ENV || 'development'}`);
+                console.log(`🏗️  部署平台: ${process.env.VERCEL ? 'Vercel' : 'Local'}`);
+                
+                // 启动定时任务服务
+                const scheduler = require('./services/scheduler');
+                scheduler.start();
+                logger.info('定时任务服务已启动');
+                console.log('⏰ 定时任务服务已启动');
+            } catch (error) {
+                logger.error('启动失败', { error: error.message, stack: error.stack });
+                console.error('❌ 启动失败:', error);
+                process.exit(1);
+            }
+        });
+
+        // 处理服务器错误
+        server.on('error', (error) => {
+            if (error.code === 'EADDRINUSE') {
+                gracefulExit(`端口 ${PORT} 已被占用，请检查是否有其他服务正在运行`);
+            } else {
+                logger.error('服务器错误', { error: error.message, stack: error.stack });
+                console.error('❌ 服务器错误:', error);
+                process.exit(1);
+            }
+        });
+
+        // 优雅关闭
+        process.on('SIGTERM', () => {
+            logger.info('收到SIGTERM信号，开始优雅关闭');
+            console.log('🛑 SIGTERM received, shutting down gracefully');
+            server.close(() => {
+                logger.info('进程已终止');
+                console.log('✅ Process terminated');
+                process.exit(0);
+            });
+        });
+
+        process.on('SIGINT', () => {
+            logger.info('收到SIGINT信号，开始优雅关闭');
+            console.log('🛑 SIGINT received, shutting down gracefully');
+            server.close(() => {
+                logger.info('进程已终止');
+                console.log('✅ Process terminated');
+                process.exit(0);
+            });
+        });
+
     } catch (error) {
-        console.error('启动失败:', error);
+        logger.error('启动服务器时发生错误', { error: error.message, stack: error.stack });
+        console.error('❌ 启动服务器时发生错误:', error);
         process.exit(1);
     }
-});
+}
+
+// 启动服务器
+startServer();

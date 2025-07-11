@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
+    <!-- FontAwesome 6 Free -->
+    <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
+    <!-- Font Awesome 修复 - 使用emoji替代缺失的字体文件 -->
+    <link rel="stylesheet" href="/assets/css/font-awesome-fix.css">
+    <script src="/assets/js/htmx.min.js"></script>
+    <script src="/assets/lib/chart.umd.min.js"></script>
+    <script src="/assets/lib/moment.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- 演示模式提示条 -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-play text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-semibold">🎯 系统演示模式</h1>
+                    <p class="text-sm text-blue-100">体验学习追踪系统的核心功能</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm bg-white/20 px-3 py-1 rounded-full">演示数据</span>
+                <a href="/" class="text-sm hover:text-blue-200 transition">返回首页</a>
+                <a href="/auth/register" class="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition">
+                    立即注册
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- 用户信息卡片 -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <img src="{{demoData.user.avatar}}" alt="用户头像" class="w-16 h-16 rounded-full">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">{{demoData.user.username}}</h2>
+                        <p class="text-gray-600">{{demoData.user.email}}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-bold text-blue-600">{{demoData.user.totalPoints}}</div>
+                    <div class="text-sm text-gray-500">总积分</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能导航 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <button onclick="showSection('dashboard')" class="demo-nav-btn bg-blue-500 hover:bg-blue-600">
+                <i class="fas fa-chart-line text-2xl mb-2"></i>
+                <span>仪表板</span>
+            </button>
+            <button onclick="showSection('projects')" class="demo-nav-btn bg-green-500 hover:bg-green-600">
+                <i class="fas fa-project-diagram text-2xl mb-2"></i>
+                <span>项目管理</span>
+            </button>
+            <button onclick="showSection('sessions')" class="demo-nav-btn bg-purple-500 hover:bg-purple-600">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <span>学习记录</span>
+            </button>
+            <button onclick="showSection('achievements')" class="demo-nav-btn bg-yellow-500 hover:bg-yellow-600">
+                <i class="fas fa-trophy text-2xl mb-2"></i>
+                <span>成就系统</span>
+            </button>
+        </div>
+
+        <!-- 内容区域 -->
+        <div id="contentArea">
+            <!-- 仪表板 -->
+            <div id="dashboard" class="demo-section">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">总学习时间</p>
+                                <p class="text-2xl font-bold text-gray-900">{{demoData.analytics.totalStudyTime}} 分钟</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">学习会话</p>
+                                <p class="text-2xl font-bold text-gray-900">{{demoData.analytics.totalSessions}} 次</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-play text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600">连续学习</p>
+                                <p class="text-2xl font-bold text-gray-900">{{demoData.analytics.currentStreak}} 天</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-fire text-purple-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold mb-4">本周学习趋势</h3>
+                        <canvas id="weeklyChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold mb-4">最近学习记录</h3>
+                        <div class="space-y-3">
+                            {{#each demoData.sessions}}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900">{{project_name}}</p>
+                                    <p class="text-sm text-gray-600">{{notes}}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-blue-600">{{duration}} 分钟</p>
+                                    <p class="text-xs text-gray-500">{{study_date}}</p>
+                                </div>
+                            </div>
+                            {{/each}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 项目管理 -->
+            <div id="projects" class="demo-section hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">学习项目</h2>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>新建项目
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {{#each demoData.projects}}
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-900">{{name}}</h3>
+                                <span class="px-2 py-1 text-xs rounded-full {{#if (eq status 'active')}}bg-green-100 text-green-800{{else}}bg-blue-100 text-blue-800{{/if}}">
+                                    {{#if (eq status 'active')}}进行中{{else}}已完成{{/if}}
+                                </span>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-4">{{description}}</p>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">总时长:</span>
+                                    <span class="font-medium">{{totalTime}} 分钟</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">学习次数:</span>
+                                    <span class="font-medium">{{sessions}} 次</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">最后学习:</span>
+                                    <span class="font-medium">{{last_study_date}}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学习记录 -->
+            <div id="sessions" class="demo-section hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">学习记录</h2>
+                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>记录学习
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">项目</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">时长</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">学习内容</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">时间</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {{#each demoData.sessions}}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{project_name}}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="text-sm text-blue-600 font-semibold">{{duration}} 分钟</span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{notes}}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500">{{study_date}}</div>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 成就系统 -->
+            <div id="achievements" class="demo-section hidden">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">成就系统</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {{#each demoData.achievements}}
+                        <div class="border border-gray-200 rounded-lg p-6 text-center hover:shadow-lg transition">
+                            <img src="{{icon}}" alt="{{name}}" class="w-16 h-16 mx-auto mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{name}}</h3>
+                            <p class="text-gray-600 text-sm mb-3">{{description}}</p>
+                            <div class="text-xs text-gray-500">获得时间: {{earned_at}}</div>
+                        </div>
+                        {{/each}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .demo-nav-btn {
+            @apply flex flex-col items-center justify-center p-6 rounded-xl text-white transition-all duration-200;
+        }
+        
+        .demo-section {
+            @apply transition-all duration-300;
+        }
+        
+        .demo-section.hidden {
+            @apply hidden;
+        }
+    </style>
+
+    <script>
+        // 导航功能
+        function showSection(sectionId) {
+            // 隐藏所有section
+            document.querySelectorAll('.demo-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // 显示选中的section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // 如果是仪表板，初始化图表
+            if (sectionId === 'dashboard') {
+                initCharts();
+            }
+        }
+
+        // 初始化图表
+        function initCharts() {
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            
+            const weeklyData = {{{json demoData.analytics.weeklyData}}};
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: weeklyData.map(item => moment(item.date).format('MM/DD')),
+                    datasets: [{
+                        label: '学习时长 (分钟)',
+                        data: weeklyData.map(item => item.time),
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 默认显示仪表板
+            showSection('dashboard');
+        });
+    </script>
+</body>
+</html> 

@@ -1,3 +1,7 @@
+// 防止重复加载
+if (window.AvatarUpdater) {
+    console.log('AvatarUpdater 已经加载过，跳过重复加载');
+} else {
 // 全局头像更新管理器
 class AvatarUpdater {
   constructor() {
@@ -249,4 +253,5 @@ class AvatarUpdater {
 window.avatarUpdater = new AvatarUpdater();
 
 // 导出类供其他模块使用
-window.AvatarUpdater = AvatarUpdater; 
+window.AvatarUpdater = AvatarUpdater;
+} 

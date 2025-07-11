@@ -1,101 +1,110 @@
-<div class="space-y-4">
-  <!-- 页面标题和操作按钮 -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">🏆 成就管理</h3>
-    <div class="mt-4 sm:mt-0 space-x-2">
-      <button id="downloadIconsBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-        <i class="fas fa-download mr-2"></i>下载图标
-      </button>
-      <button id="addCategoryBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-        <i class="fas fa-folder-plus mr-2"></i>添加分类
-      </button>
-      <button id="addAchievementBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-        <i class="fas fa-plus mr-2"></i>添加成就
-      </button>
-    </div>
+{{!-- 成就管理页面 --}}
+<div class="container mx-auto px-4 py-6">
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">成就管理</h1>
+    <p class="text-gray-600 dark:text-gray-400">管理系统成就和分类</p>
   </div>
 
   <!-- 统计卡片 -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div class="flex items-center">
         <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
           <i class="fas fa-trophy text-blue-600 dark:text-blue-400 text-xl"></i>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">总成就数</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalAchievements">0</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalAchievements">0</p>
         </div>
       </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div class="flex items-center">
         <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-          <i class="fas fa-folder text-green-600 dark:text-green-400 text-xl"></i>
+          <i class="fas fa-tags text-green-600 dark:text-green-400 text-xl"></i>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">成就分类</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalCategories">0</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">分类数量</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalCategories">0</p>
         </div>
       </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div class="flex items-center">
         <div class="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
           <i class="fas fa-users text-yellow-600 dark:text-yellow-400 text-xl"></i>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">活跃用户</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="activeUsers">0</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">获得用户</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalUsers">0</p>
         </div>
       </div>
     </div>
-    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div class="flex items-center">
         <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-          <i class="fas fa-star text-purple-600 dark:text-purple-400 text-xl"></i>
+          <i class="fas fa-coins text-purple-600 dark:text-purple-400 text-xl"></i>
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-600 dark:text-gray-400">总积分</p>
-          <p class="text-2xl font-semibold text-gray-900 dark:text-white" id="totalPoints">0</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalPoints">0</p>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 操作按钮 -->
+  <div class="flex flex-wrap gap-4 mb-6">
+    <button id="addAchievementBtn" data-action="save-achievement" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+      <i class="fas fa-plus mr-2"></i>添加成就
+    </button>
+    <button id="addCategoryBtn" data-action="save-achievement-category" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+      <i class="fas fa-tag mr-2"></i>添加分类
+    </button>
+    <button id="downloadIconsBtn" data-action="download-achievement-icon" class="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors">
+      <i class="fas fa-download mr-2"></i>下载图标
+    </button>
+  </div>
+
   <!-- 筛选和搜索 -->
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-    <div class="flex flex-col sm:flex-row gap-4">
-      <div class="flex-1">
-        <input type="text" id="searchInput" placeholder="搜索成就名称..." autocomplete="off" 
-               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-      </div>
-      <div class="flex gap-2">
-        <select id="categoryFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-          <option value="">全部分类</option>
-        </select>
-        <select id="statusFilter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-          <option value="">全部状态</option>
-          <option value="active">启用</option>
-          <option value="inactive">禁用</option>
-        </select>
-        <button id="refreshBtn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md">
-          <i class="fas fa-sync-alt"></i>
-        </button>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <input type="text" id="searchInput" placeholder="搜索成就..." 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <select id="categoryFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">所有分类</option>
+          </select>
+        </div>
+        <div>
+          <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">所有状态</option>
+            <option value="active">启用</option>
+            <option value="inactive">禁用</option>
+          </select>
+        </div>
+        <div>
+          <button id="resetFiltersBtn" 
+                  class="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
+            重置筛选
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- 成就列表 -->
-  <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
-    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-      <h4 class="text-lg font-medium text-gray-900 dark:text-white">成就列表</h4>
-    </div>
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">成就</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">图标</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">成就名称</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">分类</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">触发条件</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">积分</th>
@@ -115,31 +124,27 @@
   </div>
 </div>
 
-<!-- 添加/编辑成就模态框 -->
-<div id="achievementModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4">
+<!-- 成就管理模态框 -->
+<div id="achievementModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4 overflow-hidden">
   <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 32rem; width: 100%; max-height: 90vh;">
-    <!-- 弹窗主体 -->
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col" style="width: 100%; max-height: 90vh;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col overflow-hidden" style="width: 100%; max-height: 90vh;">
       <!-- 头部 -->
       <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
-            </svg>
+            <i class="fas fa-trophy text-blue-600 dark:text-blue-400 text-xl"></i>
           </div>
-          <h3 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white">添加成就</h3>
+          <h3 id="achievementModalTitle" class="text-lg font-bold text-gray-900 dark:text-white">添加成就</h3>
         </div>
-        <button onclick="closeAchievementModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
-          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+        <button type="button" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" onclick="closeAchievementModal()">
+          <i class="fas fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"></i>
         </button>
       </div>
-      
-      <!-- 内容区 - 可滚动 -->
+
+      <!-- 内容区 -->
       <form id="achievementForm" class="px-6 py-6 flex-1 overflow-y-auto" style="min-height:0;max-height:calc(90vh - 64px - 72px);">
-        <input type="hidden" id="achievementId" name="id">
+        <!-- 隐藏字段 -->
+        <input type="hidden" id="achievementId" name="id" value="">
         
         <div class="space-y-6">
           <!-- 基本信息 -->
@@ -147,199 +152,188 @@
             <div>
               <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就名称 <span class="text-red-500">*</span></label>
               <input type="text" id="achievementName" name="name" required
-                     class="input"
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                      placeholder="请输入成就名称" autocomplete="off">
             </div>
             <div>
               <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就分类 <span class="text-red-500">*</span></label>
               <select id="achievementCategory" name="category_id" required
-                      class="input">
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
                 <option value="">选择分类</option>
               </select>
             </div>
           </div>
+
           <div>
             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就描述</label>
-            <textarea id="achievementDescription" name="description" rows="2"
-                      class="input"
-                      placeholder="请输入成就描述（可选）"></textarea>
+            <textarea id="achievementDescription" name="description" rows="3"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+                      placeholder="请输入成就描述"></textarea>
           </div>
-          <!-- 图标和样式 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就图标</label>
-              <input type="text" id="achievementIcon" name="icon" placeholder="图标路径"
-                     class="input w-full" autocomplete="off">
-            </div>
-            <div class="flex items-center space-x-2 mt-2 md:mt-0">
-              <button type="button" id="iconPickerBtn" title="选择图标" class="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center">
-                <i class="fas fa-image" id="iconPickerBtnIcon"></i>
+
+          <!-- 图标选择区域 -->
+          <div>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就图标</label>
+            <div class="flex items-center space-x-2">
+              <input type="text" id="achievementIcon" name="icon" placeholder="图标路径或emoji"
+                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+              <button type="button" id="iconPickerBtn" 
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                <i class="fas fa-palette mr-2"></i>选择
               </button>
-              <!-- 图标预览区 -->
-              <span id="iconPreview" class="inline-block w-8 h-8 align-middle"></span>
+              <button type="button" id="uploadIconBtn" data-action="upload-achievement-icon"
+                      class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors">
+                <i class="fas fa-upload mr-2"></i>上传
+              </button>
             </div>
+            
+            <!-- 图标预览 -->
+            <div id="iconPreview" class="mt-3 flex items-center space-x-3">
+              <div id="previewContainer" class="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-gray-700">
+                <span id="previewText" class="text-gray-400 text-xs">预览</span>
+              </div>
+              <div class="flex-1">
+                <span id="previewPath" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  支持 emoji、系统图标和自定义图片 (SVG, PNG, JPG, GIF, WebP)
+                </div>
+              </div>
+            </div>
+            
+            <!-- 隐藏的文件输入 -->
+            <input type="file" id="iconFileInput" accept="image/*" class="hidden">
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">徽章样式</label>
-              <select id="achievementBadgeStyle" name="badge_style" class="input">
-                <option value="default">默认</option>
-                <option value="frequency">频率</option>
-                <option value="project">项目</option>
-                <option value="efficiency">效率</option>
-                <option value="special">特殊</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">成就等级</label>
-              <select id="achievementLevel" name="level" class="input">
-                <option value="1">铜牌 (1)</option>
-                <option value="2">银牌 (2)</option>
-                <option value="3">金牌 (3)</option>
-                <option value="4">钻石 (4)</option>
-              </select>
-            </div>
-          </div>
-          <!-- 触发条件 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">触发类型 <span class="text-red-500">*</span></label>
-              <select id="achievementTriggerType" name="trigger_type" required class="input">
-                <option value="">选择触发类型</option>
-                <option value="total_duration">总学习时长</option>
-                <option value="consecutive_days">连续学习天数</option>
-                <option value="project_completion">项目完成</option>
-                <option value="daily_frequency">每日学习频率</option>
-                <option value="weekly_frequency">每周学习频率</option>
-                <option value="monthly_frequency">每月学习频率</option>
-                <option value="efficiency">学习效率</option>
-                <option value="milestone">里程碑</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">需要达到的次数</label>
-              <input type="number" id="achievementRequiredCount" name="required_count" min="1" value="1" class="input">
-            </div>
-          </div>
-          <!-- 触发条件配置 -->
-          <div id="triggerConfigSection" class="hidden">
-            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">触发条件配置</label>
-            <div id="triggerConfigFields" class="space-y-4"></div>
-          </div>
-          <!-- 积分和状态 -->
+
+          <!-- 触发条件和积分 -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">获得积分</label>
-              <input type="number" id="achievementPoints" name="points" min="0" value="0" class="input">
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">排序</label>
-              <input type="number" id="achievementSortOrder" name="sort_order" min="0" value="0" class="input">
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">状态</label>
-              <select id="achievementStatus" name="is_active" class="input">
-                <option value="true">启用</option>
-                <option value="false">禁用</option>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">触发类型 <span class="text-red-500">*</span></label>
+              <select id="triggerType" name="trigger_type" required
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                <option value="">选择类型</option>
+                <option value="total_duration">总学习时长</option>
+                <option value="total_sessions">总学习次数</option>
+                <option value="consecutive_days">连续学习天数</option>
+                <option value="total_projects">完成项目数</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">要求数量 <span class="text-red-500">*</span></label>
+              <input type="number" id="requiredCount" name="required_count" min="1" required
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                     placeholder="请输入要求数量">
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">积分奖励 <span class="text-red-500">*</span></label>
+              <input type="number" id="achievementPoints" name="points" min="0" required
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                     placeholder="请输入积分奖励">
+            </div>
+          </div>
+
+          <!-- 状态 -->
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="achievementActive" name="is_active" checked
+                     class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+              <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">启用成就</span>
+            </label>
           </div>
         </div>
-        
-        <!-- 按钮区 -->
-        <div class="flex flex-col-reverse sm:flex-row gap-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <button type="button" onclick="closeAchievementModal()" 
-                  class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
-            取消
-          </button>
-          <button type="submit" id="saveAchievementBtn"
-                  class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            保存成就
-          </button>
-        </div>
       </form>
+
+      <!-- 模态框底部 -->
+      <div class="flex justify-end space-x-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <button type="button" onclick="closeAchievementModal()"
+                class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+          取消
+        </button>
+        <button type="button" onclick="saveAchievement()" data-action="save-achievement"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+          <i class="fas fa-save mr-2"></i>保存
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- 添加分类模态框 -->
-<div id="categoryModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4">
-  <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 28rem; width: 100%;">
-    <!-- 弹窗主体 -->
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0">
+<!-- 图标选择器模态框 -->
+<div id="iconPickerModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4 overflow-hidden">
+  <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 32rem; width: 100%; max-height: 90vh;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col overflow-hidden" style="width: 100%; max-height: 90vh;">
+      <div class="flex items-center justify-between px-6 py-4 border-b">
+        <h3 class="text-lg font-semibold">选择图标</h3>
+        <button type="button" class="text-gray-400 hover:text-gray-700" onclick="achievementManager.closeIconPickerModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto" style="max-height: 60vh;">
+        <div class="grid grid-cols-8 gap-2" id="iconGrid">
+          <!-- 图标将通过JavaScript动态加载 -->
+        </div>
+        <!-- 加载状态 -->
+        <div id="iconLoading" class="text-center py-8">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-3 text-gray-500 text-sm">加载图标中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 分类管理模态框 -->
+<div id="categoryModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-all duration-300 hidden p-4 overflow-hidden">
+  <div class="relative w-full mx-2 sm:mx-auto" style="max-width: 28rem; width: 100%; max-height: 90vh;">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transition-all duration-300 scale-95 opacity-0 flex flex-col overflow-hidden" style="width: 100%; max-height: 90vh;">
       <!-- 头部 -->
-      <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800">
+      <div class="flex items-center justify-between px-6 pt-6 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
-            </svg>
+            <i class="fas fa-tag text-green-600 dark:text-green-400 text-xl"></i>
           </div>
           <h3 id="categoryModalTitle" class="text-lg font-bold text-gray-900 dark:text-white">添加分类</h3>
         </div>
-        <button onclick="closeCategoryModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200">
-          <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
+        <button type="button" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200" onclick="closeCategoryModal()">
+          <i class="fas fa-times text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"></i>
         </button>
       </div>
-      
+
       <!-- 内容区 -->
-      <form id="categoryForm" class="px-6 py-6">
-        <input type="hidden" id="categoryId" name="id">
-        
-        <div class="space-y-4">
+      <form id="categoryForm" class="px-6 py-6 flex-1 overflow-y-auto" style="min-height:0;max-height:calc(90vh - 64px - 72px);">
+        <div class="space-y-6">
+          <!-- 隐藏字段 -->
+          <input type="hidden" id="categoryId" name="id" value="">
+          
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类名称 <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">分类名称 <span class="text-red-500">*</span></label>
             <input type="text" id="categoryName" name="name" required
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                    placeholder="请输入分类名称" autocomplete="off">
           </div>
-          
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类描述</label>
-            <textarea id="categoryDescription" name="description" rows="2"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="请输入分类描述（可选）"></textarea>
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">分类描述</label>
+            <textarea id="categoryDescription" name="description" rows="3"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+                      placeholder="请输入分类描述"></textarea>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">分类图标</label>
-            <input type="text" id="categoryIcon" name="icon" placeholder="图标类名或emoji"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">排序</label>
-            <input type="number" id="categorySortOrder" name="sort_order" min="0" value="0"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
-          </div>
-        </div>
-        
-        <!-- 按钮区 -->
-        <div class="flex flex-col-reverse sm:flex-row gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-          <button type="button" onclick="closeCategoryModal()" 
-                  class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200 font-medium">
-            取消
-          </button>
-          <button type="submit" id="saveCategoryBtn"
-                  class="w-full sm:w-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            保存分类
-          </button>
         </div>
       </form>
+
+      <!-- 模态框底部 -->
+      <div class="flex justify-end space-x-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <button type="button" onclick="closeCategoryModal()"
+                class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+          取消
+        </button>
+        <button type="button" onclick="saveCategory()"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+          <i class="fas fa-save mr-2"></i>保存
+        </button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- 引入成就管理JavaScript -->
-<script src="/assets/js/admin-achievements.js"></script>
-<!-- 修复脚本 - 确保按钮功能正常 -->
-<script src="/fix-achievement-buttons.js"></script> 
+<script src="/assets/js/admin-achievements.js"></script> 

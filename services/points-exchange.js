@@ -547,7 +547,7 @@ class PointsExchangeService {
             {
               exchange_id: exchangeId,
               product_id: productId,
-              product_name: product.name,
+              product_name: product ? product.name : '演示商品',
               points_spent: totalPoints,
               quantity: quantity,
               status: 'pending'
@@ -562,7 +562,7 @@ class PointsExchangeService {
             {
               exchange_id: exchangeId,
               product_id: productId,
-              product_name: product.name,
+              product_name: product ? product.name : '演示商品',
               points_spent: totalPoints,
               quantity: quantity,
               status: 'completed'
@@ -763,7 +763,7 @@ class PointsExchangeService {
           {
             exchange_id: exchangeId,
             product_id: exchange.product_id,
-            product_name: product ? product.name : '未知商品',
+            product_name: product ? product.name : '演示商品',
             points_spent: exchange.points_spent,
             status: status,
             approval_notes: notes,

@@ -13,6 +13,15 @@ class SessionsManager {
         this.chart = null;
         this.analyticsData = {};
         
+        // 学习记录筛选相关属性
+        this.recordsFilters = {
+            timeRange: '',
+            startDate: '',
+            endDate: '',
+            projectName: '',
+            durationRange: ''
+        };
+        
         this.init();
     }
 
@@ -21,6 +30,11 @@ class SessionsManager {
         
         // 绑定事件监听器
         this.bindEvents();
+        
+        // 全局拦截demo模式下的表单提交
+        if (window.isDemo) {
+            this.interceptDemoModeSubmissions();
+        }
         
         // 初始化日历
         this.initCalendar();
@@ -101,6 +115,9 @@ class SessionsManager {
         
         // 编辑弹窗事件绑定
         this.bindEditModalEvents();
+        
+        // 学习记录筛选事件绑定
+        this.bindRecordsFilterEvents();
         
         console.log('=== 事件绑定完成 ===');
     }
@@ -325,8 +342,21 @@ class SessionsManager {
         console.log(`=== 计算时长结束 ===`);
     }
 
+    // 拦截demo模式下的表单提交
+    interceptDemoModeSubmissions() {
+        // 使用新的精确按钮拦截系统
+        if (window.isDemo && typeof window.initDemoModeButtonInterception === 'function') {
+            window.initDemoModeButtonInterception();
+        }
+    }
+    
     async addRecord(type = 'mobile') {
         console.log(`Adding record for type: ${type}`);
+        
+        // 演示模式API拦截
+        if (!window.interceptDemoModeAPI(getApiUrl('/api/sessions'), 'POST', '这是演示系统，禁止添加学习记录。您可以浏览和体验所有功能，但无法保存或修改数据。')) {
+            return;
+        }
         
         let date, projectSelect, projectCustom, startTime, endTime, duration;
 
@@ -355,7 +385,7 @@ class SessionsManager {
         }
 
         if (!date || !projectName || !startTime || !endTime || !duration) {
-            alert('请填写所有必填字段');
+            window.demoModeAlert('请填写所有必填字段');
             console.warn('Missing required fields');
             return;
         }
@@ -363,12 +393,12 @@ class SessionsManager {
         // 只允许数字
         const durationMinutes = parseInt(duration);
         if (isNaN(durationMinutes) || durationMinutes <= 0) {
-            alert('学习时长无效，请重新填写');
+            window.demoModeAlert('学习时长无效，请重新填写');
             return;
         }
 
         try {
-            const response = await fetch('/api/sessions', {
+            const response = await fetch(getApiUrl('/api/sessions'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -401,14 +431,14 @@ class SessionsManager {
                 await this.loadChartData();
                 
                 console.log('数据刷新完成');
-                alert('学习记录添加成功！');
+                window.demoModeAlert('学习记录添加成功！');
             } else {
                 const error = await response.json();
-                alert(`添加失败: ${error.message}`);
+                window.demoModeAlert(`添加失败: ${error.message}`);
             }
         } catch (error) {
             console.error('Add record error:', error);
-            alert('添加记录失败，请重试');
+            window.demoModeAlert('添加记录失败，请重试');
         }
     }
 
@@ -445,7 +475,38 @@ class SessionsManager {
         try {
             console.log('开始加载学习记录...');
             
-            const response = await fetch(`/api/sessions?page=${this.currentPage}&limit=${this.limit}`);
+            // 构建API请求参数
+            const params = new URLSearchParams({
+                page: this.currentPage,
+                limit: this.limit
+            });
+            
+            // 添加筛选参数
+            if (this.recordsFilters.timeRange && this.recordsFilters.timeRange !== 'custom') {
+                // 计算时间范围
+                const days = parseInt(this.recordsFilters.timeRange);
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - days);
+                
+                params.append('startDate', startDate.toISOString().split('T')[0]);
+                params.append('endDate', endDate.toISOString().split('T')[0]);
+            } else if (this.recordsFilters.startDate && this.recordsFilters.endDate) {
+                params.append('startDate', this.recordsFilters.startDate);
+                params.append('endDate', this.recordsFilters.endDate);
+            }
+            
+            if (this.recordsFilters.projectName) {
+                params.append('projectName', this.recordsFilters.projectName);
+            }
+            
+            if (this.recordsFilters.durationRange) {
+                params.append('durationRange', this.recordsFilters.durationRange);
+            }
+            
+            console.log('学习记录API请求参数:', params.toString());
+            
+            const response = await fetch(getApiUrl(`/api/sessions?${params.toString()}`));
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -456,40 +517,26 @@ class SessionsManager {
             console.log('加载到的数据:', data);
             
             this.records = data.sessions || [];
-            this.totalRecords = data.total || 0;
-            this.totalPages = data.totalPages || 0;
+            // 修复分页数据处理 - 从pagination对象中获取分页信息
+            if (data.pagination) {
+                this.totalRecords = data.pagination.total || 0;
+                this.totalPages = data.pagination.totalPages || 0;
+            } else {
+                // 兼容旧格式
+                this.totalRecords = data.total || 0;
+                this.totalPages = data.totalPages || 0;
+            }
             
-            console.log(`成功加载 ${this.records.length} 条记录，总计 ${this.totalRecords} 条`);
+            console.log(`成功加载 ${this.records.length} 条记录，总计 ${this.totalRecords} 条，总页数 ${this.totalPages}`);
             
             // 渲染记录
             this.renderRecordsTable();
-            this.renderMobileCards();
-            this.renderDesktopTable();
             
             // 加载日历数据
             await this.loadCalendarData();
             
         } catch (error) {
             console.error('加载学习记录失败:', error);
-            
-            // 显示错误信息
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4';
-            errorMessage.innerHTML = `
-                <strong>加载失败!</strong> 
-                <span>无法加载学习记录，请检查网络连接或刷新页面重试。</span>
-                <button onclick="location.reload()" class="ml-2 text-red-600 hover:text-red-800 underline">刷新页面</button>
-            `;
-            
-            // 插入到页面顶部
-            const container = document.querySelector('#sessionsContainer') || document.body;
-            container.insertBefore(errorMessage, container.firstChild);
-            
-            // 5秒后自动重试
-            setTimeout(() => {
-                console.log('5秒后自动重试加载数据...');
-                this.loadRecords();
-            }, 5000);
         }
     }
 
@@ -499,6 +546,8 @@ class SessionsManager {
         console.log('Records count:', this.records.length);
         console.log('Is mobile:', this.isMobile);
         console.log('Container:', container);
+        console.log('Total records:', this.totalRecords);
+        console.log('Total pages:', this.totalPages);
         
         // 检查容器是否存在
         if (!container) {
@@ -531,7 +580,50 @@ class SessionsManager {
             container.innerHTML = tableHTML;
         }
 
+        // 绑定表格事件
+        this.bindTableEvents();
+        
+        // 渲染分页控件
         this.renderPagination();
+    }
+
+    // 新增：绑定表格事件的方法
+    bindTableEvents() {
+        console.log('=== 绑定表格事件 ===');
+        
+        const container = document.getElementById('recordsTableContainer');
+        if (!container) {
+            console.error('recordsTableContainer 元素未找到，无法绑定表格事件');
+            return;
+        }
+        
+        // 使用事件委托绑定编辑和删除事件
+        container.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            
+            const action = target.getAttribute('data-action');
+            const recordId = target.getAttribute('data-id');
+            
+            if (!action || !recordId) return;
+            
+            console.log(`表格事件触发: ${action}, ID: ${recordId}`);
+            
+            switch (action) {
+                case 'edit':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.editRecord(parseInt(recordId));
+                    break;
+                case 'delete':
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.deleteRecord(parseInt(recordId));
+                    break;
+            }
+        });
+        
+        console.log('=== 表格事件绑定完成 ===');
     }
 
     renderMobileCards() {
@@ -557,12 +649,12 @@ class SessionsManager {
                         </div>
                     </div>
                     <div class="flex-shrink-0 flex flex-col items-end space-y-2">
-                        <button onclick="sessionsManager.editRecord(${record.id})" class="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 p-1 rounded transition-colors">
+                        <button data-action="edit" data-id="${record.id}" class="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 p-1 rounded transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
                         </button>
-                        <button onclick="sessionsManager.deleteRecord(${record.id})" class="text-red-600 hover:text-red-800 dark:hover:text-red-400 p-1 rounded transition-colors">
+                        <button data-action="delete" data-id="${record.id}" class="text-red-600 hover:text-red-800 dark:hover:text-red-400 p-1 rounded transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
@@ -599,13 +691,13 @@ class SessionsManager {
                 <td class="py-4 px-6 text-sm text-gray-900 dark:text-white text-center font-medium">${record.duration || 0}分钟</td>
                 <td class="py-4 px-6 text-center">
                     <div class="flex items-center justify-center space-x-2">
-                        <button onclick="sessionsManager.editRecord(${record.id})" 
+                        <button data-action="edit" data-id="${record.id}" 
                                 class="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 p-1 rounded transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
                         </button>
-                        <button onclick="sessionsManager.deleteRecord(${record.id})" 
+                        <button data-action="delete" data-id="${record.id}" 
                                 class="text-red-600 hover:text-red-800 dark:hover:text-red-400 p-1 rounded transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -651,9 +743,11 @@ class SessionsManager {
         console.log('总记录数:', this.totalRecords);
         console.log('页面大小:', this.limit);
         console.log('当前页码:', this.currentPage);
+        console.log('总页数:', this.totalPages);
         
-        const totalPages = Math.ceil(this.totalRecords / this.limit);
-        console.log('计算出的总页数:', totalPages);
+        // 使用API返回的总页数，而不是重新计算
+        const totalPages = this.totalPages;
+        console.log('使用的总页数:', totalPages);
         
         if (totalPages <= 1) {
             console.log('只有一页或没有记录，不显示分页');
@@ -666,19 +760,23 @@ class SessionsManager {
             return;
         }
         
+        // 清空旧分页
+        const oldPagination = container.querySelector('.pagination-controls');
+        if (oldPagination) oldPagination.remove();
+        
         const pagination = document.createElement('div');
-        pagination.className = 'mt-6 flex items-center justify-between';
+        pagination.className = 'mt-6 flex items-center justify-between pagination-controls';
         pagination.innerHTML = `
             <div class="flex items-center text-sm text-gray-700 dark:text-gray-300">
                 <span>共 ${this.totalRecords} 条记录，第 ${this.currentPage} / ${totalPages} 页</span>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="sessionsManager.changePage(${this.currentPage - 1})" 
+                <button id="prevPageBtn" 
                         ${this.currentPage <= 1 ? 'disabled' : ''}
                         class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600">
                     上一页
                 </button>
-                <button onclick="sessionsManager.changePage(${this.currentPage + 1})" 
+                <button id="nextPageBtn" 
                         ${this.currentPage >= totalPages ? 'disabled' : ''}
                         class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600">
                     下一页
@@ -686,13 +784,45 @@ class SessionsManager {
             </div>
         `;
         container.appendChild(pagination);
+        this.bindPaginationEvents();
         console.log('分页渲染完成');
     }
 
-    changePage(page) {
-        const totalPages = Math.ceil(this.totalRecords / this.limit);
-        if (page < 1 || page > totalPages) return;
+    bindPaginationEvents() {
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
         
+        console.log('绑定分页事件，当前页:', this.currentPage, '总页数:', this.totalPages);
+        
+        if (prevBtn) {
+            prevBtn.onclick = (e) => {
+                e.preventDefault();
+                console.log('上一页按钮点击，当前页:', this.currentPage);
+                if (this.currentPage > 1) {
+                    this.changePage(this.currentPage - 1);
+                }
+            };
+        }
+        if (nextBtn) {
+            nextBtn.onclick = (e) => {
+                e.preventDefault();
+                console.log('下一页按钮点击，当前页:', this.currentPage, '总页数:', this.totalPages);
+                if (this.currentPage < this.totalPages) {
+                    this.changePage(this.currentPage + 1);
+                }
+            };
+        }
+    }
+
+    changePage(page) {
+        console.log('changePage called, target page:', page, 'total pages:', this.totalPages);
+        
+        if (page < 1 || page > this.totalPages) {
+            console.log('页码无效，跳过');
+            return;
+        }
+        
+        console.log('切换到页面:', page);
         this.currentPage = page;
         this.loadRecords();
     }
@@ -702,11 +832,11 @@ class SessionsManager {
         
         try {
             // 通过 API 获取记录详情，而不是从 this.records 中查找
-            const response = await fetch(`/api/sessions/${id}`);
+            const response = await fetch(getApiUrl(`/api/sessions/${id}`));
             const data = await response.json();
             
             if (!response.ok) {
-                alert(`获取记录失败: ${data.message}`);
+                window.demoModeAlert(`获取记录失败: ${data.message}`);
                 return;
             }
             
@@ -743,11 +873,16 @@ class SessionsManager {
             
         } catch (error) {
             console.error('获取记录详情失败:', error);
-            alert('获取记录详情失败，请重试');
+            window.demoModeAlert('获取记录详情失败，请重试');
         }
     }
 
     async saveEdit() {
+        // 演示模式API拦截
+        if (!window.interceptDemoModeAPI(getApiUrl(`/api/sessions/${document.getElementById('editRecordId').value}`), 'PUT', '这是演示系统，禁止编辑学习记录。您可以浏览和体验所有功能，但无法保存或修改数据。')) {
+            return;
+        }
+        
         const id = document.getElementById('editRecordId').value;
         const date = document.getElementById('editDate').value;
         const projectSelect = document.getElementById('editProject');
@@ -758,7 +893,7 @@ class SessionsManager {
         let projectName = projectSelect.value;
 
         if (!date || !projectName || !startTime || !endTime || !duration) {
-            alert('请填写所有必填字段');
+            window.demoModeAlert('请填写所有必填字段');
             return;
         }
 
@@ -771,21 +906,21 @@ class SessionsManager {
         }
 
         if (isNaN(durationMinutes) || durationMinutes <= 0) {
-            alert('学习时长无效，请重新填写');
+            window.demoModeAlert('学习时长无效，请重新填写');
             return;
         }
 
         // 验证时间格式
         const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
         if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-            alert('时间格式不正确，请使用 HH:MM 格式');
+            window.demoModeAlert('时间格式不正确，请使用 HH:MM 格式');
             return;
         }
 
         // 验证日期格式
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(date)) {
-            alert('日期格式不正确，请使用 YYYY-MM-DD 格式');
+            window.demoModeAlert('日期格式不正确，请使用 YYYY-MM-DD 格式');
             return;
         }
 
@@ -800,7 +935,7 @@ class SessionsManager {
         console.log('发送编辑数据:', requestData);
 
         try {
-            const response = await fetch(`/api/sessions/${id}`, {
+            const response = await fetch(getApiUrl(`/api/sessions/${id}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -820,7 +955,7 @@ class SessionsManager {
                 await this.loadAnalytics();
                 // 加载图表数据
                 await this.loadChartData();
-                alert('记录更新成功！');
+                window.demoModeAlert('记录更新成功！');
             } else {
                 // 修复错误信息显示
                 let errorMessage = '更新失败';
@@ -830,11 +965,11 @@ class SessionsManager {
                 if (responseData.details && responseData.details.length > 0) {
                     errorMessage += ': ' + responseData.details.map(d => d.msg).join(', ');
                 }
-                alert(errorMessage);
+                window.demoModeAlert(errorMessage);
             }
         } catch (error) {
             console.error('Update record error:', error);
-            alert('更新记录失败，请重试');
+            window.demoModeAlert('更新记录失败，请重试');
         }
     }
 
@@ -844,6 +979,11 @@ class SessionsManager {
     }
 
     async deleteRecord(id) {
+        // 演示模式API拦截
+        if (!window.interceptDemoModeAPI(getApiUrl(`/api/sessions/${id}`), 'DELETE', '这是演示系统，禁止删除学习记录。您可以浏览和体验所有功能，但无法保存或修改数据。')) {
+            return;
+        }
+        
         const confirmed = await this.showConfirmDialog(
             '删除学习记录',
             '确定要删除这条学习记录吗？此操作不可恢复。',
@@ -854,22 +994,33 @@ class SessionsManager {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/sessions/${id}`, {
+            // 显示加载状态
+            this.showToast('正在删除记录...', 'info');
+            
+            const response = await fetch(getApiUrl(`/api/sessions/${id}`), {
                 method: 'DELETE'
             });
 
             if (response.ok) {
-                // 刷新记录列表
-                this.loadRecords();
-                // 刷新日历数据
-                this.loadCalendarData();
-                // 关闭日历详情弹窗
+                // 并行执行刷新操作，提高响应速度
+                const refreshPromises = [
+                    this.loadRecords(),
+                    this.loadCalendarData(),
+                    this.loadAnalytics(),
+                    this.loadChartData()
+                ];
+                
+                // 等待所有刷新操作完成
+                await Promise.allSettled(refreshPromises);
+                
+                // 确保关闭日历详情弹窗
                 this.hideCalendarDetailModal();
-                // 加载分析数据
-                await this.loadAnalytics();
-                // 加载图表数据
-                await this.loadChartData();
-                this.showToast('记录删除成功！', 'success');
+                
+                // 删除成功后显示成功消息（延迟一点，让用户看到刷新效果）
+                setTimeout(() => {
+                    this.showToast('记录删除成功！', 'success');
+                }, 300);
+                
             } else {
                 const errorData = await response.json();
                 // 修复错误信息显示
@@ -917,7 +1068,7 @@ class SessionsManager {
             
             console.log(`加载 ${year}年${month}月 的日历数据...`);
             
-            const response = await fetch(`/api/sessions/calendar?year=${year}&month=${month}`);
+            const response = await fetch(getApiUrl(`/api/sessions/calendar?year=${year}&month=${month}`));
             
             if (!response.ok) {
                 throw new Error(`日历数据加载失败: ${response.status}`);
@@ -1056,7 +1207,7 @@ class SessionsManager {
         try {
             // 添加时间戳防止浏览器缓存
             const timestamp = new Date().getTime();
-            const response = await fetch(`/api/sessions/date/${date}?_t=${timestamp}`, {
+            const response = await fetch(getApiUrl(`/api/sessions/date/${date}?_t=${timestamp}`), {
                 method: 'GET',
                 headers: {
                     'Cache-Control': 'no-cache',
@@ -1448,7 +1599,8 @@ class SessionsManager {
             'inputProjectDesktop',    // 桌面端添加记录
             'editProject',             // 编辑弹窗
             'projectChartSelector',    // 图表项目选择器
-            'projectFilterSelector'    // 项目筛选选择器
+            'projectFilterSelector',   // 项目筛选选择器
+            'recordsProjectFilterSelector' // 学习记录筛选项目选择器
         ];
         
         selectors.forEach(selectorId => {
@@ -1458,7 +1610,7 @@ class SessionsManager {
                 const currentValue = select.value;
                 
                 // 清空现有选项（保留第一个选项）
-                if (selectorId === 'projectFilterSelector') {
+                if (selectorId === 'projectFilterSelector' || selectorId === 'recordsProjectFilterSelector') {
                     select.innerHTML = '<option value="">所有项目</option>';
                 } else {
                     select.innerHTML = '<option value="">选择学习项目</option>';
@@ -1492,7 +1644,7 @@ class SessionsManager {
     // 加载分析数据
     async loadAnalytics() {
         try {
-            const response = await fetch('/api/sessions/analytics');
+            const response = await fetch(getApiUrl('/api/sessions/analytics'));
             if (response.ok) {
                 this.analyticsData = await response.json();
                 this.updateStats();
@@ -1658,7 +1810,7 @@ class SessionsManager {
                 params.append('durationRange', durationRange);
             }
             
-            const response = await fetch(`/api/sessions/chart-data?${params}`);
+            const response = await fetch(getApiUrl(`/api/sessions/chart-data?${params}`));
             if (response.ok) {
                 const chartData = await response.json();
                 this.updateChart(chartData, chartType);
@@ -1739,7 +1891,7 @@ class SessionsManager {
         try {
             console.log('开始加载项目列表...');
             
-            const response = await fetch('/api/sessions/projects/list');
+            const response = await fetch(getApiUrl('/api/sessions/projects/list'));
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
@@ -1773,6 +1925,12 @@ class SessionsManager {
     // 显示确认对话框
     showConfirmDialog(title, message, confirmText = '确定', cancelText = '取消') {
         return new Promise((resolve) => {
+            // 如果已经存在确认弹窗，先移除
+            const existingModal = document.getElementById('confirmModal');
+            if (existingModal) {
+                document.body.removeChild(existingModal);
+            }
+            
             // 创建模态框
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
@@ -1804,33 +1962,46 @@ class SessionsManager {
             const confirmBtn = modal.querySelector('#confirmBtn');
             const cancelBtn = modal.querySelector('#cancelBtn');
 
+            let isResolved = false;
+
             const cleanup = () => {
-                document.body.removeChild(modal);
+                if (isResolved) return; // 防止重复执行
+                isResolved = true;
+                
+                try {
+                    if (document.body.contains(modal)) {
+                        document.body.removeChild(modal);
+                    }
+                } catch (error) {
+                    console.warn('清理确认弹窗时出错:', error);
+                }
+            };
+
+            const resolveAndCleanup = (value) => {
+                if (isResolved) return; // 防止重复执行
+                cleanup();
+                resolve(value);
             };
 
             confirmBtn.addEventListener('click', () => {
-                cleanup();
-                resolve(true);
+                resolveAndCleanup(true);
             });
 
             cancelBtn.addEventListener('click', () => {
-                cleanup();
-                resolve(false);
+                resolveAndCleanup(false);
             });
 
             // 点击背景关闭
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    cleanup();
-                    resolve(false);
+                    resolveAndCleanup(false);
                 }
             });
 
             // ESC键关闭
             const handleEsc = (e) => {
                 if (e.key === 'Escape') {
-                    cleanup();
-                    resolve(false);
+                    resolveAndCleanup(false);
                     document.removeEventListener('keydown', handleEsc);
                 }
             };
@@ -1840,50 +2011,147 @@ class SessionsManager {
 
     // 显示Toast消息
     showToast(message, type = 'info') {
-        // 创建toast容器
-        let toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.id = 'toastContainer';
-            toastContainer.className = 'fixed top-4 right-4 z-50 space-y-2';
-            document.body.appendChild(toastContainer);
+        // 使用演示模式通知系统
+        window.demoModeShowToast(message, type);
+    }
+    
+    // 绑定学习记录筛选事件
+    bindRecordsFilterEvents() {
+        console.log('=== 绑定学习记录筛选事件 ===');
+        
+        // 时间范围选择器事件
+        const timeRangeSelector = document.getElementById('recordsTimeRangeSelector');
+        if (timeRangeSelector && !timeRangeSelector.hasAttribute('data-events-bound')) {
+            timeRangeSelector.addEventListener('change', (e) => {
+                console.log('时间范围选择改变:', e.target.value);
+                this.handleRecordsTimeRangeChange(e.target.value);
+            });
+            timeRangeSelector.setAttribute('data-events-bound', 'true');
         }
-
-        // 创建toast元素
-        const toast = document.createElement('div');
-        const colors = {
-            success: 'bg-green-500',
-            error: 'bg-red-500',
-            warning: 'bg-yellow-500',
-            info: 'bg-blue-500'
+        
+        // 项目筛选选择器事件
+        const projectFilterSelector = document.getElementById('recordsProjectFilterSelector');
+        if (projectFilterSelector && !projectFilterSelector.hasAttribute('data-events-bound')) {
+            projectFilterSelector.addEventListener('change', (e) => {
+                console.log('项目筛选选择改变:', e.target.value);
+                this.recordsFilters.projectName = e.target.value;
+            });
+            projectFilterSelector.setAttribute('data-events-bound', 'true');
+        }
+        
+        // 时长范围选择器事件
+        const durationFilterSelector = document.getElementById('recordsDurationFilterSelector');
+        if (durationFilterSelector && !durationFilterSelector.hasAttribute('data-events-bound')) {
+            durationFilterSelector.addEventListener('change', (e) => {
+                console.log('时长范围选择改变:', e.target.value);
+                this.recordsFilters.durationRange = e.target.value;
+            });
+            durationFilterSelector.setAttribute('data-events-bound', 'true');
+        }
+        
+        // 应用筛选按钮事件
+        const applyFiltersBtn = document.getElementById('applyRecordsFiltersBtn');
+        if (applyFiltersBtn && !applyFiltersBtn.hasAttribute('data-events-bound')) {
+            applyFiltersBtn.addEventListener('click', () => {
+                console.log('应用筛选按钮点击');
+                this.applyRecordsFilters();
+            });
+            applyFiltersBtn.setAttribute('data-events-bound', 'true');
+        }
+        
+        // 重置筛选按钮事件
+        const resetFiltersBtn = document.getElementById('resetRecordsFiltersBtn');
+        if (resetFiltersBtn && !resetFiltersBtn.hasAttribute('data-events-bound')) {
+            resetFiltersBtn.addEventListener('click', () => {
+                console.log('重置筛选按钮点击');
+                this.resetRecordsFilters();
+            });
+            resetFiltersBtn.setAttribute('data-events-bound', 'true');
+        }
+        
+        console.log('=== 学习记录筛选事件绑定完成 ===');
+    }
+    
+    // 处理时间范围选择改变
+    handleRecordsTimeRangeChange(value) {
+        const customDateRange = document.getElementById('recordsCustomDateRange');
+        
+        if (value === 'custom') {
+            customDateRange.classList.remove('hidden');
+            // 设置默认日期范围（最近30天）
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            
+            const startDateInput = document.getElementById('recordsStartDate');
+            const endDateInput = document.getElementById('recordsEndDate');
+            
+            if (startDateInput) startDateInput.value = startDate.toISOString().split('T')[0];
+            if (endDateInput) endDateInput.value = endDate.toISOString().split('T')[0];
+        } else {
+            customDateRange.classList.add('hidden');
+        }
+        
+        this.recordsFilters.timeRange = value;
+    }
+    
+    // 应用筛选
+    applyRecordsFilters() {
+        console.log('应用学习记录筛选:', this.recordsFilters);
+        
+        // 获取自定义日期范围
+        if (this.recordsFilters.timeRange === 'custom') {
+            const startDateInput = document.getElementById('recordsStartDate');
+            const endDateInput = document.getElementById('recordsEndDate');
+            
+            if (startDateInput && endDateInput) {
+                this.recordsFilters.startDate = startDateInput.value;
+                this.recordsFilters.endDate = endDateInput.value;
+            }
+        }
+        
+        // 重置到第一页
+        this.currentPage = 1;
+        
+        // 重新加载记录
+        this.loadRecords();
+        
+        this.showToast('筛选已应用', 'success');
+    }
+    
+    // 重置筛选
+    resetRecordsFilters() {
+        console.log('重置学习记录筛选');
+        
+        // 重置筛选状态
+        this.recordsFilters = {
+            timeRange: '',
+            startDate: '',
+            endDate: '',
+            projectName: '',
+            durationRange: ''
         };
         
-        toast.className = `${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
-        toast.innerHTML = `
-            <div class="flex items-center">
-                <span class="flex-1">${message}</span>
-                <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-
-        toastContainer.appendChild(toast);
-
-        // 显示动画
-        setTimeout(() => {
-            toast.classList.remove('translate-x-full');
-        }, 100);
-
-        // 自动隐藏
-        setTimeout(() => {
-            toast.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.parentElement.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        // 重置UI
+        const timeRangeSelector = document.getElementById('recordsTimeRangeSelector');
+        const projectFilterSelector = document.getElementById('recordsProjectFilterSelector');
+        const durationFilterSelector = document.getElementById('recordsDurationFilterSelector');
+        const customDateRange = document.getElementById('recordsCustomDateRange');
+        const startDateInput = document.getElementById('recordsStartDate');
+        const endDateInput = document.getElementById('recordsEndDate');
+        
+        if (timeRangeSelector) timeRangeSelector.value = '';
+        if (projectFilterSelector) projectFilterSelector.value = '';
+        if (durationFilterSelector) durationFilterSelector.value = '';
+        if (customDateRange) customDateRange.classList.add('hidden');
+        if (startDateInput) startDateInput.value = '';
+        if (endDateInput) endDateInput.value = '';
+        
+        // 重置到第一页并重新加载
+        this.currentPage = 1;
+        this.loadRecords();
+        
+        this.showToast('筛选已重置', 'info');
     }
 }
 
@@ -1982,4 +2250,9 @@ function observeDOMChanges() {
     });
     
     console.log('DOM变化监听器已启动');
+}
+
+// fetch 路径适配函数
+function getApiUrl(path) {
+  return window.isDemo ? `/demo${path}` : path;
 }

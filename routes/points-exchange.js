@@ -19,6 +19,48 @@ const upload = multer({
   }
 });
 
+// ====== DEMO 数据统一源 ======
+const demoData = {
+  users: [
+    { id: 161, username: 'admin', email: 'admin@example.com', avatar: '/assets/ico/default.svg' },
+    { id: 162, username: 'testuser', email: 'testuser@example.com', avatar: '/assets/ico/default.svg' },
+    { id: 163, username: 'test7', email: 'test7@example.com', avatar: '/assets/ico/default.svg' }
+  ],
+  products: [
+    { id: 1, name: '专注模式', description: '解锁专注模式，屏蔽干扰，提升学习效率', category_id: 1, image_url: '/assets/ico/focus-mode.svg', points_required: 100, stock_quantity: -1, exchange_limit_per_user: 1, requires_approval: false, sort_order: 1, is_active: true },
+    { id: 2, name: '学习报告', description: '获得详细的学习分析报告', category_id: 1, image_url: '/assets/ico/analytics-report.svg', points_required: 50, stock_quantity: -1, exchange_limit_per_user: 5, requires_approval: false, sort_order: 2, is_active: true },
+    { id: 3, name: '黄金徽章', description: '获得特殊的黄金成就徽章', category_id: 2, image_url: '/assets/ico/gold-badge.svg', points_required: 200, stock_quantity: 100, exchange_limit_per_user: 1, requires_approval: true, sort_order: 3, is_active: true },
+    { id: 4, name: '高级主题', description: '解锁高级界面主题', category_id: 3, image_url: '/assets/ico/premium-theme.svg', points_required: 150, stock_quantity: -1, exchange_limit_per_user: 1, requires_approval: false, sort_order: 4, is_active: true },
+    { id: 5, name: 'JavaScript进阶课程', description: '包含完整的学习路径和实战项目', category_id: 5, image_url: '/assets/ico/certificate.svg', points_required: 5000, stock_quantity: 10, exchange_limit_per_user: 1, requires_approval: true, sort_order: 5, is_active: true },
+    { id: 6, name: '技术书籍合集', description: '精选的技术书籍，涵盖多个领域', category_id: 6, image_url: '/assets/ico/knowledge-star.svg', points_required: 2000, stock_quantity: 25, exchange_limit_per_user: 3, requires_approval: true, sort_order: 6, is_active: true },
+    { id: 7, name: '在线工具会员', description: '提供各种开发工具的会员服务', category_id: 7, image_url: '/assets/ico/efficiency-focus.svg', points_required: 3000, stock_quantity: 50, exchange_limit_per_user: 2, requires_approval: true, sort_order: 7, is_active: true },
+    { id: 8, name: '学习周边套装', description: '高质量的学习用品和周边产品', category_id: 8, image_url: '/assets/ico/community-active.svg', points_required: 800, stock_quantity: 100, exchange_limit_per_user: 5, requires_approval: false, sort_order: 8, is_active: true },
+    { id: 9, name: '一对一技术辅导', description: '专业导师一对一技术指导', category_id: 9, image_url: '/assets/ico/study-expert.svg', points_required: 8000, stock_quantity: 5, exchange_limit_per_user: 1, requires_approval: true, sort_order: 9, is_active: true },
+    { id: 10, name: '学习纪念徽章', description: '纪念你的学习历程', category_id: 4, image_url: '/assets/ico/special-milestone.svg', points_required: 300, stock_quantity: 200, exchange_limit_per_user: 1, requires_approval: false, sort_order: 10, is_active: true }
+  ],
+  categories: [
+    { id: 1, name: '学习工具', description: '提升学习效率的虚拟工具', icon: '🛠️', is_active: true, sort_order: 1 },
+    { id: 2, name: '成就徽章', description: '特殊的成就徽章和装饰', icon: '🏆', is_active: true, sort_order: 2 },
+    { id: 3, name: '特权功能', description: '解锁特殊功能和使用权限', icon: '⭐', is_active: true, sort_order: 3 },
+    { id: 4, name: '纪念品', description: '学习历程纪念品', icon: '🎁', is_active: true, sort_order: 4 },
+    { id: 5, name: '课程', description: '在线学习课程', icon: '📚', is_active: true, sort_order: 5 },
+    { id: 6, name: '书籍', description: '技术书籍和资料', icon: '📖', is_active: true, sort_order: 6 },
+    { id: 7, name: '工具', description: '开发工具和服务', icon: '🔧', is_active: true, sort_order: 7 },
+    { id: 8, name: '周边', description: '学习用品和周边', icon: '🎒', is_active: true, sort_order: 8 },
+    { id: 9, name: '服务', description: '专业服务', icon: '👨‍🏫', is_active: true, sort_order: 9 }
+  ],
+  exchangeRecords: [
+    { id: 1, user_id: 161, product_id: 6, status: 'approved', points_spent: 2000, quantity: 1, created_at: '2025-07-01 10:30:00', updated_at: '2025-07-01 11:00:00', completed_at: '2025-07-01 11:00:00', approved_by: 1, approved_at: '2025-07-01 11:00:00', approval_notes: '审核通过' },
+    { id: 2, user_id: 162, product_id: 8, status: 'pending', points_spent: 800, quantity: 1, created_at: '2025-07-05 14:20:00', updated_at: '2025-07-05 14:20:00', completed_at: null, approved_by: null, approved_at: null, approval_notes: '' },
+    { id: 3, user_id: 163, product_id: 7, status: 'approved', points_spent: 3000, quantity: 1, created_at: '2025-07-02 09:15:00', updated_at: '2025-07-02 10:00:00', completed_at: '2025-07-02 10:00:00', approved_by: 1, approved_at: '2025-07-02 10:00:00', approval_notes: '审核通过' },
+    { id: 4, user_id: 162, product_id: 5, status: 'processing', points_spent: 5000, quantity: 1, created_at: '2025-07-08 16:45:00', updated_at: '2025-07-08 16:45:00', completed_at: null, approved_by: null, approved_at: null, approval_notes: '' },
+    { id: 5, user_id: 161, product_id: 9, status: 'rejected', points_spent: 8000, quantity: 1, created_at: '2025-07-06 13:30:00', updated_at: '2025-07-06 14:00:00', completed_at: null, approved_by: 1, approved_at: '2025-07-06 14:00:00', approval_notes: '库存不足，暂时无法提供此服务' },
+    { id: 6, user_id: 163, product_id: 3, status: 'pending', points_spent: 200, quantity: 1, created_at: '2025-07-09 15:45:00', updated_at: '2025-07-09 15:45:00', completed_at: null, approved_by: null, approved_at: null, approval_notes: '' },
+    { id: 7, user_id: 162, product_id: 6, status: 'completed', points_spent: 2000, quantity: 1, created_at: '2025-07-03 11:20:00', updated_at: '2025-07-03 12:00:00', completed_at: '2025-07-03 12:00:00', approved_by: 1, approved_at: '2025-07-03 11:30:00', approval_notes: '审核通过' },
+    { id: 8, user_id: 161, product_id: 4, status: 'completed', points_spent: 150, quantity: 1, created_at: '2025-07-04 14:30:00', updated_at: '2025-07-04 14:35:00', completed_at: '2025-07-04 14:35:00', approved_by: null, approved_at: null, approval_notes: '' }
+  ]
+};
+
 // 用户端API
 // 获取商品分类
 router.get('/categories', authenticateToken, async (req, res) => {
@@ -28,6 +70,9 @@ router.get('/categories', authenticateToken, async (req, res) => {
 
 // 获取商品列表
 router.get('/products', authenticateToken, async (req, res) => {
+  if (isDemoApi(req)) {
+    return res.json({ success: true, data: demoData.products });
+  }
   const { category_id, max_points, search } = req.query;
   const products = await pointsExchangeService.getVirtualProducts({ category_id, max_points, search });
   res.json({ success: true, data: products });
@@ -60,6 +105,20 @@ router.post('/products/:id/exchange', authenticateToken, async (req, res) => {
 
 // 获取用户兑换记录
 router.get('/exchange-records', authenticateToken, async (req, res) => {
+  if (isDemoApi(req)) {
+    // 可根据 req.user.id 过滤
+    const userId = req.user && req.user.id;
+    let records = demoData.exchangeRecords;
+    if (userId) records = records.filter(r => r.user_id === userId);
+    res.json({
+      success: true,
+      data: {
+        records,
+        pagination: { page: 1, limit: 10, total: records.length, totalPages: 1 }
+      }
+    });
+    return;
+  }
   // 传递search参数
   const { search, status, page, limit } = req.query;
   const result = await pointsExchangeService.getUserExchangeRecords(req.user.id, { search, status, page, limit });
@@ -68,6 +127,38 @@ router.get('/exchange-records', authenticateToken, async (req, res) => {
 
 // 获取用户积分明细
 router.get('/points-records', authenticateToken, async (req, res) => {
+  if (isDemoApi(req)) {
+    // 生成积分明细：注册奖励、打卡、完成项目、兑换商品
+    const userId = req.user && req.user.id;
+    let records = [];
+    if (!userId || userId === 161) {
+      records = [
+        { id: 1, type: 'gain', points: 10000, description: '新用户注册奖励', created_at: '2025-07-01 08:00:00' },
+        { id: 2, type: 'gain', points: 10, description: '每日打卡', created_at: '2025-07-01 08:10:00' },
+        ...demoData.exchangeRecords.filter(r => r.user_id === 161).map((r, i) => ({ id: 100 + i, type: 'spend', points: -r.points_spent, description: `兑换 ${demoData.products.find(p => p.id === r.product_id)?.name || ''}`, created_at: r.created_at }))
+      ];
+    } else if (userId === 162) {
+      records = [
+        { id: 3, type: 'gain', points: 10000, description: '新用户注册奖励', created_at: '2025-07-01 08:00:00' },
+        { id: 4, type: 'gain', points: 10, description: '每日打卡', created_at: '2025-07-01 08:10:00' },
+        ...demoData.exchangeRecords.filter(r => r.user_id === 162).map((r, i) => ({ id: 200 + i, type: 'spend', points: -r.points_spent, description: `兑换 ${demoData.products.find(p => p.id === r.product_id)?.name || ''}`, created_at: r.created_at }))
+      ];
+    } else if (userId === 163) {
+      records = [
+        { id: 5, type: 'gain', points: 10000, description: '新用户注册奖励', created_at: '2025-07-01 08:00:00' },
+        { id: 6, type: 'gain', points: 10, description: '每日打卡', created_at: '2025-07-01 08:10:00' },
+        ...demoData.exchangeRecords.filter(r => r.user_id === 163).map((r, i) => ({ id: 300 + i, type: 'spend', points: -r.points_spent, description: `兑换 ${demoData.products.find(p => p.id === r.product_id)?.name || ''}`, created_at: r.created_at }))
+      ];
+    }
+    res.json({
+      success: true,
+      data: {
+        records,
+        pagination: { page: 1, limit: 10, total: records.length, totalPages: 1 }
+      }
+    });
+    return;
+  }
   const { page, limit, record_type, search } = req.query;
   const result = await pointsExchangeService.getPointsRecords(req.user.id, { page, limit, record_type, search });
   res.json(result);
@@ -81,9 +172,21 @@ router.get('/user-points', authenticateToken, async (req, res) => {
   res.json({ success: true, data: points });
 });
 
+// 工具函数：判断是否为演示模式API
+function isDemoApi(req) {
+  return req.originalUrl && req.originalUrl.startsWith('/demo/api');
+}
+
 // 管理端API
 // 获取所有商品（含禁用）
 router.get('/admin/products', authenticateToken, requireAdmin, async (req, res) => {
+  if (isDemoApi(req)) {
+    // 演示模式下返回硬编码商品
+    return res.json({
+      success: true,
+      data: demoData.products
+    });
+  }
   const { category_id, max_points, search } = req.query;
   const products = await pointsExchangeService.getAdminVirtualProducts({ category_id, max_points, search });
   res.json({ success: true, data: products });
@@ -256,6 +359,12 @@ router.post('/admin/products/upload-image', authenticateToken, requireAdmin, (re
 // 分类管理API
 // 获取所有分类
 router.get('/admin/categories', authenticateToken, requireAdmin, async (req, res) => {
+  if (isDemoApi(req)) {
+    return res.json({
+      success: true,
+      data: demoData.categories
+    });
+  }
   try {
     const categories = await db('product_categories')
       .orderBy('sort_order', 'asc')
@@ -361,6 +470,15 @@ router.delete('/admin/categories/:id', authenticateToken, requireAdmin, async (r
 
 // 获取所有积分规则
 router.get('/admin/points-rules', authenticateToken, requireAdmin, async (req, res) => {
+  if (isDemoApi(req)) {
+    return res.json({
+      success: true,
+      data: [
+        { id: 1, name: '每日打卡', description: '每日学习打卡奖励', points: 10, is_active: true, created_at: new Date(), updated_at: new Date() },
+        { id: 2, name: '完成项目', description: '完成学习项目奖励', points: 50, is_active: true, created_at: new Date(), updated_at: new Date() }
+      ]
+    });
+  }
   const rules = await pointsExchangeService.getPointsRules();
   res.json({ success: true, data: rules });
 });
@@ -393,15 +511,110 @@ router.delete('/admin/points-rules/:id', authenticateToken, requireAdmin, async 
 
 // 获取待审核兑换申请
 router.get('/admin/pending-exchanges', authenticateToken, requireAdmin, async (req, res) => {
+  if (isDemoApi(req)) {
+    return res.json({
+      success: true,
+      data: demoData.exchangeRecords.filter(r => r.status === 'pending')
+    });
+  }
   const records = await pointsExchangeService.getPendingExchanges();
   res.json({ success: true, data: records });
 });
 
+// 获取待审核兑换申请（兼容前端调用）
+router.get('/admin/exchange/pending', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    console.log('开始获取待审核兑换记录...');
+    
+    const records = await db('exchange_records as er')
+      .select(
+        'er.id',
+        'er.user_id',
+        'er.product_id',
+        'er.status',
+        'er.points_spent',
+        'er.quantity',
+        'er.created_at',
+        'er.updated_at',
+        'er.completed_at',
+        'er.approved_by',
+        'er.approved_at',
+        'er.approval_notes',
+        'u.username',
+        'u.email',
+        'u.avatar as user_avatar',
+        'vp.name as product_name',
+        'vp.description as product_description',
+        'vp.image_url as product_image',
+        'vp.requires_approval',
+        'pc.name as category_name',
+        'admin.username as approved_by_username'
+      )
+      .leftJoin('users as u', 'er.user_id', 'u.id')
+      .leftJoin('virtual_products as vp', 'er.product_id', 'vp.id')
+      .leftJoin('product_categories as pc', 'vp.category_id', 'pc.id')
+      .leftJoin('users as admin', 'er.approved_by', 'admin.id')
+      .where('er.status', 'pending')
+      .orderBy('er.created_at', 'desc');
+
+    // 格式化数据以匹配前端期望的结构
+    const formattedRecords = records.map(record => ({
+      id: record.id,
+      user_id: record.user_id,
+      product_id: record.product_id,
+      status: record.status,
+      points_required: record.points_spent,
+      quantity: record.quantity, // 这里严格等于数据库字段
+      created_at: record.created_at,
+      updated_at: record.updated_at,
+      completed_at: record.completed_at,
+      approved_by: record.approved_by,
+      approved_at: record.approved_at,
+      approval_notes: record.approval_notes,
+      user: {
+        id: record.user_id,
+        username: record.username,
+        email: record.email,
+        avatar: record.user_avatar
+      },
+      product: {
+        id: record.product_id,
+        name: record.product_name,
+        description: record.product_description,
+        image_url: record.product_image,
+        requires_approval: record.requires_approval
+      },
+      category: {
+        name: record.category_name
+      },
+      approved_by_user: record.approved_by_username
+    }));
+
+    console.log(`成功获取 ${formattedRecords.length} 条待审核记录`);
+    
+    res.json({
+      success: true,
+      records: formattedRecords
+    });
+  } catch (error) {
+    console.error('获取待审核兑换记录失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: '获取待审核兑换记录失败' 
+    });
+  }
+});
+
 // 审核兑换申请
 router.post('/admin/exchanges/:id/approve', authenticateToken, requireAdmin, async (req, res) => {
+  console.log('审核兑换申请开始:', req.params.id, req.body);
   const { approved, notes } = req.body;
   const result = await pointsExchangeService.approveExchange(req.params.id, req.user.id, approved, notes);
-  if (!result.success) return res.status(400).json({ success: false, error: result.error });
+  if (!result.success) {
+    console.log('审核失败:', result.error);
+    return res.status(400).json({ success: false, error: result.error });
+  }
+  console.log('审核成功');
   res.json({ success: true });
 });
 
@@ -442,18 +655,48 @@ router.delete('/admin/exchanges/:id', authenticateToken, requireAdmin, async (re
 
 // 获取兑换统计
 router.get('/admin/exchange-stats', authenticateToken, requireAdmin, async (req, res) => {
-  try {
-    const totalExchanges = await db('exchange_records').count('* as count').first();
-    const pendingExchanges = await db('exchange_records').where('status', 'pending').count('* as count').first();
-    const totalPoints = await db('user_points').sum('total_points as total').first();
-    
+  if (isDemoApi(req)) {
+    const demoRecords = demoData.exchangeRecords;
+    const totalProducts = demoData.products.length;
+    const totalExchanges = demoRecords.length;
+    const pending = demoRecords.filter(r => r.status === 'pending').length;
+    const approved = demoRecords.filter(r => r.status === 'approved').length;
+    const rejected = demoRecords.filter(r => r.status === 'rejected').length;
+    const completed = demoRecords.filter(r => r.status === 'completed').length;
+    const totalPoints = demoRecords.reduce((sum, r) => sum + r.points_spent, 0);
     res.json({
       success: true,
       data: {
-        totalExchanges: totalExchanges.count || 0,
-        pendingExchanges: pendingExchanges.count || 0,
-        totalPoints: totalPoints.total || 0
+        total: totalExchanges,
+        pending,
+        approved,
+        rejected,
+        totalPoints
       }
+    });
+    return;
+  }
+  try {
+    console.log('开始获取兑换统计信息...');
+    const totalExchanges = await db('exchange_records').count('* as count').first();
+    const pending = await db('exchange_records').where('status', 'pending').count('* as count').first();
+    const approved = await db('exchange_records').where('status', 'approved').count('* as count').first();
+    const rejected = await db('exchange_records').where('status', 'rejected').count('* as count').first();
+    const totalPoints = await db('user_points').sum('total_points as total').first();
+    
+    const stats = {
+      total: totalExchanges.count || 0,
+      pending: pending.count || 0,
+      approved: approved.count || 0,
+      rejected: rejected.count || 0,
+      totalPoints: totalPoints.total || 0
+    };
+    
+    console.log('统计信息查询结果:', stats);
+    
+    res.json({
+      success: true,
+      data: stats
     });
   } catch (error) {
     console.error('获取兑换统计失败:', error);
@@ -463,8 +706,14 @@ router.get('/admin/exchange-stats', authenticateToken, requireAdmin, async (req,
 
 // 获取所有兑换记录（管理端）
 router.get('/admin/exchange-records', authenticateToken, requireAdmin, async (req, res) => {
+  if (isDemoApi(req)) {
+    return res.json({
+      success: true,
+      data: demoData.exchangeRecords
+    });
+  }
   try {
-    const { page = 1, limit = 20, status, user_id, search } = req.query;
+    const { page = 1, limit = 10, status, user_id, search } = req.query;
     const offset = (page - 1) * limit;
 
     // 1. 查询数据列表

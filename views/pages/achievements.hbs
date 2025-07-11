@@ -228,7 +228,7 @@ if (typeof window.AchievementPage === 'undefined') {
         const userAch = userMap[a.id];
         return {
           ...a,
-          is_completed: !!userAch,
+          is_completed: !!userAch && userAch.is_completed,
           current_progress: userAch ? userAch.current_progress : 0
         };
       });
@@ -307,11 +307,14 @@ if (typeof window.AchievementPage === 'undefined') {
             case 'total_duration':
               targetValue = conditions.target_minutes || 600;
               break;
+            case 'total_hours':
+              targetValue = (conditions.hours || 1) * 60; // 转换为分钟
+              break;
             case 'consecutive_days':
-              targetValue = conditions.target_days || 7;
+              targetValue = conditions.days || 7;
               break;
             case 'project_completion':
-              targetValue = conditions.target_count || 1;
+              targetValue = conditions.count || 1;
               break;
             default:
               targetValue = 1;
@@ -322,14 +325,25 @@ if (typeof window.AchievementPage === 'undefined') {
         targetValue = 1;
       }
       
+      // 如果已完成，确保进度显示为目标值
+      const displayProgress = isCompleted ? targetValue : progress;
       const progressPercent = isCompleted ? 100 : Math.min((progress / targetValue) * 100, 100);
 
       // 图标class：已完成加动画和高光，未完成加淡入
       let iconHtml = '';
-      if (achievement.achievement_icon && achievement.achievement_icon.endsWith('.svg')) {
-        iconHtml = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-16 w-16 mb-4 badge-glow bg-transparent" />`;
+      if (achievement.achievement_icon) {
+        // 检查是否为图片文件（包括自定义上传的图片）
+        const isImageFile = achievement.achievement_icon.match(/\.(svg|png|jpg|jpeg|gif|webp)$/i) || 
+                           achievement.achievement_icon.startsWith('/assets/ico/achievements/custom/');
+        
+        if (isImageFile) {
+          iconHtml = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-16 w-16 mb-4 badge-glow bg-transparent" />`;
+        } else {
+          iconHtml = `<i class="${achievement.achievement_icon} text-6xl mb-4 ${isCompleted ? 'badge-animate-pop badge-glow' : 'badge-fade-in opacity-50'}"></i>`;
+        }
       } else {
-        iconHtml = `<i class="${achievement.achievement_icon} text-6xl mb-4 ${isCompleted ? 'badge-animate-pop badge-glow' : 'badge-fade-in opacity-50'}"></i>`;
+        // 默认图标
+        iconHtml = `<i class="fas fa-trophy text-6xl mb-4 ${isCompleted ? 'badge-animate-pop badge-glow' : 'badge-fade-in opacity-50'}"></i>`;
       }
 
       card.innerHTML = `
@@ -339,7 +353,7 @@ if (typeof window.AchievementPage === 'undefined') {
         <div class="progress-container mb-4">
           <div class="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
             <span>进度</span>
-            <span>${progress}/${targetValue}</span>
+            <span>${displayProgress}/${targetValue}</span>
           </div>
           <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div class="progress-bar bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
@@ -365,11 +379,20 @@ if (typeof window.AchievementPage === 'undefined') {
       const progressBar = document.getElementById('progressBar');
       const points = document.getElementById('modalPoints');
 
-      // 修复：弹窗icon支持SVG和icon class
-      if (achievement.achievement_icon && achievement.achievement_icon.endsWith('.svg')) {
-        icon.innerHTML = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-20 w-20 mb-2 badge-glow" />`;
+      // 修复：弹窗icon支持SVG、自定义图片和icon class
+      if (achievement.achievement_icon) {
+        // 检查是否为图片文件（包括自定义上传的图片）
+        const isImageFile = achievement.achievement_icon.match(/\.(svg|png|jpg|jpeg|gif|webp)$/i) || 
+                           achievement.achievement_icon.startsWith('/assets/ico/achievements/custom/');
+        
+        if (isImageFile) {
+          icon.innerHTML = `<img src="${achievement.achievement_icon}" alt="徽章" class="mx-auto h-20 w-20 mb-2 badge-glow" />`;
+        } else {
+          icon.innerHTML = `<i class="${achievement.achievement_icon} text-6xl badge-glow"></i>`;
+        }
       } else {
-        icon.innerHTML = `<i class="${achievement.achievement_icon} text-6xl badge-glow"></i>`;
+        // 默认图标
+        icon.innerHTML = `<i class="fas fa-trophy text-6xl badge-glow"></i>`;
       }
       
       title.textContent = achievement.achievement_name;
@@ -388,11 +411,14 @@ if (typeof window.AchievementPage === 'undefined') {
             case 'total_duration':
               targetValue = conditions.target_minutes || 600;
               break;
+            case 'total_hours':
+              targetValue = (conditions.hours || 1) * 60; // 转换为分钟
+              break;
             case 'consecutive_days':
-              targetValue = conditions.target_days || 7;
+              targetValue = conditions.days || 7;
               break;
             case 'project_completion':
-              targetValue = conditions.target_count || 1;
+              targetValue = conditions.count || 1;
               break;
             default:
               targetValue = 1;
@@ -403,9 +429,11 @@ if (typeof window.AchievementPage === 'undefined') {
         targetValue = 1;
       }
       
+      // 如果已完成，确保进度显示为目标值
+      const displayProgress = achievement.is_completed ? targetValue : progress;
       const progressPercent = achievement.is_completed ? 100 : Math.min((progress / targetValue) * 100, 100);
       
-      progressText.textContent = `${progress}/${targetValue}`;
+      progressText.textContent = `${displayProgress}/${targetValue}`;
       progressBar.style.width = `${progressPercent}%`;
       points.textContent = `获得积分: ${achievement.points}`;
 

@@ -101,6 +101,26 @@
     }
 </style>
 
+{{#if isDemo}}
+<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 mb-6">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+        <i class="fas fa-play text-sm"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-semibold">🎯 系统演示模式</h1>
+        <p class="text-sm text-blue-100">当前为演示数据，仅供体验，所有操作不会影响真实数据。</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-sm bg-white/20 px-3 py-1 rounded-full">演示数据</span>
+      <a href="/" class="text-sm hover:text-blue-200 transition">返回首页</a>
+    </div>
+  </div>
+</div>
+{{/if}}
+
 <div class="container mx-auto px-4 py-8">
     <!-- Excel导入区域 -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">

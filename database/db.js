@@ -250,6 +250,132 @@ async function getAnalytics(userId) {
   };
 }
 
+// Admin methods
+async function getAllUsers(includeInactive = false) {
+  let query = db('users')
+    .select('id', 'username', 'email', 'role', 'is_active', 'avatar', 'created_at', 'last_login_at')
+    .orderBy('created_at', 'desc');
+  
+  // 默认只返回活跃用户，除非明确要求包含非活跃用户
+  if (!includeInactive) {
+    query = query.where('is_active', true);
+  }
+  
+  const users = await query;
+  
+  // 获取每个用户的积分信息
+  const usersWithPoints = await Promise.all(users.map(async (user) => {
+    const userPoints = await db('user_points')
+      .where('user_id', user.id)
+      .select('total_points', 'available_points', 'used_points')
+      .first();
+    
+    return {
+      ...user,
+      points: userPoints ? userPoints.available_points : 0,
+      total_points: userPoints ? userPoints.total_points : 0,
+      used_points: userPoints ? userPoints.used_points : 0
+    };
+  }));
+  
+  return usersWithPoints;
+}
+
+async function getDataStats() {
+  const totalUsers = await db('users').count('* as count').first();
+  const totalProjects = await db('study_projects').count('* as count').first();
+  const totalSessions = await db('study_sessions').count('* as count').first();
+  
+  return {
+    totalUsers: parseInt(totalUsers.count),
+    totalProjects: parseInt(totalProjects.count),
+    totalSessions: parseInt(totalSessions.count)
+  };
+}
+
+async function getAllAchievements() {
+  return await db('achievements')
+    .select('*')
+    .orderBy('created_at', 'desc');
+}
+
+async function getSystemConfig() {
+  const config = await db('system_config').first();
+  return config || {
+    systemName: 'Study Tracker',
+    systemVersion: '2.0.0',
+    adminEmail: 'admin@example.com',
+    timezone: 'Asia/Shanghai',
+    defaultStudyTime: 30,
+    dailyGoal: 120,
+    reminderTime: '09:00',
+    autoSaveInterval: 60,
+    browserNotifications: true,
+    studyReminders: true,
+    sessionTimeout: 30,
+    maxLoginAttempts: 5,
+    minPasswordLength: 8,
+    backupFrequency: 7,
+    debugMode: false,
+    maintenanceMode: false
+  };
+}
+
+async function getExchangeRecords() {
+  return await db('exchange_records')
+    .join('users', 'exchange_records.user_id', 'users.id')
+    .join('virtual_products', 'exchange_records.product_id', 'virtual_products.id')
+    .select(
+      'exchange_records.*',
+      'users.username as user_username',
+      'virtual_products.name as product_name'
+    )
+    .orderBy('exchange_records.created_at', 'desc');
+}
+
+async function getPendingExchangeRecords() {
+  return await db('exchange_records')
+    .join('users', 'exchange_records.user_id', 'users.id')
+    .join('virtual_products', 'exchange_records.product_id', 'virtual_products.id')
+    .where('exchange_records.status', 'pending')
+    .select(
+      'exchange_records.*',
+      'users.username as user_username',
+      'virtual_products.name as product_name'
+    )
+    .orderBy('exchange_records.created_at', 'desc');
+}
+
+async function getSMTPConfig() {
+  const config = await db('system_config').first();
+  return {
+    host: config?.smtp_host || '',
+    port: config?.smtp_port || 587,
+    user: config?.smtp_user || '',
+    pass: config?.smtp_pass || '',
+    secure: config?.smtp_secure || false
+  };
+}
+
+async function getAdminStats() {
+  const totalUsers = await db('users').count('* as count').first();
+  const totalProjects = await db('study_projects').count('* as count').first();
+  const totalSessions = await db('study_sessions').count('* as count').first();
+  const totalAchievements = await db('achievements').count('* as count').first();
+  
+  // 计算总学习时间
+  const sessions = await db('study_sessions').select('duration_hours');
+  const totalHours = sessions.reduce((sum, session) => sum + (session.duration_hours || 0), 0);
+  
+  return {
+    totalUsers: parseInt(totalUsers.count),
+    totalProjects: parseInt(totalProjects.count),
+    totalSessions: parseInt(totalSessions.count),
+    totalAchievements: parseInt(totalAchievements.count),
+    totalHours: Math.round(totalHours * 100) / 100
+  };
+}
+
 module.exports = {
   db,
   knex: db,
@@ -273,5 +399,14 @@ module.exports = {
   getDashboardStats,
   getWeeklyProgress,
   getRecentActivities,
-  getAnalytics
+  getAnalytics,
+  // Admin functions
+  getAllUsers,
+  getDataStats,
+  getAllAchievements,
+  getSystemConfig,
+  getExchangeRecords,
+  getPendingExchangeRecords,
+  getSMTPConfig,
+  getAdminStats
 }; 

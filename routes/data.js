@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const multer = require('multer');
 const XLSX = require('xlsx');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const path = require('path');
 
 const router = express.Router();
 
@@ -12,21 +13,19 @@ const router = express.Router();
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB
+        fileSize: 20 * 1024 * 1024, // 20MB，与安全验证一致
+        files: 1, // 只允许上传1个文件
+        fieldSize: 1024 * 1024 // 字段大小限制
     },
     fileFilter: (req, file, cb) => {
-        // 更宽松的文件类型检查
+        // 文件类型检查
         const allowedMimeTypes = [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
             'application/vnd.ms-excel', // .xls
-            'text/csv', // .csv
-            'application/csv', // .csv
-            'application/excel', // .xls
-            'application/vnd.msexcel', // .xls
             'application/octet-stream' // 通用二进制文件
         ];
         
-        const allowedExtensions = ['.xlsx', '.xls', '.csv'];
+        const allowedExtensions = ['.xlsx', '.xls'];
         
         // 检查MIME类型或文件扩展名
         const isValidMimeType = allowedMimeTypes.includes(file.mimetype);
@@ -41,7 +40,7 @@ const upload = multer({
                 filename: file.originalname,
                 mimetype: file.mimetype
             });
-            cb(new Error('只支持Excel文件(.xlsx/.xls)和CSV文件格式'), false);
+            cb(new Error('只支持Excel文件(.xlsx/.xls)格式'), false);
         }
     }
 });
@@ -477,29 +476,345 @@ router.get('/api/projects', async (req, res) => {
     }
 });
 
-// 仪表板Excel解析接口
+// 仪表板Excel解析接口 - 加强安全防护
 router.post('/dashboard/parse-excel', upload.single('file'), async (req, res) => {
+  const startTime = Date.now();
+  const securityLog = {
+    timestamp: new Date().toISOString(),
+    event: 'dashboard_excel_parse',
+    userId: req.user?.id || 'anonymous',
+    username: req.user?.username || 'anonymous',
+    ip: req.ip || req.connection.remoteAddress,
+    userAgent: req.get('User-Agent'),
+    fileInfo: null,
+    validationResults: [],
+    errors: [],
+    processingTime: 0
+  };
+
   try {
-    if (!req.file) return res.status(400).json({ error: '未上传文件' });
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    // 1. 基础权限验证
+    if (!req.user) {
+      securityLog.errors.push('未授权访问');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(401).json({ error: '请先登录' });
+    }
+
+    // 2. 文件存在性检查
+    if (!req.file) {
+      securityLog.errors.push('未上传文件');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '未上传文件' });
+    }
+
+    // 3. 文件信息记录
+    securityLog.fileInfo = {
+      originalName: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype,
+      encoding: req.file.encoding
+    };
+
+    // 4. 文件大小限制 (20MB)
+    const MAX_FILE_SIZE = 20 * 1024 * 1024;
+    if (req.file.size > MAX_FILE_SIZE) {
+      securityLog.errors.push(`文件大小超限: ${req.file.size} bytes`);
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '文件大小不能超过20MB' });
+    }
+
+    // 5. 文件类型验证
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/octet-stream'
+    ];
+    
+    if (!allowedMimeTypes.includes(req.file.mimetype)) {
+      securityLog.errors.push(`不允许的文件类型: ${req.file.mimetype}`);
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '只支持Excel文件格式' });
+    }
+
+    // 6. 文件名安全验证
+    const fileName = req.file.originalname;
+    if (!fileName || fileName.length > 255) {
+      securityLog.errors.push('文件名无效或过长');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '文件名无效' });
+    }
+
+    // 检查文件名是否包含危险字符
+    const dangerousPatterns = /[<>:"/\\|?*\x00-\x1f]/;
+    if (dangerousPatterns.test(fileName)) {
+      securityLog.errors.push('文件名包含危险字符');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '文件名包含非法字符' });
+    }
+
+    // 7. 文件扩展名验证
+    const allowedExtensions = ['.xlsx', '.xls'];
+    const fileExtension = path.extname(fileName).toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+      securityLog.errors.push(`不允许的文件扩展名: ${fileExtension}`);
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '只支持.xlsx和.xls格式' });
+    }
+
+    // 8. 文件内容魔数验证
+    const excelSignatures = [
+      Buffer.from([0x50, 0x4B, 0x03, 0x04]), // ZIP/XLSX
+      Buffer.from([0x50, 0x4B, 0x05, 0x06]), // ZIP/XLSX
+      Buffer.from([0x50, 0x4B, 0x07, 0x08]), // ZIP/XLSX
+      Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) // XLS
+    ];
+
+    const fileBuffer = req.file.buffer;
+    const isValidSignature = excelSignatures.some(signature => 
+      fileBuffer.slice(0, signature.length).equals(signature)
+    );
+
+    if (!isValidSignature) {
+      securityLog.errors.push('文件签名验证失败');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '文件格式验证失败' });
+    }
+
+    // 9. 恶意代码检测
+    const maliciousPatterns = [
+      // JavaScript代码
+      /<script[^>]*>/i, /javascript:/i, /eval\s*\(/i, /Function\s*\(/i,
+      // SQL注入
+      /union\s+select/i, /drop\s+table/i, /insert\s+into/i, /delete\s+from/i,
+      // 系统命令
+      /system\s*\(/i, /exec\s*\(/i, /shell_exec\s*\(/i, /passthru\s*\(/i,
+      // 文件操作
+      /file_get_contents/i, /fopen\s*\(/i, /fwrite\s*\(/i,
+      // 网络请求
+      /curl_exec/i, /fsockopen/i,
+      // 编码绕过
+      /base64_decode/i, /urldecode/i, /hex2bin/i,
+      // 反序列化
+      /unserialize/i, /__destruct/i
+    ];
+
+    const fileContent = fileBuffer.toString('utf8', 0, Math.min(fileBuffer.length, 100000)); // 检查前100KB
+    for (const pattern of maliciousPatterns) {
+      if (pattern.test(fileContent)) {
+        securityLog.errors.push(`检测到恶意代码模式: ${pattern.source}`);
+        console.log('🔒 安全事件:', securityLog);
+        return res.status(400).json({ error: '文件内容包含非法代码' });
+      }
+    }
+
+    // 10. Excel文件结构验证
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    
+    if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+      securityLog.errors.push('Excel文件没有工作表');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: 'Excel文件格式无效' });
+    }
+
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
+    
+    if (!sheet) {
+      securityLog.errors.push('无法读取工作表');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: '无法读取工作表' });
+    }
+
+    // 11. 数据行数限制 (防止大量数据攻击)
     const rawData = XLSX.utils.sheet_to_json(sheet);
+    const MAX_ROWS = 1000;
     
-    // 将中文字段名映射为英文字段名
-    const data = rawData.map(row => ({
-      date: row['日期'] || row['date'],
-      projectName: row['学习项目名称'] || row['projectName'],
-      startTime: row['项目开始时间'] || row['startTime'],
-      endTime: row['项目结束时间'] || row['endTime'],
-      duration: row['项目完成时间'] || row['duration']
-    }));
+    if (rawData.length > MAX_ROWS) {
+      securityLog.errors.push(`数据行数超限: ${rawData.length} > ${MAX_ROWS}`);
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(400).json({ error: `数据行数不能超过${MAX_ROWS}行` });
+    }
+
+    // 12. 数据内容验证
+    const validatedData = [];
+    const requiredFields = ['日期', '学习项目名称', '项目开始时间', '项目结束时间', '项目完成时间'];
     
-    res.json({ success: true, data });
+    for (let i = 0; i < rawData.length; i++) {
+      const row = rawData[i];
+      const rowNumber = i + 2; // Excel行号从2开始
+      
+      // 检查必要字段
+      const missingFields = requiredFields.filter(field => !row[field]);
+      if (missingFields.length > 0) {
+        securityLog.errors.push(`第${rowNumber}行缺少必要字段: ${missingFields.join(', ')}`);
+        continue;
+      }
+
+      // 数据长度限制
+      const fieldLengths = {
+        '学习项目名称': 100,
+        '项目开始时间': 50,
+        '项目结束时间': 50,
+        '项目完成时间': 20
+      };
+
+      for (const [field, maxLength] of Object.entries(fieldLengths)) {
+        if (row[field] && row[field].toString().length > maxLength) {
+          securityLog.errors.push(`第${rowNumber}行${field}过长: ${row[field].toString().length} > ${maxLength}`);
+          continue;
+        }
+      }
+
+      // 日期格式验证，支持 YYYY-MM-DD、YYYY.MM.DD、YYYY/MM/DD
+      let rawDate = row['日期'] ? row['日期'].toString().trim() : '';
+      let normalizedDate = rawDate.replace(/[./]/g, '-');
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(normalizedDate)) {
+        securityLog.errors.push(`第${rowNumber}行日期格式无效: ${row['日期']}`);
+        continue;
+      }
+      row['日期'] = normalizedDate; // 标准化后写回
+
+      // 时间格式验证，支持 H:mm 和 HH:mm，自动补零为 HH:mm
+      const timeFields = ['项目开始时间', '项目结束时间'];
+      const timeRegex = /^([0-1]?\d|2[0-3]):[0-5]\d$/;
+      let timeValid = true;
+      for (const field of timeFields) {
+        let t = row[field] ? row[field].toString().trim() : '';
+        if (!timeRegex.test(t)) {
+          securityLog.errors.push(`第${rowNumber}行时间格式无效`);
+          timeValid = false;
+          break;
+        }
+        // 自动补零为 HH:mm
+        if (t.length === 4) t = '0' + t;
+        row[field] = t;
+      }
+      if (!timeValid) continue;
+
+      // 数值验证
+      const duration = parseInt(row['项目完成时间']);
+      if (isNaN(duration) || duration < 0 || duration > 1440) { // 最大24小时
+        securityLog.errors.push(`第${rowNumber}行完成时间无效: ${row['项目完成时间']}`);
+        continue;
+      }
+
+      // 数据清理和转换
+      const cleanRow = {
+        date: row['日期'].toString().trim(),
+        projectName: row['学习项目名称'].toString().trim().substring(0, 100),
+        startTime: row['项目开始时间'].toString().trim(),
+        endTime: row['项目结束时间'].toString().trim(),
+        duration: duration
+      };
+
+      validatedData.push(cleanRow);
+    }
+
+    // 13. 记录验证结果
+    securityLog.validationResults = {
+      totalRows: rawData.length,
+      validRows: validatedData.length,
+      invalidRows: rawData.length - validatedData.length
+    };
+
+    // 14. 频率限制检查 (使用session)
+    const sessionKey = `excel_parse_${req.user.id}`;
+    const currentTime = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    
+    if (!req.session[sessionKey]) {
+      req.session[sessionKey] = { count: 0, firstRequest: currentTime };
+    }
+    
+    const sessionData = req.session[sessionKey];
+    
+    // 重置计数器 (如果超过1小时)
+    if (currentTime - sessionData.firstRequest > oneHour) {
+      sessionData.count = 0;
+      sessionData.firstRequest = currentTime;
+    }
+    
+    // 检查频率限制 (每小时最多10次)
+    const MAX_REQUESTS_PER_HOUR = 10;
+    if (sessionData.count >= MAX_REQUESTS_PER_HOUR) {
+      securityLog.errors.push('频率限制: 每小时最多10次解析请求');
+      console.log('🔒 安全事件:', securityLog);
+      return res.status(429).json({ error: '请求过于频繁，请稍后再试' });
+    }
+    
+    sessionData.count++;
+
+    // 15. 记录操作日志到数据库
+    try {
+      await db('data_operation_logs').insert({
+        user_id: req.user.id,
+        operation_type: 'dashboard_excel_parse',
+        target_user_id: req.user.id,
+        details: JSON.stringify({
+          fileName: fileName,
+          fileSize: req.file.size,
+          totalRows: rawData.length,
+          validRows: validatedData.length,
+          errors: securityLog.errors,
+          ip: req.ip,
+          userAgent: req.get('User-Agent')
+        }),
+        created_at: new Date()
+      });
+    } catch (logError) {
+      console.error('记录操作日志失败:', logError);
+    }
+
+    // 16. 计算处理时间
+    securityLog.processingTime = Date.now() - startTime;
+
+    // 17. 输出安全日志
+    console.log('🔒 安全事件:', securityLog);
+
+    // 18. 返回结果
+    if (validatedData.length === 0) {
+      return res.status(400).json({ 
+        error: '没有有效的数据行',
+        details: securityLog.errors
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      data: validatedData,
+      summary: {
+        totalRows: rawData.length,
+        validRows: validatedData.length,
+        invalidRows: rawData.length - validatedData.length,
+        errors: securityLog.errors
+      }
+    });
+
   } catch (err) {
+    securityLog.errors.push(`处理异常: ${err.message}`);
+    securityLog.processingTime = Date.now() - startTime;
     console.error('Excel解析失败:', err);
+    console.log('🔒 安全事件:', securityLog);
     res.status(500).json({ error: 'Excel解析失败' });
   }
+});
+
+// Multer错误处理专用中间件（必须放在路由后）
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: '文件大小不能超过20MB' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ error: '只能上传一个文件' });
+    }
+    return res.status(400).json({ error: '文件上传失败' });
+  }
+  if (err) {
+    return res.status(400).json({ error: err.message || '文件上传失败' });
+  }
+  next();
 });
 
 // 仪表板
@@ -574,12 +889,14 @@ router.get('/points-records', (req, res) => {
   }
 });
 
+
+
 // 系统管理
 router.get('/admin', adminMiddleware, (req, res) => {
   if (req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest') {
-    res.render('admin/config', { layout: false, user: req.user });
+    res.render('pages/admin', { layout: false, user: req.user });
   } else {
-    res.render('admin/config', { user: req.user });
+    res.render('pages/admin', { user: req.user });
   }
 });
 

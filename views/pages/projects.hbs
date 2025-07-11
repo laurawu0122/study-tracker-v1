@@ -229,6 +229,50 @@
                 </div>
             </div>
         </div>
+
+        <!-- 项目完成统计卡片 -->
+        <div id="completionStatsCard" class="mt-8 p-6 bg-white rounded-lg shadow border border-gray-100">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">项目完成统计</h3>
+            <div class="flex items-center space-x-2">
+              <select id="projectSelect" class="border rounded px-2 py-1 text-sm">
+                <option value="">选择项目</option>
+              </select>
+              <select id="statsRangeSelect" class="border rounded px-2 py-1 text-sm">
+                <option value="week">本周</option>
+                <option value="month">本月</option>
+                <option value="quarter">本季度</option>
+                <option value="year">本年</option>
+              </select>
+            </div>
+          </div>
+          <div id="completionStatsSummary" class="mb-4 text-sm text-gray-600"></div>
+          
+          <!-- 柱状图容器 -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">学习时长统计</h4>
+            <div class="w-full h-64">
+              <canvas id="completionStatsBarChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- 统计表格 -->
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm border">
+              <thead>
+                <tr class="bg-gray-50">
+                  <th class="px-3 py-2 border text-center">日期</th>
+                  <th class="px-3 py-2 border text-center">学习时长(分钟)</th>
+                  <th class="px-3 py-2 border text-center">评级</th>
+                  <th class="px-3 py-2 border text-center">按时完成</th>
+                </tr>
+              </thead>
+              <tbody id="completionStatsTableBody">
+                <!-- 动态填充 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
     </div>
 
     <!-- Excel导入模态框 -->
@@ -547,6 +591,54 @@
     </div>
 </div>
 
+<!-- Cal-Heatmap 日历热力图样式 -->
+<link rel="stylesheet" href="/assets/js/lib/cal-heatmap.min.css">
+
+<!-- 项目完成情况统计热力图容器 -->
+<div id="calendar-heatmap" class="my-6"></div>
+
+<script src="/assets/js/lib/cal-heatmap.min.js"></script>
+<script>
+  // 示例静态数据，后续可替换为后端接口返回的学习时长数据
+  const heatmapData = {
+    '2025-07-01': 60,
+    '2025-07-02': 120,
+    '2025-07-03': 90,
+    '2025-07-04': 0,
+    '2025-07-05': 180,
+    '2025-07-06': 30,
+    '2025-07-07': 150,
+    '2025-07-08': 80,
+    '2025-07-09': 0,
+    '2025-07-10': 60
+  };
+  // 转换为 cal-heatmap 需要的格式
+  const calData = {};
+  Object.keys(heatmapData).forEach(date => {
+    calData[new Date(date).getTime() / 1000] = heatmapData[date];
+  });
+  // 渲染日历热力图
+  const cal = new CalHeatmap();
+  cal.paint({
+    data: {
+      source: calData,
+      type: 'json'
+    },
+    range: 1,
+    domain: { type: 'month', label: { position: 'top', text: '学习日历' } },
+    subDomain: { type: 'day', label: 'D', radius: 4 },
+    scale: { color: { type: 'linear', scheme: 'YlOrRd', domain: [0, 180] } },
+    legend: [30, 60, 90, 120, 150, 180],
+    itemSelector: '#calendar-heatmap',
+    tooltip: {
+      enabled: true,
+      text: function(date, value) {
+        return `${date.toLocaleDateString()} 学习时长：${value || 0} 分钟`;
+      }
+    }
+  });
+</script>
+
 <script>
 // 项目管理应用
 class ProjectsApp {
@@ -607,7 +699,18 @@ class ProjectsApp {
             this.showLoading();
             
             // 调用API时传递分页参数
-            const response = await fetch(`/api/projects?page=${page}&limit=${this.pageSize}`);
+            const url = `/api/projects?page=${page}&limit=${this.pageSize}`;
+            
+            // 在demo模式下检查是否被拦截
+            if (window.isDemo && window.interceptDemoModeAPI) {
+                if (!window.interceptDemoModeAPI(url, 'GET')) {
+                    this.hideLoading();
+                    this.isLoading = false;
+                    return;
+                }
+            }
+            
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 this.projects = data.projects || [];
@@ -643,7 +746,7 @@ class ProjectsApp {
         
         // 直接渲染当前页的项目，不需要客户端分页
         tbody.innerHTML = this.projects.map(project => `
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200" data-project-id="${project.id}">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10">
@@ -689,7 +792,7 @@ class ProjectsApp {
                         <button onclick="projectsApp.editProject(${project.id})" 
                                 class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors duration-200">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 01-2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                             </svg>
                         </button>
                         <button onclick="projectsApp.deleteProject(${project.id})" 
@@ -704,6 +807,14 @@ class ProjectsApp {
         `).join('');
         
         this.updatePagination();
+        this.updateProjectSelect();
+        
+        // 项目数据加载完成后，自动加载项目完成统计
+        if (this.projects.length > 0) {
+            setTimeout(() => {
+                loadCompletionStats(this.projects[0].id, 'week');
+            }, 100);
+        }
     }
     
     setupEventListeners() {
@@ -1265,6 +1376,32 @@ class ProjectsApp {
         }
     }
     
+    updateProjectSelect() {
+        const projectSelect = document.getElementById('projectSelect');
+        if (!projectSelect) return;
+        
+        // 保存当前选中的值
+        const currentValue = projectSelect.value;
+        
+        // 清空现有选项
+        projectSelect.innerHTML = '<option value="">选择项目</option>';
+        
+        // 添加项目选项
+        this.projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+        
+        // 恢复选中的值，如果没有则选择第一个项目
+        if (currentValue && this.projects.some(p => p.id == currentValue)) {
+            projectSelect.value = currentValue;
+        } else if (this.projects.length > 0) {
+            projectSelect.value = this.projects[0].id;
+        }
+    }
+    
     // 工具方法
     getCategoryText(category) {
         const categories = {
@@ -1487,7 +1624,7 @@ class ProjectsApp {
                 status: 'in_progress', // 默认进行中
                 category: 'other', // 默认其他分类
                 difficulty_level: this.calculateDifficultyLevel(formData.get('estimated_hours')), // 根据预估时间计算难度等级
-                rating_standards: this.getRatingStandards(formData.get('project_type')) // 获取评级标准
+                rating_standards: JSON.stringify(this.getRatingStandards(formData.get('project_type'))) // 获取评级标准并转换为JSON字符串
             };
             
             // 验证必填字段
@@ -1519,7 +1656,18 @@ class ProjectsApp {
             
             messageDiv.innerHTML = '<div class="text-blue-600 text-sm">正在创建项目...</div>';
             
-            const response = await fetch('/api/projects', {
+            const url = '/api/projects';
+            
+            // 在demo模式下检查是否被拦截
+            if (window.isDemo && window.interceptDemoModeAPI) {
+                if (!window.interceptDemoModeAPI(url, 'POST')) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '创建项目';
+                    return;
+                }
+            }
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1605,7 +1753,16 @@ class ProjectsApp {
     
     async loadProjectForEdit(id) {
         try {
-            const response = await fetch(`/api/projects/${id}`);
+            const url = `/api/projects/${id}`;
+            
+            // 在demo模式下检查是否被拦截
+            if (window.isDemo && window.interceptDemoModeAPI) {
+                if (!window.interceptDemoModeAPI(url, 'GET')) {
+                    return;
+                }
+            }
+            
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 const project = data.project;
@@ -1703,7 +1860,16 @@ class ProjectsApp {
         }
         
         try {
-            const response = await fetch(`/api/projects/${this.currentEditProjectId}`, {
+            const url = `/api/projects/${this.currentEditProjectId}`;
+            
+            // 在demo模式下检查是否被拦截
+            if (window.isDemo && window.interceptDemoModeAPI) {
+                if (!window.interceptDemoModeAPI(url, 'PUT')) {
+                    return;
+                }
+            }
+            
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1778,7 +1944,16 @@ class ProjectsApp {
     
     async performDeleteProject(id) {
         try {
-            const response = await fetch(`/api/projects/${id}`, {
+            const url = `/api/projects/${id}`;
+            
+            // 在demo模式下检查是否被拦截
+            if (window.isDemo && window.interceptDemoModeAPI) {
+                if (!window.interceptDemoModeAPI(url, 'DELETE')) {
+                    return;
+                }
+            }
+            
+            const response = await fetch(url, {
                 method: 'DELETE'
             });
             
@@ -2007,7 +2182,13 @@ class ProjectsApp {
                 }
             };
         }
-        return null;
+        // 默认评级标准
+        return {
+            excellent: { max: 30, emoji: '😊' },
+            good: { min: 30, max: 60, emoji: '😊' },
+            medium: { min: 60, max: 90, emoji: '💪' },
+            poor: { min: 90, emoji: '😠' }
+        };
     }
 
     // 转义HTML
@@ -2059,4 +2240,204 @@ function initializeProjects() {
 if (typeof window !== 'undefined') {
     window.initializeProjects = initializeProjects;
 }
+
+// 项目完成统计逻辑
+async function loadCompletionStats(projectId, range = 'week') {
+  // 如果没有传入projectId，尝试从当前页面获取
+  if (!projectId) {
+    // 尝试从项目选择下拉框获取
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect && projectSelect.value) {
+      projectId = projectSelect.value;
+    }
+    
+    // 如果还是没有，尝试从URL参数获取
+    if (!projectId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      projectId = urlParams.get('id');
+    }
+    
+    // 如果还是没有，尝试从页面元素获取
+    if (!projectId) {
+      const projectIdElement = document.querySelector('[data-project-id]');
+      if (projectIdElement) {
+        projectId = projectIdElement.getAttribute('data-project-id');
+      }
+    }
+    
+    // 如果还是没有，尝试从项目列表中选择第一个项目
+    if (!projectId) {
+      const projectRows = document.querySelectorAll('[data-project-id]');
+      if (projectRows.length > 0) {
+        projectId = projectRows[0].getAttribute('data-project-id');
+      }
+    }
+  }
+  
+  if (!projectId) {
+    console.error('无法获取项目ID');
+    document.getElementById('completionStatsSummary').textContent = '无法获取项目ID';
+    document.getElementById('completionStatsTableBody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">无法获取项目ID</td></tr>';
+    return;
+  }
+  
+  const summaryDiv = document.getElementById('completionStatsSummary');
+  const tableBody = document.getElementById('completionStatsTableBody');
+  const chartCanvas = document.getElementById('completionStatsBarChart');
+  summaryDiv.textContent = '加载中...';
+  tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">加载中...</td></tr>';
+  if (window.completionStatsChart) {
+    window.completionStatsChart.destroy();
+  }
+  try {
+    const res = await fetch(`/api/projects/${projectId}/completion-stats?range=${range}`);
+    if (!res.ok) throw new Error('获取统计失败');
+    const data = await res.json();
+    // 汇总
+    summaryDiv.innerHTML = `
+      <span>统计区间：${data.startDate} ~ ${data.endDate}</span> ｜
+      <span>总天数：${data.summary.total}</span> ｜
+      <span>按时完成：<span class='text-green-600 font-bold'>${data.summary.onTime}</span></span> ｜
+      <span>超时完成：<span class='text-red-600 font-bold'>${data.summary.overtime}</span></span> ｜
+      <span>优秀：${data.summary.excellent}，良：${data.summary.good}，中：${data.summary.medium}，差：${data.summary.poor}</span>
+    `;
+    // 表格
+    tableBody.innerHTML = data.dailyStats.length ? data.dailyStats.map(d => `
+      <tr>
+        <td class="border px-3 py-1 text-center">${d.date}</td>
+        <td class="border px-3 py-1 text-center">${d.duration}</td>
+        <td class="border px-3 py-1 text-center">${d.level}</td>
+        <td class="border px-3 py-1 text-center">${d.isOnTime ? '<span class=\'text-green-600\'>✔</span>' : '<span class=\'text-red-600\'>✘</span>'}</td>
+      </tr>
+    `).join('') : '<tr><td colspan="4" class="text-center py-4">暂无数据</td></tr>';
+    // 极简折线图 - 按照手绘图风格
+    const labels = data.dailyStats.map(d => d.date);
+    const values = data.dailyStats.map(d => d.duration);
+    
+    // 获取优秀基准线数值（每个项目不同）
+    let excellentThreshold = 60; // 默认值
+    if (data.project && data.project.rating_standards) {
+      const standards = typeof data.project.rating_standards === 'string' 
+        ? JSON.parse(data.project.rating_standards) 
+        : data.project.rating_standards;
+      
+      // 处理不同的评级标准结构
+      if (standards.优秀) {
+        excellentThreshold = standards.优秀;
+      } else if (standards.excellent) {
+        // 处理 {"excellent":{"max":60}} 结构
+        if (typeof standards.excellent === 'object' && standards.excellent.max) {
+          excellentThreshold = standards.excellent.max;
+        } else if (typeof standards.excellent === 'number') {
+          excellentThreshold = standards.excellent;
+        }
+      }
+    }
+    
+    // 创建优秀基准线数据（水平线）
+    const baselineData = labels.map(() => excellentThreshold);
+    
+    // 准备柱状图数据
+    const chartData = {
+      labels: labels,
+      datasets: [{
+        label: '学习时长(分钟)',
+        data: values,
+        backgroundColor: values.map(value => {
+          if (value === 0) return 'rgba(156, 163, 175, 0.2)'; // 灰色
+          if (value >= excellentThreshold) return 'rgba(34, 197, 94, 0.6)'; // 绿色
+          if (value >= excellentThreshold * 0.8) return 'rgba(59, 130, 246, 0.6)'; // 蓝色
+          return 'rgba(239, 68, 68, 0.6)'; // 红色
+        }),
+        borderColor: values.map(value => {
+          if (value === 0) return 'rgba(156, 163, 175, 0.5)';
+          if (value >= excellentThreshold) return 'rgba(34, 197, 94, 0.8)';
+          if (value >= excellentThreshold * 0.8) return 'rgba(59, 130, 246, 0.8)';
+          return 'rgba(239, 68, 68, 0.8)';
+        }),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    };
+
+    // 计算动态Y轴最大值
+    const maxValue = Math.max(...values, excellentThreshold);
+    const yAxisMax = Math.ceil(maxValue / 20) * 20; // 向上取整到20的倍数
+
+    window.completionStatsChart = new Chart(chartCanvas, {
+      type: 'bar',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: '学习时长统计',
+            font: {
+              size: 16,
+              weight: 'bold'
+            }
+          },
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y + ' 分钟';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: yAxisMax,
+            ticks: {
+              stepSize: 20,
+              callback: function(value) {
+                return value + ' 分钟';
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('加载项目完成统计失败:', e);
+    summaryDiv.textContent = '加载失败';
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">加载失败</td></tr>';
+  }
+}
+// 监听时间范围切换
+if (document.getElementById('statsRangeSelect')) {
+  document.getElementById('statsRangeSelect').addEventListener('change', function() {
+    // 获取当前选中的项目id
+    const projectSelect = document.getElementById('projectSelect');
+    const projectId = projectSelect && projectSelect.value ? projectSelect.value : null;
+    loadCompletionStats(projectId, this.value);
+  });
+}
+
+// 监听项目选择切换
+if (document.getElementById('projectSelect')) {
+  document.getElementById('projectSelect').addEventListener('change', function() {
+    // 获取当前选中的时间区间
+    const statsRangeSelect = document.getElementById('statsRangeSelect');
+    const range = statsRangeSelect && statsRangeSelect.value ? statsRangeSelect.value : 'week';
+    loadCompletionStats(this.value, range);
+  });
+}
+// 页面加载时不再自动加载统计，因为会在项目数据加载完成后自动触发
+// window.addEventListener('DOMContentLoaded', function() {
+//   loadCompletionStats(null, document.getElementById('statsRangeSelect')?.value || 'week');
+// });
+
+
+
+
 </script> 

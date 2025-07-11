@@ -83,35 +83,35 @@
           <form class="space-y-4">
                 <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">学习日期</label>
-              <input type="date" id="inputDate" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              <input type="date" id="inputDate" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-12" />
                 </div>
                 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">学习项目</label>
-              <select id="inputProject" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <select id="inputProject" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-12">
                 <option value="">选择学习项目</option>
                 <!-- 项目选项将动态加载 -->
               </select>
-              <input type="text" id="inputProjectCustom" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 mt-2 text-sm hidden dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="输入自定义项目名称" />
+              <input type="text" id="inputProjectCustom" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 mt-2 text-sm hidden dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-12" placeholder="输入自定义项目名称" />
                     </div>
                     
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">开始时间</label>
-                <input type="time" id="inputStartTime" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <input type="time" id="inputStartTime" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-12" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">结束时间</label>
-                <input type="time" id="inputEndTime" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <input type="time" id="inputEndTime" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-12" />
                     </div>
                 </div>
             
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">学习时长</label>
-              <input type="text" id="inputDuration" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 cursor-not-allowed text-center font-medium" placeholder="自动计算" readonly />
+              <input type="text" id="inputDuration" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-sm dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 cursor-not-allowed text-center font-medium h-12" placeholder="自动计算" readonly />
             </div>
             
-            <button type="button" id="addRecordBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 text-sm">
+            <button type="button" id="addRecordBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 text-sm h-12">
               添加记录
             </button>
           </form>
@@ -123,40 +123,40 @@
             <!-- 学习日期 -->
             <div class="flex-1 min-w-0">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">学习日期</label>
-              <input type="date" id="inputDateDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer" />
+              <input type="date" id="inputDateDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer h-10" />
             </div>
             
             <!-- 学习项目 -->
             <div class="flex-1 min-w-0">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">学习项目</label>
-              <select id="inputProjectDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer">
+              <select id="inputProjectDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer h-10">
                 <option value="">选择项目</option>
                 <!-- 项目选项将动态加载 -->
               </select>
-              <input type="text" id="inputProjectCustomDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 mt-1 text-sm hidden dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="自定义项目" />
+              <input type="text" id="inputProjectCustomDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 mt-1 text-sm hidden dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent h-10" placeholder="自定义项目" />
             </div>
             
             <!-- 开始时间 -->
             <div class="flex-1 min-w-0">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">开始时间</label>
-              <input type="time" id="inputStartTimeDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer" />
+              <input type="time" id="inputStartTimeDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer h-10" />
             </div>
 
             <!-- 结束时间 -->
             <div class="flex-1 min-w-0">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">结束时间</label>
-              <input type="time" id="inputEndTimeDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer" />
+              <input type="time" id="inputEndTimeDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer h-10" />
             </div>
 
             <!-- 学习时长 -->
             <div class="flex-1 min-w-0">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">学习时长</label>
-              <input type="text" id="inputDurationDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 cursor-not-allowed text-center font-medium" placeholder="自动计算" readonly />
+              <input type="text" id="inputDurationDesktop" class="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm dark:bg-gray-700 dark:text-white bg-gray-50 dark:bg-gray-600 cursor-not-allowed text-center font-medium h-10" placeholder="自动计算" readonly />
             </div>
 
             <!-- 添加按钮 -->
             <div class="flex-shrink-0">
-              <button type="button" id="addRecordBtnDesktop" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 text-sm">
+              <button type="button" id="addRecordBtnDesktop" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200 text-sm h-10">
                 添加
               </button>
             </div>
@@ -181,6 +181,51 @@
                     </div>
                 </div>
             </div>
+        
+        <!-- 学习记录筛选控制面板 -->
+        <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- 时间范围选择器 -->
+            <select id="recordsTimeRangeSelector" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+              <option value="">所有时间</option>
+              <option value="7">最近7天</option>
+              <option value="30">最近30天</option>
+              <option value="90">最近90天</option>
+              <option value="custom">自定义日期范围</option>
+            </select>
+            
+            <!-- 自定义日期范围选择器 -->
+            <div id="recordsCustomDateRange" class="hidden flex gap-2">
+              <input type="date" id="recordsStartDate" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+              <span class="text-gray-500 dark:text-gray-400 self-center">至</span>
+              <input type="date" id="recordsEndDate" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+            </div>
+            
+            <!-- 项目筛选选择器 -->
+            <select id="recordsProjectFilterSelector" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+              <option value="">所有项目</option>
+            </select>
+            
+            <!-- 时长范围选择器 -->
+            <select id="recordsDurationFilterSelector" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+              <option value="">所有时长</option>
+              <option value="0-30">30分钟以下</option>
+              <option value="30-60">30-60分钟</option>
+              <option value="60-120">1-2小时</option>
+              <option value="120+">2小时以上</option>
+            </select>
+            
+            <!-- 应用筛选按钮 -->
+            <button id="applyRecordsFiltersBtn" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium">
+              应用筛选
+            </button>
+            
+            <!-- 重置筛选按钮 -->
+            <button id="resetRecordsFiltersBtn" class="px-4 py-2 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 font-medium">
+              重置
+            </button>
+          </div>
+        </div>
         
         <div id="recordsTableContainer">
           <!-- 表格和分页控件将由JS动态渲染 -->

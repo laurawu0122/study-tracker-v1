@@ -15,6 +15,9 @@ class AdminPointsExchange {
   }
 
   async init() {
+    // 临时设置页面标识，让EventManager能正确识别当前页面
+    document.body.setAttribute('data-page', 'admin-points-exchange');
+    
     await this.loadData();
     this.bindEvents();
     this.renderProducts();
@@ -24,17 +27,17 @@ class AdminPointsExchange {
   async loadData() {
     try {
       // 加载商品分类
-      const categoriesResponse = await fetch('/api/points-exchange/admin/categories');
+      const categoriesResponse = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/categories' : getApiUrl('/api/points-exchange/admin/categories'));
       const categoriesData = await categoriesResponse.json();
       this.categories = categoriesData.data || [];
 
       // 加载商品列表
-      const productsResponse = await fetch('/api/points-exchange/admin/products');
+      const productsResponse = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/products' : getApiUrl('/api/points-exchange/admin/products'));
       const productsData = await productsResponse.json();
       this.products = productsData.data || [];
 
       // 加载积分规则
-      const rulesResponse = await fetch('/api/points-exchange/admin/points-rules');
+      const rulesResponse = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/points-rules' : getApiUrl('/api/points-exchange/admin/points-rules'));
       const rulesData = await rulesResponse.json();
       this.pointsRules = rulesData.data || [];
 
@@ -188,7 +191,9 @@ class AdminPointsExchange {
       // 处理弹窗关闭按钮
       const closeBtn = e.target.closest('#closeModalBtn');
       const cancelBtn = e.target.closest('#cancelBtn');
-      if (closeBtn || cancelBtn) {
+      // 确保不是确认对话框中的按钮
+      const isConfirmDialog = e.target.closest('#confirmModal');
+      if ((closeBtn || cancelBtn) && !isConfirmDialog) {
         e.preventDefault();
         e.stopPropagation();
         console.log('关闭按钮被点击:', e.target.id || e.target.className);
@@ -245,96 +250,28 @@ class AdminPointsExchange {
         this.showConditionForm(e.target.value);
       }
     });
+  }
 
-    // 阻止分类和规则弹窗内部滚动传播到背景
-    document.addEventListener('wheel', (e) => {
-      const categoryModal = document.getElementById('categoryModal');
-      const rulesModal = document.getElementById('rulesModal');
-      
-      if (categoryModal && !categoryModal.classList.contains('hidden')) {
-        const modalContent = categoryModal.querySelector('.bg-white, .dark\\:bg-gray-900');
-        if (modalContent && !modalContent.contains(e.target)) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-      
-      if (rulesModal && !rulesModal.classList.contains('hidden')) {
-        const modalContent = rulesModal.querySelector('.bg-white, .dark\\:bg-gray-900');
-        if (modalContent && !modalContent.contains(e.target)) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-      }
-    }, { passive: false });
-
-    // 阻止分类和规则弹窗背景的滚动事件
-    document.addEventListener('touchmove', (e) => {
-      const categoryModal = document.getElementById('categoryModal');
-      const rulesModal = document.getElementById('rulesModal');
-      
-      if (categoryModal && !categoryModal.classList.contains('hidden')) {
-        const modalContent = categoryModal.querySelector('.bg-white, .dark\\:bg-gray-900');
-        if (modalContent && !modalContent.contains(e.target)) {
-          e.preventDefault();
-        }
-      }
-      
-      if (rulesModal && !rulesModal.classList.contains('hidden')) {
-        const modalContent = rulesModal.querySelector('.bg-white, .dark\\:bg-gray-900');
-        if (modalContent && !modalContent.contains(e.target)) {
-          e.preventDefault();
-        }
-      }
-    }, { passive: false });
-
-    // 分类弹窗关闭按钮事件
-    document.addEventListener('click', (e) => {
-      const closeCategoryBtn = e.target.closest('#closeCategoryModalBtn');
-      const cancelCategoryBtn = e.target.closest('#cancelCategoryBtn');
-      
-      if (closeCategoryBtn || cancelCategoryBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('分类弹窗关闭按钮被点击');
-        this.closeCategoryModal();
-      }
-    });
-
-    // 规则弹窗关闭按钮事件
-    document.addEventListener('click', (e) => {
-      const closeRulesBtn = e.target.closest('#closeRulesModalBtn');
-      const cancelRulesBtn = e.target.closest('#cancelRuleBtn');
-      
-      if (closeRulesBtn || cancelRulesBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('规则弹窗关闭按钮被点击');
-        this.closeRulesModal();
-      }
-    });
-
-    // 商品名称唯一性校验
-    const productNameInput = document.getElementById('productName');
-    if (productNameInput) {
-      productNameInput.addEventListener('blur', async function() {
-        const name = this.value.trim();
-        if (!name) return;
-        const res = await fetch(`/points-exchange/admin/products/check-name?name=${encodeURIComponent(name)}`, {
-          credentials: 'include'
-        });
-        const data = await res.json();
-        const feedback = document.getElementById('nameFeedback');
-        if (feedback) {
-          if (data.exists) {
-            feedback.textContent = '商品名称已存在，请更换';
-            feedback.style.color = 'red';
-          } else {
-            feedback.textContent = '商品名称可用';
-            feedback.style.color = 'green';
-          }
-        }
-      });
+  // EventManager 需要的 buttonClick 方法
+  buttonClick(data, event) {
+    const { buttonId } = data;
+    console.log(`🎯 AdminPointsExchange 处理按钮点击: ${buttonId}`);
+    
+    switch (buttonId) {
+      case 'addProductBtn':
+        this.openProductModal();
+        break;
+      case 'addCategoryBtn':
+        this.openCategoryModal();
+        break;
+      case 'manageRulesBtn':
+        this.openRulesModal();
+        break;
+      case 'refreshBtn':
+        this.refreshData();
+        break;
+      default:
+        console.warn(`⚠️ 未处理的按钮ID: ${buttonId}`);
     }
   }
 
@@ -376,7 +313,7 @@ class AdminPointsExchange {
     if (statusFilter) params.append('status', statusFilter);
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/products?${params}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/products?${params}` : getApiUrl(`/api/points-exchange/admin/products?${params}`), {
         credentials: 'include'
       });
       const data = await response.json();
@@ -430,13 +367,7 @@ class AdminPointsExchange {
     tbody.innerHTML = '';
 
     if (products.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-            暂无商品数据
-          </td>
-        </tr>
-      `;
+      tbody.innerHTML = '<p class="text-center py-8 text-gray-500 dark:text-gray-400">演示商品数据</p>';
       return;
     }
 
@@ -456,7 +387,7 @@ class AdminPointsExchange {
             </div>
             <div class="ml-4">
               <div class="text-sm font-medium text-gray-900 dark:text-white">${product.name}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">${product.description || '暂无描述'}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">${product.description || '演示商品描述'}</div>
             </div>
           </div>
         </td>
@@ -503,7 +434,7 @@ class AdminPointsExchange {
 
   async updateStats() {
     try {
-      const response = await fetch('/api/points-exchange/admin/exchange-stats');
+      const response = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/exchange-stats' : getApiUrl('/api/points-exchange/admin/exchange-stats'));
       const result = await response.json();
       
       if (result.success) {
@@ -516,8 +447,8 @@ class AdminPointsExchange {
         const totalPointsEl = document.getElementById('totalPoints');
         
         if (totalProductsEl) totalProductsEl.textContent = totalProducts;
-        if (totalExchangesEl) totalExchangesEl.textContent = stats.totalExchanges;
-        if (pendingExchangesEl) pendingExchangesEl.textContent = stats.pendingExchanges;
+        if (totalExchangesEl) totalExchangesEl.textContent = stats.total;
+        if (pendingExchangesEl) pendingExchangesEl.textContent = stats.pending;
         if (totalPointsEl) totalPointsEl.textContent = stats.totalPoints;
       }
     } catch (error) {
@@ -647,7 +578,7 @@ class AdminPointsExchange {
     formData.append('image', file);
 
     try {
-      const response = await fetch('/api/points-exchange/admin/products/upload-image', {
+      const response = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/products/upload-image' : getApiUrl('/api/points-exchange/admin/products/upload-image'), {
         method: 'POST',
         body: formData
       });
@@ -708,8 +639,8 @@ class AdminPointsExchange {
 
     try {
       const url = this.isEditing 
-        ? `/api/points-exchange/admin/products/${this.currentProduct.id}`
-        : '/api/points-exchange/admin/products';
+        ? window.isDemo ? `/demo/api/points-exchange/admin/products/${this.currentProduct.id}` : getApiUrl(`/api/points-exchange/admin/products/${this.currentProduct.id}`)
+        : window.isDemo ? '/demo/api/points-exchange/admin/products' : getApiUrl('/api/points-exchange/admin/products');
       
       const method = this.isEditing ? 'PUT' : 'POST';
       
@@ -759,7 +690,7 @@ class AdminPointsExchange {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/products/${productId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/products/${productId}` : getApiUrl(`/api/points-exchange/admin/products/${productId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -797,7 +728,7 @@ class AdminPointsExchange {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/products/${productId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/products/${productId}` : getApiUrl(`/api/points-exchange/admin/products/${productId}`), {
         method: 'DELETE'
       });
 
@@ -868,11 +799,7 @@ class AdminPointsExchange {
     if (!categoryList) return;
 
     if (this.categories.length === 0) {
-      categoryList.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          暂无分类数据
-        </div>
-      `;
+      categoryList.innerHTML = '<p class="text-center py-8 text-gray-500 dark:text-gray-400">演示分类数据</p>';
       return;
     }
 
@@ -884,7 +811,7 @@ class AdminPointsExchange {
           </div>
           <div>
             <h4 class="font-medium text-gray-900 dark:text-white">${category.name}</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">${category.description || '暂无描述'}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">${category.description || '演示分类描述'}</p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -948,8 +875,8 @@ class AdminPointsExchange {
 
     try {
       const url = this.isEditingCategory 
-        ? `/api/points-exchange/admin/categories/${this.currentCategory.id}`
-        : '/api/points-exchange/admin/categories';
+        ? window.isDemo ? `/demo/api/points-exchange/admin/categories/${this.currentCategory.id}` : getApiUrl(`/api/points-exchange/admin/categories/${this.currentCategory.id}`)
+        : window.isDemo ? '/demo/api/points-exchange/admin/categories' : getApiUrl('/api/points-exchange/admin/categories');
       
       const method = this.isEditingCategory ? 'PUT' : 'POST';
       
@@ -1003,7 +930,7 @@ class AdminPointsExchange {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/categories/${categoryId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/categories/${categoryId}` : getApiUrl(`/api/points-exchange/admin/categories/${categoryId}`), {
         method: 'DELETE'
       });
 
@@ -1074,11 +1001,7 @@ class AdminPointsExchange {
     if (!rulesList) return;
 
     if (this.pointsRules.length === 0) {
-      rulesList.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          暂无积分规则数据
-        </div>
-      `;
+      rulesList.innerHTML = '<p class="text-center py-8 text-gray-500 dark:text-gray-400">演示积分规则数据</p>';
       return;
     }
 
@@ -1098,7 +1021,7 @@ class AdminPointsExchange {
             </div>
             <div>
               <h4 class="font-medium text-gray-900 dark:text-white">${rule.name}</h4>
-              <p class="text-sm text-gray-500 dark:text-gray-400">${rule.description || '暂无描述'}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${rule.description || '演示规则描述'}</p>
               <p class="text-xs text-gray-400 dark:text-gray-500">触发类型: ${triggerTypeText} | 积分: ${rule.points}</p>
             </div>
           </div>
@@ -1232,8 +1155,8 @@ class AdminPointsExchange {
 
     try {
       const url = this.isEditingRule 
-        ? `/api/points-exchange/admin/points-rules/${this.currentRule.id}`
-        : '/api/points-exchange/admin/points-rules';
+        ? window.isDemo ? `/demo/api/points-exchange/admin/points-rules/${this.currentRule.id}` : getApiUrl(`/api/points-exchange/admin/points-rules/${this.currentRule.id}`)
+        : window.isDemo ? '/demo/api/points-exchange/admin/points-rules' : getApiUrl('/api/points-exchange/admin/points-rules');
       
       const method = this.isEditingRule ? 'PUT' : 'POST';
       
@@ -1314,7 +1237,7 @@ class AdminPointsExchange {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/points-rules/${ruleId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/points-rules/${ruleId}` : getApiUrl(`/api/points-exchange/admin/points-rules/${ruleId}`), {
         method: 'DELETE'
       });
 
@@ -1492,10 +1415,10 @@ class AdminPointsExchange {
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">${title}</h3>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">${message}</p>
             <div class="flex space-x-3">
-              <button id="cancelBtn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
+              <button type="button" class="confirm-cancel-btn flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
                 ${cancelText}
               </button>
-              <button id="confirmBtn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300">
+              <button type="button" class="confirm-confirm-btn flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300">
                 ${confirmText}
               </button>
             </div>
@@ -1505,38 +1428,63 @@ class AdminPointsExchange {
 
       document.body.appendChild(modal);
 
-      // 绑定事件
-      const confirmBtn = modal.querySelector('#confirmBtn');
-      const cancelBtn = modal.querySelector('#cancelBtn');
+      // 使用类选择器而不是ID，避免与全局监听器冲突
+      const confirmBtn = modal.querySelector('.confirm-confirm-btn');
+      const cancelBtn = modal.querySelector('.confirm-cancel-btn');
+
+      let isResolved = false;
 
       const cleanup = () => {
-        document.body.removeChild(modal);
+        if (isResolved) return;
+        isResolved = true;
+        
+        // 移除ESC键监听器
+        document.removeEventListener('keydown', handleEsc);
+        
+        // 安全移除模态框
+        if (document.body.contains(modal)) {
+          document.body.removeChild(modal);
+        }
       };
 
-      confirmBtn.addEventListener('click', () => {
+      // 确认按钮事件
+      const handleConfirm = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         cleanup();
         resolve(true);
-      });
+      };
 
-      cancelBtn.addEventListener('click', () => {
+      // 取消按钮事件
+      const handleCancel = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         cleanup();
         resolve(false);
-      });
+      };
+
+      // 绑定事件监听器
+      confirmBtn.addEventListener('click', handleConfirm, { once: true });
+      cancelBtn.addEventListener('click', handleCancel, { once: true });
 
       // 点击背景关闭
-      modal.addEventListener('click', (e) => {
+      const handleBackgroundClick = (e) => {
         if (e.target === modal) {
+          e.preventDefault();
+          e.stopPropagation();
           cleanup();
           resolve(false);
         }
-      });
+      };
+      modal.addEventListener('click', handleBackgroundClick, { once: true });
 
       // ESC键关闭
       const handleEsc = (e) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
           cleanup();
           resolve(false);
-          document.removeEventListener('keydown', handleEsc);
         }
       };
       document.addEventListener('keydown', handleEsc);
@@ -1612,17 +1560,51 @@ function initAdminPointsExchange() {
   console.log('初始化积分兑换管理...');
   const instance = getAdminPointsExchangeInstance();
   instance.init();
+  
+  // 注册到全局事件管理器
+  if (window.EventManager) {
+    window.EventManager.registerPageManager('admin-points-exchange', instance);
+    console.log('✅ AdminPointsExchange 已注册到全局事件管理器');
+  } else {
+    console.warn('⚠️ 全局事件管理器未找到，无法注册 AdminPointsExchange');
+  }
+  
   return instance;
 }
 
-// DOM加载完成时初始化
+// 立即初始化（SPA环境）
+if (document.readyState === 'loading') {
+  // DOM还在加载中，等待DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎬 DOM加载完成，初始化积分兑换管理');
+    initAdminPointsExchange();
+  });
+} else {
+  // DOM已经加载完成，立即初始化
+  console.log('🎬 DOM已加载完成，立即初始化积分兑换管理');
+  initAdminPointsExchange();
+}
+
+// DOM加载完成时初始化（传统页面）
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('🎬 DOM加载完成，初始化积分兑换管理');
   // 检查是否在积分兑换管理页面
   if (document.querySelector('[data-page="admin-points-exchange"]') || 
-      window.location.pathname.includes('admin-points-exchange')) {
+      (window.location.pathname && window.location.pathname.includes('admin-points-exchange'))) {
     initAdminPointsExchange();
   }
 });
 
 // 为SPA环境提供的手动初始化函数
-window.initAdminPointsExchange = initAdminPointsExchange; 
+window.initAdminPointsExchange = initAdminPointsExchange;
+
+// 暴露到全局作用域，确保admin.js可以调用
+window.AdminPointsExchange = {
+  instance: adminPointsExchange,
+  init: initAdminPointsExchange
+};
+
+// fetch 路径适配函数
+function getApiUrl(path) {
+  return window.isDemo ? `/demo${path}` : path;
+} 

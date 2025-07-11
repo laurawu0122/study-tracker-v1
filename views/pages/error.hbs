@@ -1,15 +1,171 @@
-<div class="min-h-screen flex items-center justify-center p-4">
-    <div class="text-center">
-        <div class="text-6xl mb-4">😔</div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">{{title}}</h1>
-        <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">{{error}}</p>
-        <div class="space-x-4">
-            <a href="/dashboard" class="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
-                返回首页
-            </a>
-            <a href="javascript:history.back()" class="inline-block bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                返回上页
-            </a>
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - 学习项目追踪系统</title>
+    <meta name="description" content="{{description}}">
+    
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="/assets/css/tailwind.css">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="/assets/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/assets/css/font-awesome-fix.css">
+    
+    <style>
+        /* 动态背景渐变 */
+        .animated-bg {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease infinite;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        /* 浮动气泡效果 */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        .bubble:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .bubble:nth-child(2) { width: 120px; height: 120px; left: 20%; animation-delay: 2s; }
+        .bubble:nth-child(3) { width: 60px; height: 60px; left: 70%; animation-delay: 4s; }
+        .bubble:nth-child(4) { width: 100px; height: 100px; left: 80%; animation-delay: 1s; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 1; }
+        }
+        /* 毛玻璃卡片效果 */
+        .glass-card {
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 15s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* 按钮底座毛玻璃条 */
+        .glass-btn-bar {
+          backdrop-filter: blur(12px) saturate(180%);
+          -webkit-backdrop-filter: blur(12px) saturate(180%);
+          background: rgba(255,255,255,0.18);
+          border: 1.5px solid rgba(255,255,255,0.22);
+          border-radius: 9999px;
+          box-shadow: 0 2px 12px rgba(102, 126, 234, 0.10);
+        }
+        /* 按钮样式 */
+        .glass-btn {
+            border: 1.5px solid rgba(255,255,255,0.32);
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+            font-weight: 500;
+            transition: all 0.18s cubic-bezier(.4,0,.2,1);
+            box-shadow: 0 1.5px 6px rgba(102, 126, 234, 0.08);
+        }
+        .glass-btn:hover, .glass-btn:focus {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: #a3bffa;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.13);
+        }
+        .glass-btn-primary {
+          color: #fff;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+          border: 1.5px solid #a3bffa;
+        }
+        .glass-btn-primary:hover, .glass-btn-primary:focus {
+          color: #fff;
+          background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
+          border-color: #667eea;
+        }
+        /* 错误代码样式 */
+        .error-code {
+          font-size: 8rem;
+          font-weight: 900;
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+        }
+        @media (max-width: 640px) {
+          .error-code { font-size: 5rem; }
+          .glass-card { margin: 1rem; padding: 2rem; }
+        }
+        @media (prefers-color-scheme: dark) {
+          .glass-card, .glass-btn-bar {
+            background: rgba(40,40,40,0.32);
+            border-color: rgba(80,80,80,0.22);
+          }
+          .glass-btn {
+            background: rgba(60,60,60,0.18);
+            color: #e0e0e0;
+            border-color: rgba(80,80,80,0.32);
+          }
+          .glass-btn-primary {
+            background: linear-gradient(90deg, #444 0%, #222 100%);
+            color: #fff;
+            border-color: #444;
+          }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg min-h-screen flex items-center justify-center p-4">
+        <!-- 浮动气泡 -->
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        
+        <div class="glass-card p-12 max-w-md w-full text-center relative z-10">
+            <div class="icon-container mb-8">
+                <div class="error-code">{{status}}</div>
+            </div>
+            
+            <h1 class="text-3xl font-bold text-white mb-4 text-glow">{{title}}</h1>
+            <p class="text-white/80 mb-8 text-lg">{{description}}</p>
+            
+            <!-- 按钮底座毛玻璃条 -->
+            <div class="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2 w-[90%] max-w-md px-2">
+                <div class="glass-btn-bar flex flex-row items-center justify-center gap-2 py-2 px-2">
+                    <a href="/" class="flex-1 flex items-center justify-center gap-2 h-11 rounded-full glass-btn glass-btn-primary outline-none focus:ring-2 focus:ring-indigo-300">
+                        <i class="fas fa-home"></i> 返回首页
+                    </a>
+                    <a href="javascript:history.back()" class="flex-1 flex items-center justify-center gap-2 h-11 rounded-full glass-btn outline-none focus:ring-2 focus:ring-purple-300">
+                        <i class="fas fa-arrow-left"></i> 返回上一页
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-</div> 
+</body>
+</html> 

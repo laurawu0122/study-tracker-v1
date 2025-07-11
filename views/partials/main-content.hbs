@@ -407,13 +407,13 @@ function showContent(contentType) {
     };
     pageTitle.textContent = titles[contentType] || '学习追踪系统';
     
-    // 通过AJAX加载对应页面内容
-    loadPageContent(contentType);
+    // 通过AJAX加载对应页面内容，菜单切换时不显示成功通知
+    loadPageContent(contentType, false);
 }
 
 // 加载页面内容
-async function loadPageContent(contentType) {
-    console.log('loadPageContent 被调用，contentType:', contentType);
+async function loadPageContent(contentType, showSuccessNotification = true) {
+    console.log('loadPageContent 被调用，contentType:', contentType, 'showSuccessNotification:', showSuccessNotification);
     console.log('调用栈:', new Error().stack);
     
     const dynamicContent = document.getElementById('dynamicContent');
@@ -439,6 +439,11 @@ async function loadPageContent(contentType) {
             requestUrl = '/admin/exchange-approval';
         }
         
+        // Demo模式下添加前缀
+        if (window.isDemo) {
+            requestUrl = '/demo' + requestUrl;
+        }
+        
         console.log('发送 AJAX 请求到:', requestUrl);
         const response = await fetch(requestUrl, {
             method: 'GET',
@@ -455,15 +460,15 @@ async function loadPageContent(contentType) {
             dynamicContent.innerHTML = content;
             
             // 更新浏览器历史
-            const url = `/${contentType}`;
+            const url = window.isDemo ? `/demo/${contentType}` : `/${contentType}`;
             window.history.pushState({ contentType }, '', url);
             
             // 执行页面特定的初始化脚本
             console.log('准备执行页面脚本，contentType:', contentType);
             executePageScripts(contentType);
             
-            // 显示成功通知
-            if (window.showNotification) {
+            // 只在需要时显示成功通知
+            if (showSuccessNotification && window.showNotification) {
                 window.showNotification('页面加载成功', 'success', 2000);
             }
         } else {
@@ -476,7 +481,7 @@ async function loadPageContent(contentType) {
                 <div class="text-center">
                     <div class="text-red-500 text-4xl mb-4">❌</div>
                     <p class="text-gray-600 dark:text-gray-400">加载失败，请重试</p>
-                    <button onclick="loadPageContent('${contentType}')" class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    <button onclick="loadPageContent('${contentType}', true)" class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
                         重新加载
                     </button>
                 </div>
@@ -922,9 +927,10 @@ function executeAdminExchangeApprovalScripts() {
                                 window.adminExchangeApproval = null;
                             }
                             
-                            // 创建新实例
+                            // 创建新实例并初始化
                             window.adminExchangeApproval = new AdminExchangeApproval();
-                            console.log('AdminExchangeApproval 实例创建成功');
+                            window.adminExchangeApproval.init();
+                            console.log('AdminExchangeApproval 实例创建并初始化成功');
                         } catch (error) {
                             console.error('创建 AdminExchangeApproval 实例失败:', error);
                         }
@@ -963,9 +969,10 @@ function executeAdminExchangeApprovalScripts() {
                             window.adminExchangeApproval = null;
                         }
                         
-                        // 创建新实例
+                        // 创建新实例并初始化
                         window.adminExchangeApproval = new AdminExchangeApproval();
-                        console.log('AdminExchangeApproval 实例创建成功');
+                        window.adminExchangeApproval.init();
+                        console.log('AdminExchangeApproval 实例创建并初始化成功');
                     } catch (error) {
                         console.error('创建 AdminExchangeApproval 实例失败:', error);
                     }
@@ -982,7 +989,8 @@ function executeAdminExchangeApprovalScripts() {
                                     window.adminExchangeApproval = null;
                                 }
                                 window.adminExchangeApproval = new AdminExchangeApproval();
-                                console.log('AdminExchangeApproval 实例创建成功');
+                                window.adminExchangeApproval.init();
+                                console.log('AdminExchangeApproval 实例创建并初始化成功');
                             } catch (error) {
                                 console.error('创建 AdminExchangeApproval 实例失败:', error);
                             }

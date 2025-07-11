@@ -22,8 +22,12 @@ class DashboardExcelApp {
         // 确保Chart.js已加载后再初始化图表
         this.ensureChartJSLoaded().then(() => {
             this.initCharts();
+            // 在demo环境中自动加载演示数据
+            this.loadDemoData();
         }).catch(() => {
             console.warn('Chart.js 加载失败，图表功能不可用');
+            // 即使Chart.js加载失败，也尝试加载演示数据
+            this.loadDemoData();
         });
     }
     
@@ -59,45 +63,83 @@ class DashboardExcelApp {
     }
     
     setupEventListeners() {
-        // 文件上传
+        // 检查是否在demo环境中
+        const isDemo = window.location.pathname && window.location.pathname.includes('/demo');
+        
+        // 全局拦截demo模式下的表单提交
+        if (window.isDemo) {
+            this.interceptDemoModeSubmissions();
+        }
+        
+        // 文件上传 - 在demo环境中禁用
         const uploadBtn = document.getElementById('uploadBtn');
         const excelFile = document.getElementById('excelFile');
         const uploadArea = document.getElementById('uploadArea');
         
         if (uploadBtn) {
-            uploadBtn.addEventListener('click', () => {
-                if (excelFile) excelFile.click();
-            });
+            if (isDemo) {
+                // demo环境中禁用上传按钮
+                uploadBtn.disabled = true;
+                uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                uploadBtn.title = '演示环境中已加载默认数据，不支持文件上传';
+                
+                // 添加演示环境提示
+                const demoNotice = document.createElement('div');
+                demoNotice.className = 'text-sm text-blue-600 dark:text-blue-400 mt-2';
+                demoNotice.innerHTML = '<i class="fas fa-info-circle mr-1"></i>演示环境已自动加载"生成的学习项目记录.xlsx"文件数据';
+                uploadBtn.parentNode.appendChild(demoNotice);
+            } else {
+                uploadBtn.addEventListener('click', () => {
+                    if (excelFile) excelFile.click();
+                });
+            }
         }
         
         if (excelFile) {
-            excelFile.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                    this.handleFileUpload(e.target.files[0]);
-                }
-            });
+            if (!isDemo) {
+                excelFile.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        this.handleFileUpload(e.target.files[0]);
+                    }
+                });
+            } else {
+                // demo环境中隐藏文件输入
+                excelFile.style.display = 'none';
+            }
         }
         
-        // 拖拽上传
+        // 拖拽上传 - 在demo环境中禁用
         if (uploadArea) {
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('border-primary-500', 'bg-primary-50');
-            });
-            
-            uploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('border-primary-500', 'bg-primary-50');
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('border-primary-500', 'bg-primary-50');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    this.handleFile(files[0]);
+            if (isDemo) {
+                // demo环境中禁用拖拽区域
+                uploadArea.classList.add('opacity-50', 'cursor-not-allowed');
+                uploadArea.style.pointerEvents = 'none';
+                
+                // 修改拖拽区域文本
+                const dragText = uploadArea.querySelector('p');
+                if (dragText) {
+                    dragText.innerHTML = '<i class="fas fa-chart-line text-2xl mb-2"></i><br>演示数据已加载<br><span class="text-sm text-gray-500">文件：生成的学习项目记录.xlsx</span>';
                 }
-            });
+            } else {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('border-primary-500', 'bg-primary-50');
+                });
+                
+                uploadArea.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-primary-500', 'bg-primary-50');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('border-primary-500', 'bg-primary-50');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.handleFile(files[0]);
+                    }
+                });
+            }
         }
         
         // 筛选器
@@ -160,6 +202,14 @@ class DashboardExcelApp {
         // 调用handleFile方法来处理文件上传
         console.log('上传文件:', file);
         this.handleFile(file);
+    }
+    
+    // 拦截demo模式下的表单提交
+    interceptDemoModeSubmissions() {
+        // 使用新的精确按钮拦截系统
+        if (window.isDemo && typeof window.initDemoModeButtonInterception === 'function') {
+            window.initDemoModeButtonInterception();
+        }
     }
     
     async handleFile(file) {
@@ -292,7 +342,9 @@ class DashboardExcelApp {
         // 更新项目名称筛选器
         const projectFilter = document.getElementById('projectFilter');
         if (projectFilter && this.excelData.length > 0) {
-            const projects = [...new Set(this.excelData.map(row => row.projectName))];
+            const projects = [...new Set(this.excelData.map(row => {
+                return row.projectName || row.project_name || row.project || row['学习项目名称'];
+            }))];
             console.log('找到的项目:', projects);
             
             projectFilter.innerHTML = '<option value="">全部项目</option>';
@@ -312,22 +364,30 @@ class DashboardExcelApp {
     
     setDefaultDate() {
         if (this.excelData.length > 0) {
-            // 找到最新的日期
-            const dates = this.excelData.map(row => new Date(row.date)).sort((a, b) => b - a);
-            const latestDate = dates[0];
+            // 找到最新的日期 - 支持多种字段名
+            const dates = this.excelData.map(row => {
+                const dateStr = row.date || row.study_date || row.studyDate || row['日期'];
+                return dateStr ? new Date(dateStr) : null;
+            }).filter(date => date && !isNaN(date.getTime())).sort((a, b) => b - a);
             
-            // 格式化日期为 YYYY-MM-DD 格式
-            const formattedDate = latestDate.toISOString().split('T')[0];
-            
-            // 设置日期筛选器为最新日期
-            const dateFilter = document.getElementById('dateFilter');
-            if (dateFilter) {
-                dateFilter.value = formattedDate;
-                this.filters.date = formattedDate;
+            if (dates.length > 0) {
+                const latestDate = dates[0];
+                
+                // 格式化日期为 YYYY-MM-DD 格式
+                const formattedDate = latestDate.toISOString().split('T')[0];
+                
+                // 设置日期筛选器为最新日期
+                const dateFilter = document.getElementById('dateFilter');
+                if (dateFilter) {
+                    dateFilter.value = formattedDate;
+                    this.filters.date = formattedDate;
+                }
+                
+                // 显示最新日期的数据
+                this.applyFilters();
+            } else {
+                console.log('setDefaultDate: 没有有效的日期数据');
             }
-            
-            // 显示最新日期的数据
-            this.applyFilters();
         } else {
             console.log('setDefaultDate: excelData 为空，跳过设置默认日期');
         }
@@ -409,18 +469,34 @@ class DashboardExcelApp {
     applyFilters() {
         console.log('applyFilters 被调用');
         console.log('当前筛选条件:', this.filters);
+        
+        // 安全检查：确保 excelData 存在
+        if (!this.excelData || !Array.isArray(this.excelData)) {
+            console.log('excelData 不存在或不是数组，设置 filteredData 为空数组');
+            this.filteredData = [];
+            this.currentPage = 1;
+            this.renderTable();
+            this.updatePagination();
+            this.updateCharts();
+            return;
+        }
+        
         console.log('excelData 长度:', this.excelData.length);
         
         if (this.excelData.length === 0) {
             console.log('excelData 为空，设置 filteredData 为空数组');
             this.filteredData = [];
         } else {
-            this.filteredData = this.excelData.filter(row => {
-                // 标准化日期格式
-                let rowDate = row.date;
-                if (rowDate.includes('.')) {
-                    rowDate = rowDate.replace(/\./g, '-');
-                }
+                    this.filteredData = this.excelData.filter(row => {
+            // 标准化日期格式 - 支持多种日期字段名
+            let rowDate = row.date || row.study_date || row.studyDate || row['日期'];
+            if (!rowDate) {
+                console.warn('行数据缺少日期字段:', row);
+                return false;
+            }
+            if (rowDate.includes('.')) {
+                rowDate = rowDate.replace(/\./g, '-');
+            }
                 
                 console.log('处理行数据:', {
                     originalDate: row.date,
@@ -475,8 +551,9 @@ class DashboardExcelApp {
                     if (normalizedRowDate !== filterDate) return false;
                 }
                 
-                // 项目筛选
-                if (this.filters.project && row.projectName !== this.filters.project) {
+                // 项目筛选 - 支持多种项目字段名
+                const projectName = row.projectName || row.project_name || row.project || row['学习项目名称'];
+                if (this.filters.project && projectName !== this.filters.project) {
                     return false;
                 }
                 
@@ -485,12 +562,12 @@ class DashboardExcelApp {
             
             // 按日期升序排列
             this.filteredData.sort((a, b) => {
-                let dateA = a.date;
-                let dateB = b.date;
+                let dateA = a.date || a.study_date || a.studyDate || a['日期'];
+                let dateB = b.date || b.study_date || b.studyDate || b['日期'];
                 
                 // 标准化日期格式
-                if (dateA.includes('.')) dateA = dateA.replace(/\./g, '-');
-                if (dateB.includes('.')) dateB = dateB.replace(/\./g, '-');
+                if (dateA && dateA.includes('.')) dateA = dateA.replace(/\./g, '-');
+                if (dateB && dateB.includes('.')) dateB = dateB.replace(/\./g, '-');
                 
                 // 使用数字比较确保准确性
                 const dateAParts = dateA.split(/[\/\-]/);
@@ -535,6 +612,16 @@ class DashboardExcelApp {
         const tbody = document.getElementById('dataTableBody');
         console.log('renderTable 被调用');
         console.log('tbody 元素:', tbody);
+        
+        // 安全检查：确保 filteredData 存在
+        if (!this.filteredData || !Array.isArray(this.filteredData)) {
+            console.log('filteredData 不存在或不是数组，清空表格');
+            if (tbody) {
+                tbody.innerHTML = '';
+            }
+            return;
+        }
+        
         console.log('filteredData 长度:', this.filteredData.length);
         console.log('filteredData 内容:', this.filteredData);
         
@@ -556,15 +643,21 @@ class DashboardExcelApp {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
             
-            const date = new Date(row.date);
+            // 支持多种字段名
+            const date = new Date(row.date || row.study_date || row.studyDate || row['日期']);
             const formattedDate = date.toLocaleDateString('zh-CN');
+            const projectName = row.projectName || row.project_name || row.project || row['学习项目名称'] || '未知项目';
+            const startTime = row.startTime || row.start_time || row['项目开始时间'] || '--';
+            const endTime = row.endTime || row.end_time || row['项目结束时间'] || '--';
+            const duration = row.duration || row['项目完成时间'] || 0;
+            const notes = row.notes || row.note || '';
             
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${formattedDate}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${row.projectName}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${row.startTime}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${row.endTime}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${row.duration} 分钟</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${projectName}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${startTime}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${endTime}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">${duration} 分钟</td>
             `;
             
             tbody.appendChild(tr);
@@ -578,8 +671,13 @@ class DashboardExcelApp {
     
     updateStats() {
         console.log('updateStats 被调用');
-        console.log('excelData 长度:', this.excelData.length);
-        console.log('filteredData 长度:', this.filteredData.length);
+        
+        // 安全检查：确保数据存在
+        const excelDataLength = this.excelData && Array.isArray(this.excelData) ? this.excelData.length : 0;
+        const filteredDataLength = this.filteredData && Array.isArray(this.filteredData) ? this.filteredData.length : 0;
+        
+        console.log('excelData 长度:', excelDataLength);
+        console.log('filteredData 长度:', filteredDataLength);
         
         const totalRecords = document.getElementById('totalRecords');
         const filteredRecords = document.getElementById('filteredRecords');
@@ -597,15 +695,15 @@ class DashboardExcelApp {
             filteredDateRange
         });
         
-        if (totalRecords) totalRecords.textContent = this.excelData.length;
-        if (filteredRecords) filteredRecords.textContent = this.filteredData.length;
+        if (totalRecords) totalRecords.textContent = excelDataLength;
+        if (filteredRecords) filteredRecords.textContent = filteredDataLength;
         
         if (filteredTotalTime) {
-            const totalMinutes = this.filteredData.reduce((sum, row) => {
-                const duration = parseInt(row.duration) || 0;
-                console.log(`行数据 duration: ${row.duration}, 解析后: ${duration}`);
+            const totalMinutes = (this.filteredData && Array.isArray(this.filteredData)) ? this.filteredData.reduce((sum, row) => {
+                const duration = parseInt(row.duration || row['项目完成时间']) || 0;
+                console.log(`行数据 duration: ${row.duration || row['项目完成时间']}, 解析后: ${duration}`);
                 return sum + duration;
-            }, 0);
+            }, 0) : 0;
             const hours = Math.floor(totalMinutes / 60);
             const minutes = totalMinutes % 60;
             filteredTotalTime.textContent = `${hours}小时${minutes}分钟`;
@@ -613,18 +711,18 @@ class DashboardExcelApp {
         }
         
         if (filteredProjectCount) {
-            const uniqueProjects = new Set(this.filteredData.map(row => row.projectName));
+            const uniqueProjects = (this.filteredData && Array.isArray(this.filteredData)) ? new Set(this.filteredData.map(row => row.projectName || row['学习项目名称'])) : new Set();
             filteredProjectCount.textContent = uniqueProjects.size;
             console.log('项目数量更新:', uniqueProjects.size);
         }
         
         if (filteredAvgDaily) {
-            if (this.filteredData.length > 0) {
+            if (filteredDataLength > 0) {
                 const totalMinutes = this.filteredData.reduce((sum, row) => {
-                    const duration = parseInt(row.duration) || 0;
+                    const duration = parseInt(row.duration || row['项目完成时间']) || 0;
                     return sum + duration;
                 }, 0);
-                const uniqueDates = new Set(this.filteredData.map(row => row.date));
+                const uniqueDates = new Set(this.filteredData.map(row => row.date || row['日期']));
                 const avgDaily = Math.round(totalMinutes / uniqueDates.size);
                 filteredAvgDaily.textContent = `${avgDaily}分钟`;
                 console.log('平均每日更新:', `${avgDaily}分钟`, '总分钟数:', totalMinutes, '唯一日期数:', uniqueDates.size);
@@ -654,7 +752,9 @@ class DashboardExcelApp {
     }
     
     updatePagination() {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+        // 安全检查：确保 filteredData 存在
+        const filteredDataLength = this.filteredData && Array.isArray(this.filteredData) ? this.filteredData.length : 0;
+        const totalPages = Math.ceil(filteredDataLength / this.itemsPerPage);
         const currentPageElement = document.getElementById('currentPage');
         const totalPagesElement = document.getElementById('totalPages');
         const startRecordElement = document.getElementById('startRecord');
@@ -663,7 +763,7 @@ class DashboardExcelApp {
         const nextPageBtn = document.getElementById('nextPageBtn');
         
         console.log('updatePagination 被调用');
-        console.log('filteredData 长度:', this.filteredData.length);
+        console.log('filteredData 长度:', filteredDataLength);
         console.log('itemsPerPage:', this.itemsPerPage);
         console.log('totalPages:', totalPages);
         console.log('currentPage:', this.currentPage);
@@ -680,7 +780,7 @@ class DashboardExcelApp {
         // 更新记录范围显示
         if (startRecordElement && endRecordElement) {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
-            const endIndex = Math.min(this.currentPage * this.itemsPerPage, this.filteredData.length);
+            const endIndex = Math.min(this.currentPage * this.itemsPerPage, filteredDataLength);
             startRecordElement.textContent = startIndex;
             endRecordElement.textContent = endIndex;
         }
@@ -708,7 +808,8 @@ class DashboardExcelApp {
     }
     
     nextPage() {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+        const filteredDataLength = this.filteredData && Array.isArray(this.filteredData) ? this.filteredData.length : 0;
+        const totalPages = Math.ceil(filteredDataLength / this.itemsPerPage);
         if (this.currentPage < totalPages) {
             this.currentPage++;
             this.renderTable();
@@ -737,8 +838,16 @@ class DashboardExcelApp {
         const projectChartSelector = document.getElementById('projectChartSelector');
         if (!projectChartSelector) return;
         
-        // 获取所有项目
-        const projects = [...new Set(this.filteredData.map(row => row.projectName))];
+        // 安全检查：确保 filteredData 存在
+        if (!this.filteredData || !Array.isArray(this.filteredData)) {
+            projectChartSelector.innerHTML = '<option value="">全部项目</option>';
+            return;
+        }
+        
+        // 获取所有项目 - 支持多种字段名
+        const projects = [...new Set(this.filteredData.map(row => {
+            return row.projectName || row.project_name || row.project || row['学习项目名称'] || '未知项目';
+        }))];
         
         projectChartSelector.innerHTML = '<option value="">全部项目</option>';
         projects.forEach(project => {
@@ -824,6 +933,14 @@ class DashboardExcelApp {
     
     renderLineChart(ctx) {
         console.log('开始渲染折线图');
+        
+        // 安全检查：确保 filteredData 存在
+        if (!this.filteredData || !Array.isArray(this.filteredData)) {
+            console.log('filteredData 不存在或不是数组，显示无数据消息');
+            this.showNoDataMessage(ctx);
+            return;
+        }
+        
         console.log('数据长度:', this.filteredData.length);
         
         // 确保Canvas是干净的
@@ -844,8 +961,13 @@ class DashboardExcelApp {
         // 按日期分组数据
         const dateGroups = {};
         this.filteredData.forEach(row => {
-            // 标准化日期格式
-            let date = row.date;
+            // 标准化日期格式 - 支持多种字段名
+            let date = row.date || row.study_date || row.studyDate || row['日期'];
+            
+            if (!date) {
+                console.warn('行数据缺少日期字段:', row);
+                return;
+            }
             
             // 处理不同的日期格式
             if (date.includes('.')) {
@@ -856,7 +978,7 @@ class DashboardExcelApp {
             if (!dateGroups[date]) {
                 dateGroups[date] = 0;
             }
-            dateGroups[date] += parseInt(row.duration) || 0;
+            dateGroups[date] += parseInt(row.duration || row['项目完成时间']) || 0;
         });
         
         // 排序日期
@@ -939,6 +1061,13 @@ class DashboardExcelApp {
     }
     
     renderPieChart(ctx) {
+        // 安全检查：确保 filteredData 存在
+        if (!this.filteredData || !Array.isArray(this.filteredData)) {
+            console.log('filteredData 不存在或不是数组，显示无数据消息');
+            this.showNoDataMessage(ctx);
+            return;
+        }
+        
         // 确保Canvas是干净的
         if (this.currentChart) {
             try {
@@ -961,17 +1090,20 @@ class DashboardExcelApp {
         
         // 如果选择了特定项目，只显示该项目的数据
         if (selectedProject) {
-            dataToChart = this.filteredData.filter(row => row.projectName === selectedProject);
+            dataToChart = this.filteredData.filter(row => {
+                const projectName = row.projectName || row.project_name || row.project || row['学习项目名称'];
+                return projectName === selectedProject;
+            });
         }
         
         // 按项目分组数据
         const projectGroups = {};
         dataToChart.forEach(row => {
-            const project = row.projectName;
+            const project = row.projectName || row.project_name || row.project || row['学习项目名称'] || '未知项目';
             if (!projectGroups[project]) {
                 projectGroups[project] = 0;
             }
-            projectGroups[project] += parseInt(row.duration) || 0;
+            projectGroups[project] += parseInt(row.duration || row['项目完成时间']) || 0;
         });
         
         const projects = Object.keys(projectGroups);
@@ -1077,12 +1209,67 @@ class DashboardExcelApp {
         // 绘制文本
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        context.fillText('暂无数据可显示', centerX, centerY);
+        context.fillText('演示数据', centerX, centerY);
     }
     
     updateCharts() {
         console.log('更新图表...');
         this.updateChart();
+    }
+    
+    // 加载演示数据
+    async loadDemoData() {
+        // 检查是否在demo环境中
+        if (window.location.pathname && window.location.pathname.includes('/demo')) {
+            console.log('检测到demo环境，自动加载演示数据...');
+            try {
+                // 显示加载状态
+                this.showUploadMessage('正在加载演示数据...', 'info');
+                
+                const response = await fetch('/demo/api/data/dashboard/parse-excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    this.excelData = result.data || [];
+                    console.log('演示数据加载成功:', this.excelData.length, '条记录');
+                    
+                    // 显示成功消息
+                    this.showUploadMessage('演示数据加载成功！已加载"生成的学习项目记录.xlsx"文件数据', 'success');
+                    
+                    // 显示数据区域
+                    this.showDataSection();
+                    
+                    // 应用筛选器并更新图表
+                    this.updateFilters();
+                    this.applyFilters();
+                    
+                    // 更新统计信息
+                    this.updateStats();
+                    
+                    // 更新图表
+                    this.updateCharts();
+                    
+                    // 3秒后隐藏成功消息
+                    setTimeout(() => {
+                        const messageElement = document.querySelector('.upload-message');
+                        if (messageElement) {
+                            messageElement.style.display = 'none';
+                        }
+                    }, 3000);
+                } else {
+                    this.showUploadMessage('演示数据加载失败: ' + (result.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('加载演示数据失败:', error);
+                this.showUploadMessage('演示数据加载失败: ' + error.message, 'error');
+            }
+        }
     }
 }
 

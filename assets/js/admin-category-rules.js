@@ -19,14 +19,14 @@ class CategoryRulesManager {
   async loadData() {
     try {
       // 加载分类数据
-      const categoriesResponse = await fetch('/api/points-exchange/admin/categories');
+      const categoriesResponse = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/categories' : getApiUrl('/api/points-exchange/admin/categories'));
       const categoriesResult = await categoriesResponse.json();
       if (categoriesResult.success) {
         this.categories = categoriesResult.data;
       }
 
       // 加载积分规则数据
-      const rulesResponse = await fetch('/api/points-exchange/admin/points-rules');
+      const rulesResponse = await fetch(window.isDemo ? '/demo/api/points-exchange/admin/points-rules' : getApiUrl('/api/points-exchange/admin/points-rules'));
       const rulesResult = await rulesResponse.json();
       if (rulesResult.success) {
         this.pointsRules = rulesResult.data;
@@ -139,11 +139,7 @@ class CategoryRulesManager {
     if (!categoryList) return;
 
     if (this.categories.length === 0) {
-      categoryList.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          暂无分类数据
-        </div>
-      `;
+      categoryList.innerHTML = '<p class="text-center py-8 text-gray-500 dark:text-gray-400">演示分类数据</p>';
       return;
     }
 
@@ -155,7 +151,7 @@ class CategoryRulesManager {
           </div>
           <div>
             <h4 class="font-medium text-gray-900 dark:text-white">${category.name}</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">${category.description || '暂无描述'}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">${category.description || '演示分类描述'}</p>
           </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -219,8 +215,8 @@ class CategoryRulesManager {
 
     try {
       const url = this.isEditingCategory 
-        ? `/api/points-exchange/admin/categories/${this.currentCategory.id}`
-        : '/api/points-exchange/admin/categories';
+        ? window.isDemo ? `/demo/api/points-exchange/admin/categories/${this.currentCategory.id}` : getApiUrl(`/api/points-exchange/admin/categories/${this.currentCategory.id}`)
+        : window.isDemo ? '/demo/api/points-exchange/admin/categories' : getApiUrl('/api/points-exchange/admin/categories');
       
       const method = this.isEditingCategory ? 'PUT' : 'POST';
       
@@ -268,7 +264,7 @@ class CategoryRulesManager {
     if (!confirm(`确定要删除分类"${category.name}"吗？此操作不可恢复！`)) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/categories/${categoryId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/categories/${categoryId}` : getApiUrl(`/api/points-exchange/admin/categories/${categoryId}`), {
         method: 'DELETE'
       });
 
@@ -340,11 +336,7 @@ class CategoryRulesManager {
     if (!rulesList) return;
 
     if (this.pointsRules.length === 0) {
-      rulesList.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          暂无积分规则数据
-        </div>
-      `;
+      rulesList.innerHTML = '<p class="text-center py-8 text-gray-500 dark:text-gray-400">演示积分规则数据</p>';
       return;
     }
 
@@ -364,7 +356,7 @@ class CategoryRulesManager {
             </div>
             <div>
               <h4 class="font-medium text-gray-900 dark:text-white">${rule.name}</h4>
-              <p class="text-sm text-gray-500 dark:text-gray-400">${rule.description || '暂无描述'}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">${rule.description || '演示规则描述'}</p>
               <p class="text-xs text-gray-400 dark:text-gray-500">触发类型: ${triggerTypeText} | 积分: ${rule.points}</p>
             </div>
           </div>
@@ -498,8 +490,8 @@ class CategoryRulesManager {
 
     try {
       const url = this.isEditingRule 
-        ? `/api/points-exchange/admin/points-rules/${this.currentRule.id}`
-        : '/api/points-exchange/admin/points-rules';
+        ? window.isDemo ? `/demo/api/points-exchange/admin/points-rules/${this.currentRule.id}` : getApiUrl(`/api/points-exchange/admin/points-rules/${this.currentRule.id}`)
+        : window.isDemo ? '/demo/api/points-exchange/admin/points-rules' : getApiUrl('/api/points-exchange/admin/points-rules');
       
       const method = this.isEditingRule ? 'PUT' : 'POST';
       
@@ -573,7 +565,7 @@ class CategoryRulesManager {
     if (!confirm(`确定要删除积分规则"${rule.name}"吗？此操作不可恢复！`)) return;
 
     try {
-      const response = await fetch(`/api/points-exchange/admin/points-rules/${ruleId}`, {
+      const response = await fetch(window.isDemo ? `/demo/api/points-exchange/admin/points-rules/${ruleId}` : getApiUrl(`/api/points-exchange/admin/points-rules/${ruleId}`), {
         method: 'DELETE'
       });
 
@@ -646,4 +638,9 @@ let categoryRulesManager;
 document.addEventListener('DOMContentLoaded', () => {
   categoryRulesManager = new CategoryRulesManager();
   window.categoryRulesManager = categoryRulesManager;
-}); 
+});
+
+// fetch 路径适配函数
+function getApiUrl(path) {
+  return window.isDemo ? `/demo${path}` : path;
+} 

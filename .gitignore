@@ -12,7 +12,7 @@ yarn-error.log*
 .env.production.local
 
 # 日志
-logs
+logs/
 *.log
 
 # 运行时数据
@@ -70,18 +70,31 @@ ssl/
 
 # 敏感文件
 data/admin_password.txt
+ADMIN_CREDENTIALS.md
+DEPLOYMENT_GUIDE.md
+cookies.txt
+.env
+.env.local
+.env.production
+
+# 内部文档（不公开）
+docs/INTERNAL_*.md
+docs/SECURITY_*.md
+docs/ADMIN_*.md
 
 # 系统文件
 **/.DS_Store
 
-# Docker相关
-.dockerignore
-docker-compose.override.yml
+
 
 # 部署相关
 .vercel
 .wrangler
 cloudflare/
+
+# Docker 相关
+.dockerignore
+docker-compose.override.yml
 
 # 安全相关
 secrets/
@@ -95,6 +108,10 @@ secrets/
 # 测试覆盖率
 coverage/
 .nyc_output/
+
+# 备份文件
+backups/
+*.backup
 
 # 临时构建文件
 .next/

@@ -11,15 +11,23 @@
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h5 class="font-medium text-gray-900 dark:text-white mb-2">数据备份</h5>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">导出所有学习数据为Excel文件</p>
-        <button id="backupDataBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">
+        <button id="backupDataBtn" data-action="backup-data" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">
           立即备份
+        </button>
+      </div>
+
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h5 class="font-medium text-gray-900 dark:text-white mb-2">数据导入恢复</h5>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">从Excel备份文件恢复数据</p>
+        <button id="importDataBtn" data-action="import-restore" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm">
+          导入恢复
         </button>
       </div>
 
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h5 class="font-medium text-gray-900 dark:text-white mb-2">数据清理</h5>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">清理重复或无效的学习记录</p>
-        <button id="cleanDataBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-md text-sm">
+        <button id="cleanDataBtn" data-action="clean-data" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-md text-sm">
           开始清理
         </button>
       </div>
@@ -27,7 +35,7 @@
       <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <h5 class="font-medium text-gray-900 dark:text-white mb-2">数据重置</h5>
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">清空所有学习数据（不可恢复）</p>
-        <button id="resetDataBtn" class="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm">
+        <button id="resetDataBtn" data-action="reset-data" class="w-full bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm">
           重置数据
         </button>
       </div>
@@ -190,6 +198,10 @@
           <!-- 项目数据将通过JavaScript动态加载 -->
         </tbody>
       </table>
+      <!-- 项目数据分页 -->
+      <div id="projectsPagination" class="user-data-pagination hidden">
+        <!-- 分页内容将通过JavaScript动态加载 -->
+      </div>
     </div>
     
     <!-- 学习记录表格 -->
@@ -199,16 +211,21 @@
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用户</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">项目</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">学习日期</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">开始时间</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">结束时间</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">学习时长</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">效率评分</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">创建时间</th>
           </tr>
         </thead>
         <tbody id="sessionsTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           <!-- 学习记录将通过JavaScript动态加载 -->
         </tbody>
       </table>
+      <!-- 学习记录分页 -->
+      <div id="sessionsPagination" class="user-data-pagination hidden">
+        <!-- 分页内容将通过JavaScript动态加载 -->
+      </div>
     </div>
     
     <!-- 用户操作日志表格 -->
@@ -217,8 +234,8 @@
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作时间</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用户</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作类型</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用户</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作描述</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">状态</th>
           </tr>
@@ -227,6 +244,10 @@
           <!-- 用户操作日志将通过JavaScript动态加载 -->
         </tbody>
       </table>
+      <!-- 用户操作日志分页 -->
+      <div id="userLogsPagination" class="user-data-pagination hidden">
+        <!-- 分页内容将通过JavaScript动态加载 -->
+      </div>
     </div>
     
     <!-- 分页控件 -->
@@ -362,60 +383,518 @@ async function restoreBackup() {
 
 // ==================== 用户数据查看相关函数 ====================
 
+// 当前数据类型和筛选状态
+let currentDataType = 'projects';
+let currentFilters = {
+    userId: '',
+    projectId: '',
+    status: '',
+    operationType: '',
+    startDate: '',
+    endDate: ''
+};
+let currentPage = 1;
+
 // 初始化用户数据查看
 async function initUserDataView() {
-  await loadUsersList();
-  // 注意：事件绑定已在admin.js中处理，这里不需要重复绑定
-  // 如果需要自定义事件处理，请检查admin.js中的AdminApp类
+    await loadUsersList();
+    await loadProjectsList();
+    
+    // 绑定事件监听器
+    bindUserDataEvents();
+    
+    // 设置初始筛选器可见性
+    updateFilterVisibility();
+    
+    // 默认加载项目数据
+    await loadUserData('projects');
+}
+
+// 绑定事件监听器
+function bindUserDataEvents() {
+    // 数据类型选择
+    document.getElementById('dataTypeSelect').addEventListener('change', async (e) => {
+        currentDataType = e.target.value;
+        currentPage = 1;
+        await loadUserData(currentDataType);
+        updateFilterVisibility();
+    });
+    
+    // 用户筛选
+    document.getElementById('userFilter').addEventListener('change', async (e) => {
+        currentFilters.userId = e.target.value;
+        currentPage = 1;
+        await loadUserData(currentDataType);
+        if (currentDataType === 'sessions') {
+            await loadProjectsList(e.target.value);
+        }
+    });
+    
+    // 项目筛选
+    document.getElementById('projectFilter').addEventListener('change', async (e) => {
+        currentFilters.projectId = e.target.value;
+        currentPage = 1;
+        await loadUserData(currentDataType);
+    });
+    
+    // 状态筛选
+    document.getElementById('statusFilter').addEventListener('change', async (e) => {
+        currentFilters.status = e.target.value;
+        currentPage = 1;
+        await loadUserData(currentDataType);
+    });
+    
+    // 操作类型筛选
+    document.getElementById('userOperationTypeFilter').addEventListener('change', async (e) => {
+        currentFilters.operationType = e.target.value;
+        currentPage = 1;
+        await loadUserData(currentDataType);
+    });
+    
+    // 查询按钮
+    document.getElementById('searchUserDataBtn').addEventListener('click', async () => {
+        // 更新所有筛选条件
+        currentFilters.userId = document.getElementById('userFilter').value;
+        currentFilters.projectId = document.getElementById('projectFilter').value;
+        currentFilters.status = document.getElementById('statusFilter').value;
+        currentFilters.operationType = document.getElementById('userOperationTypeFilter').value;
+        currentFilters.startDate = document.getElementById('userDataStartDate').value;
+        currentFilters.endDate = document.getElementById('userDataEndDate').value;
+        currentPage = 1;
+        
+        console.log('搜索用户数据');
+        console.log('搜索参数:', currentFilters);
+        
+        await loadUserData(currentDataType);
+    });
+    
+    // 清空显示按钮
+    document.getElementById('clearUserDataBtn').addEventListener('click', async () => {
+        clearUserDataFilters();
+        await loadUserData(currentDataType);
+    });
+}
+
+// 更新筛选器可见性
+function updateFilterVisibility() {
+    const projectFilter = document.getElementById('projectFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const operationTypeFilter = document.getElementById('userOperationTypeFilter');
+    
+    // 隐藏所有筛选器
+    projectFilter.classList.add('hidden');
+    statusFilter.classList.add('hidden');
+    operationTypeFilter.classList.add('hidden');
+    
+    // 根据数据类型显示相应筛选器
+    switch (currentDataType) {
+        case 'sessions':
+            projectFilter.classList.remove('hidden');
+            break;
+        case 'projects':
+            statusFilter.classList.remove('hidden');
+            break;
+        case 'user-logs':
+            operationTypeFilter.classList.remove('hidden');
+            break;
+    }
+}
+
+// 清空筛选条件
+function clearUserDataFilters() {
+    currentFilters = {
+        userId: '',
+        projectId: '',
+        status: '',
+        operationType: '',
+        startDate: '',
+        endDate: ''
+    };
+    currentPage = 1;
+    
+    // 清空表单
+    document.getElementById('userFilter').value = '';
+    document.getElementById('projectFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('userOperationTypeFilter').value = '';
+    document.getElementById('userDataStartDate').value = '';
+    document.getElementById('userDataEndDate').value = '';
+}
+
+// 加载用户数据
+async function loadUserData(dataType) {
+    try {
+        showLoading('正在加载数据...');
+        
+        let url = '';
+        let params = new URLSearchParams({
+            page: currentPage,
+            limit: 10
+        });
+        
+        // 添加筛选参数
+        if (currentFilters.userId) params.append('userId', currentFilters.userId);
+        if (currentFilters.projectId) params.append('projectId', currentFilters.projectId);
+        if (currentFilters.status) params.append('status', currentFilters.status);
+        if (currentFilters.operationType) params.append('operationType', currentFilters.operationType);
+        if (currentFilters.startDate) params.append('startDate', currentFilters.startDate);
+        if (currentFilters.endDate) params.append('endDate', currentFilters.endDate);
+        
+        switch (dataType) {
+            case 'projects':
+                url = `/api/admin/data/user-projects?${params}`;
+                break;
+            case 'sessions':
+                url = `/api/admin/data/user-sessions?${params}`;
+                break;
+            case 'user-logs':
+                url = `/api/admin/data/user-logs?${params}`;
+                break;
+        }
+        
+        console.log('请求URL:', url);
+        console.log('筛选条件:', currentFilters);
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        console.log('API响应:', data);
+        
+        if (data.success) {
+            displayUserData(dataType, data.data, data.pagination);
+        } else {
+            showError('加载数据失败: ' + data.error);
+        }
+    } catch (error) {
+        console.error('加载用户数据失败:', error);
+        showError('加载数据失败: ' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// 显示用户数据
+function displayUserData(dataType, data, pagination) {
+    // 隐藏所有表格
+    document.getElementById('projectsTable').classList.add('hidden');
+    document.getElementById('sessionsTable').classList.add('hidden');
+    document.getElementById('userLogsTable').classList.add('hidden');
+    
+    switch (dataType) {
+        case 'projects':
+            displayProjectsData(data);
+            document.getElementById('projectsTable').classList.remove('hidden');
+            break;
+        case 'sessions':
+            displaySessionsData(data);
+            document.getElementById('sessionsTable').classList.remove('hidden');
+            break;
+        case 'user-logs':
+            displayUserLogsData(data);
+            document.getElementById('userLogsTable').classList.remove('hidden');
+            break;
+    }
+    
+    // 显示分页
+    displayPagination(pagination);
+}
+
+// 显示项目数据
+function displayProjectsData(projects) {
+    const tbody = document.getElementById('projectsTableBody');
+    tbody.innerHTML = '';
+    
+    if (projects.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">暂无数据</td></tr>';
+        return;
+    }
+    
+    projects.forEach(project => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${project.username}<br><span class="text-gray-500">${project.email}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${project.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${getStatusBadgeClass(project.status)}">${getStatusText(project.status)}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${project.start_date ? formatDate(project.start_date) : '-'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${project.completion_date ? formatDate(project.completion_date) : '-'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${formatDateTime(project.created_at)}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 显示学习记录数据
+function displaySessionsData(sessions) {
+    const tbody = document.getElementById('sessionsTableBody');
+    tbody.innerHTML = '';
+    
+    if (sessions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">暂无数据</td></tr>';
+        return;
+    }
+    
+            sessions.forEach(session => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${session.username}<br><span class="text-gray-500">${session.email}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${session.project_name || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${formatDate(session.study_date)}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${session.start_time_new || '-'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${session.end_time_new || '-'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    ${formatDuration(session.duration)}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+}
+
+// 显示用户操作日志数据
+function displayUserLogsData(logs) {
+    const tbody = document.getElementById('userLogsTableBody');
+    tbody.innerHTML = '';
+    
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">暂无数据</td></tr>';
+        return;
+    }
+    
+    logs.forEach(log => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${formatDateTime(log.created_at)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${log.username}<br><span class="text-gray-500">${log.email}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${log.operation_name}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                ${log.description}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${getLogStatusBadgeClass(log.status)}">${getLogStatusText(log.status)}</span>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 显示分页
+function displayPagination(pagination) {
+    const paginationDiv = document.getElementById('userDataPagination');
+    
+    if (pagination.totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+    
+    let paginationHtml = `
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                显示第 ${(pagination.currentPage - 1) * pagination.itemsPerPage + 1} 到 
+                ${Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} 条，
+                共 ${pagination.totalItems} 条记录
+            </div>
+            <div class="flex space-x-2">
+    `;
+    
+    // 上一页
+    if (pagination.currentPage > 1) {
+        paginationHtml += `
+            <button onclick="changePage(${pagination.currentPage - 1})" 
+                    class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                上一页
+            </button>
+        `;
+    }
+    
+    // 页码
+    const startPage = Math.max(1, pagination.currentPage - 2);
+    const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === pagination.currentPage) {
+            paginationHtml += `
+                <span class="px-3 py-1 text-sm bg-blue-600 text-white rounded">${i}</span>
+            `;
+        } else {
+            paginationHtml += `
+                <button onclick="changePage(${i})" 
+                        class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                    ${i}
+                </button>
+            `;
+        }
+    }
+    
+    // 下一页
+    if (pagination.currentPage < pagination.totalPages) {
+        paginationHtml += `
+            <button onclick="changePage(${pagination.currentPage + 1})" 
+                    class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                下一页
+            </button>
+        `;
+    }
+    
+    paginationHtml += '</div></div>';
+    paginationDiv.innerHTML = paginationHtml;
+}
+
+// 切换页面
+async function changePage(page) {
+    currentPage = page;
+    await loadUserData(currentDataType);
 }
 
 // 加载用户列表
 async function loadUsersList() {
-  try {
-    const response = await fetch('/api/admin/data/users-list');
-    const data = await response.json();
-    
-    if (data.success) {
-      const userFilter = document.getElementById('userFilter');
-      userFilter.innerHTML = '<option value="">所有用户</option>';
-      
-      data.users.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user.id;
-        option.textContent = `${user.username} (${user.email})`;
-        userFilter.appendChild(option);
-      });
+    try {
+        const response = await fetch('/api/admin/data/users-list');
+        const data = await response.json();
+        
+        if (data.success) {
+            const userFilter = document.getElementById('userFilter');
+            userFilter.innerHTML = '<option value="">所有用户</option>';
+            
+            data.users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.username} (${user.email})`;
+                userFilter.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载用户列表失败:', error);
     }
-  } catch (error) {
-    console.error('加载用户列表失败:', error);
-  }
 }
 
 // 加载项目列表
 async function loadProjectsList(userId = '') {
-  try {
-    const url = userId ? `/api/admin/data/projects-list?userId=${userId}` : '/api/admin/data/projects-list';
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    if (data.success) {
-      const projectFilter = document.getElementById('projectFilter');
-      projectFilter.innerHTML = '<option value="">所有项目</option>';
-      
-      data.projects.forEach(project => {
-        const option = document.createElement('option');
-        option.value = project.id;
-        option.textContent = project.name;
-        projectFilter.appendChild(option);
-      });
+    try {
+        const url = userId ? `/api/admin/data/projects-list?userId=${userId}` : '/api/admin/data/projects-list';
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            const projectFilter = document.getElementById('projectFilter');
+            projectFilter.innerHTML = '<option value="">所有项目</option>';
+            
+            data.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                projectFilter.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载项目列表失败:', error);
     }
-  } catch (error) {
-    console.error('加载项目列表失败:', error);
-  }
+}
+
+// 工具函数
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'active': return 'bg-green-100 text-green-800';
+        case 'completed': return 'bg-blue-100 text-blue-800';
+        case 'paused': return 'bg-yellow-100 text-yellow-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getStatusText(status) {
+    switch (status) {
+        case 'active': return '进行中';
+        case 'completed': return '已完成';
+        case 'paused': return '暂停';
+        default: return '未知';
+    }
+}
+
+function getLogStatusBadgeClass(status) {
+    switch (status) {
+        case 'success': return 'bg-green-100 text-green-800';
+        case 'failed': return 'bg-red-100 text-red-800';
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getLogStatusText(status) {
+    switch (status) {
+        case 'success': return '成功';
+        case 'failed': return '失败';
+        case 'pending': return '进行中';
+        default: return '未知';
+    }
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('zh-CN');
+}
+
+function formatDateTime(dateString) {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('zh-CN');
+}
+
+function formatDuration(minutes) {
+    if (!minutes) return '-';
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours > 0) {
+        return `${hours}小时${remainingMinutes}分钟`;
+    } else {
+        return `${remainingMinutes}分钟`;
+    }
+}
+
+function showLoading(message) {
+    // 简单的加载提示
+    console.log('加载中:', message);
+}
+
+function hideLoading() {
+    // 隐藏加载提示
+    console.log('加载完成');
+}
+
+function showError(message) {
+    console.error('错误:', message);
+    alert('错误: ' + message);
+}
+
+function showSuccess(message) {
+    console.log('成功:', message);
+    alert('成功: ' + message);
 }
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-  initUserDataView();
+    initUserDataView();
 });
 </script> 

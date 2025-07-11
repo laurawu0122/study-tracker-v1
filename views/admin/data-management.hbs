@@ -1,0 +1,132 @@
+<div class="space-y-6">
+    <!-- 页面标题 -->
+    <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">数据管理</h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">生成和管理测试数据，用于开发和测试环境</p>
+    </div>
+
+    <!-- 生成测试数据表单 -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">生成测试数据</h3>
+        
+        <form id="testDataForm" class="space-y-4" action="javascript:void(0)" method="post">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 项目数量 -->
+                <div>
+                    <label for="projectCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        项目数量
+                    </label>
+                    <input type="number" id="projectCount" name="projectCount" min="1" max="50" value="10"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <!-- 项目类型 -->
+                <div>
+                    <label for="projectType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        项目类型
+                    </label>
+                    <select id="projectType" name="projectType"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <option value="study">学习项目</option>
+                        <option value="work">工作项目</option>
+                        <option value="personal">个人项目</option>
+                        <option value="research">研究项目</option>
+                    </select>
+                </div>
+
+                <!-- 生成模式 -->
+                <div>
+                    <label for="mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        生成模式
+                    </label>
+                    <select id="mode" name="mode"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <option value="append">追加模式（保留现有测试数据）</option>
+                        <option value="overwrite">覆盖模式（清除现有测试数据）</option>
+                    </select>
+                </div>
+
+                <!-- 记录数量 -->
+                <div>
+                    <label for="recordCount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        记录数量
+                    </label>
+                    <input type="number" id="recordCount" name="recordCount" min="10" max="1000" value="100"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <!-- 时间范围 -->
+                <div>
+                    <label for="timeRange" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        时间范围（天）
+                    </label>
+                    <input type="number" id="timeRange" name="timeRange" min="7" max="365" value="30"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <!-- 每日记录数 -->
+                <div>
+                    <label for="dailyRecords" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        每日记录数
+                    </label>
+                    <input type="number" id="dailyRecords" name="dailyRecords" min="1" max="10" value="3"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <!-- 最小时长 -->
+                <div>
+                    <label for="minDuration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        最小时长（分钟）
+                    </label>
+                    <input type="number" id="minDuration" name="minDuration" min="15" max="120" value="30"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+
+                <!-- 最大时长 -->
+                <div>
+                    <label for="maxDuration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        最大时长（分钟）
+                    </label>
+                    <input type="number" id="maxDuration" name="maxDuration" min="30" max="300" value="180"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex space-x-4 pt-4">
+                <button type="submit" id="generateBtn" data-action="generate-test-data"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 hidden" id="generateSpinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    生成测试数据
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 清除测试数据 -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-red-600 dark:text-red-400 mb-4">清除测试数据</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            此操作将删除所有测试数据，包括测试项目和记录。此操作不可撤销，请谨慎操作。
+        </p>
+        <button type="button" id="clearBtn" data-action="clear-test-data"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 hidden" id="clearSpinner" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            清除所有测试数据
+        </button>
+    </div>
+
+    <!-- 操作日志 -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">操作日志</h3>
+        <div id="operationLogs" class="space-y-2 max-h-64 overflow-y-auto">
+            <div class="text-sm text-gray-500 dark:text-gray-400 italic">暂无操作记录</div>
+        </div>
+    </div>
+</div> 

@@ -22,7 +22,8 @@ class PointsRecordsPage {
 
   async loadUserPoints() {
     try {
-      const response = await fetch('/api/points-exchange/user-points', {
+      const url = window.isDemo ? '/demo/api/points-exchange/user-points' : '/api/points-exchange/user-points';
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.getToken()}`
         },
@@ -54,7 +55,8 @@ class PointsRecordsPage {
       if (this.currentFilters.type) params.append('record_type', this.currentFilters.type);
       if (this.currentFilters.search) params.append('search', this.currentFilters.search);
 
-      const response = await fetch(`/api/points-exchange/points-records?${params}`, {
+      const url = window.isDemo ? `/demo/api/points-exchange/points-records?${params}` : `/api/points-exchange/points-records?${params}`;
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${this.getToken()}`
         },
@@ -269,14 +271,55 @@ class PointsRecordsPage {
     container.innerHTML = `
       <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
         <div class="text-sm text-gray-700 dark:text-gray-300">
-          显示第 ${(this.currentPage - 1) * 10 + 1} 到 ${Math.min(this.currentPage * 10, this.totalRecords)} 条，共 ${this.totalRecords} 条
+          显示第 ${(this.currentPage - 1) * 10 + 1} 到 ${Math.min(this.currentPage * 10, this.totalRecords)} 条，共 ${this.totalRecords} 条记录
         </div>
-        <div class="flex space-x-2">
-          ${this.currentPage > 1 ? `<button onclick="pointsRecordsPage.changePage(${this.currentPage - 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">上一页</button>` : ''}
-          ${this.currentPage < this.totalPages ? `<button onclick="pointsRecordsPage.changePage(${this.currentPage + 1})" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">下一页</button>` : ''}
+        <div class="flex items-center space-x-2">
+          <button id="prevBtn" 
+                  ${this.currentPage <= 1 ? 'disabled' : ''}
+                  class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-page="${this.currentPage - 1}">
+            上一页
+          </button>
+          <span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
+            第 ${this.currentPage} 页，共 ${this.totalPages} 页
+          </span>
+          <button id="nextBtn" 
+                  ${this.currentPage >= this.totalPages ? 'disabled' : ''}
+                  class="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-page="${this.currentPage + 1}">
+            下一页
+          </button>
         </div>
       </div>
     `;
+    
+    // 绑定分页事件
+    this.bindPaginationEvents();
+  }
+
+  bindPaginationEvents() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (prevBtn) {
+      prevBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(e.target.getAttribute('data-page'));
+        if (page && page >= 1 && page !== this.currentPage) {
+          this.changePage(page);
+        }
+      });
+    }
+    
+    if (nextBtn) {
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = parseInt(e.target.getAttribute('data-page'));
+        if (page && page <= this.totalPages && page !== this.currentPage) {
+          this.changePage(page);
+        }
+      });
+    }
   }
 
   changePage(page) {

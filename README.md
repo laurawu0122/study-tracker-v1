@@ -19,11 +19,10 @@
 - **通知系统** - 实时通知和学习提醒
 
 ### 🚀 部署特性
-- **一键部署** - 30秒内完成部署
+- **一键部署** - Docker Compose 支持一键部署
 - **预构建镜像** - 避免网络和构建问题
 - **多环境支持** - 生产、开发、测试环境
 - **自动初始化** - 数据库自动迁移和种子
-- **容器化部署** - Docker 容器化，易于扩展
 
 ### 🔐 用户系统
 - **用户认证** - JWT 认证，支持登录/注册
@@ -73,95 +72,39 @@
 - Node.js >= 16.0.0
 - PostgreSQL >= 12.0
 - npm >= 8.0.0
+- Docker >= 20.0.0 (可选)
 
 ### 🐳 Docker 一键部署（推荐）
 
-#### 系统要求
-- Docker 20.10+
-- Docker Compose 2.0+
-- 至少 2GB 可用内存
-- 至少 10GB 可用磁盘空间
-
-#### 超快一键部署（推荐）
-
-**方式一：预构建镜像部署（最快，30秒完成）**
+1. **克隆项目**
 ```bash
-curl -sSL https://raw.githubusercontent.com/laurawu0122/study-tracker/main/deploy-prod.sh | bash
-```
-
-**方式二：本地构建部署**
-```bash
-# 1. 克隆项目
-git clone https://github.com/laurawu0122/study-tracker.git
+git clone https://github.com/your-username/study-tracker.git
 cd study-tracker
+```
 
-# 2. 配置环境变量（可选）
+2. **配置环境变量**
+```bash
+# 复制环境变量模板
 cp env.example .env
+
+# 编辑配置文件
 nano .env
-
-# 3. 一键部署
-./deploy.sh
 ```
 
-**方式三：开发环境**
+3. **启动服务**
 ```bash
-# 使用开发配置
-cp docker-compose.dev.yml docker-compose.yml
-docker-compose up -d --build
-```
+# 使用 Docker Compose 启动
+docker-compose up -d
 
-#### 部署优势对比
-
-| 部署方式 | 速度 | 网络要求 | 推荐场景 |
-|---------|------|----------|----------|
-| 预构建镜像 | 30秒 | 低 | 生产环境、快速测试 |
-| 本地构建 | 2-3分钟 | 中 | 开发环境、自定义配置 |
-| 开发环境 | 5-10分钟 | 高 | 开发调试 |
-
-#### 访问应用
-- 应用地址：http://localhost:3001
-- 默认管理员账号：admin
-- 默认密码：Admin123!
-
-#### Docker 管理命令
-```bash
 # 查看服务状态
 docker-compose ps
 
-# 查看应用日志
-docker-compose logs -f app
-
-# 重启服务
-docker-compose restart
-
-# 停止服务
-docker-compose down
-
-# 备份数据库
-docker-compose exec postgres pg_dump -U postgres study_tracker > backup.sql
-
-# 清理资源
-docker system prune -f
-
-# 更新应用（预构建镜像）
-docker-compose pull app
-docker-compose up -d app
-```
-
-#### 使用 npm 脚本
-```bash
-# 部署生产环境
-npm run deploy:prod
-
-# 部署开发环境
-npm run deploy:dev
-
 # 查看日志
-npm run docker:logs
-
-# 重启服务
-npm run docker:restart
+docker-compose logs -f
 ```
+
+4. **访问应用**
+打开浏览器访问 `http://localhost:3001`
 
 ### 🔧 传统安装方式
 
@@ -212,16 +155,20 @@ npm start
 主要配置项说明：
 
 ```bash
+# 应用配置
+NODE_ENV=production
+PORT=3001
+
 # 数据库配置
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=your_password
-DB_NAME=study_tracker_dev
+DB_NAME=study_tracker_prod
 
-# JWT 配置
-JWT_SECRET=your-super-secret-jwt-key
-JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key
+# JWT 配置（生产环境必须修改）
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-change-this-in-production
 
 # 邮件配置（可选）
 EMAIL_HOST=smtp.gmail.com
@@ -229,8 +176,12 @@ EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-email-password
 
-# 管理员配置
-DEFAULT_ADMIN_PASSWORD=Admin123!
+# 管理员配置（请修改默认密码）
+DEFAULT_ADMIN_PASSWORD=your-admin-password
+
+# 安全配置
+TRUST_PROXY=true
+SESSION_SECURE_COOKIES=true
 ```
 
 ## 🚀 使用指南
@@ -242,16 +193,27 @@ DEFAULT_ADMIN_PASSWORD=Admin123!
 
 ### 快速开始
 ```bash
-# 一键部署（推荐）
-curl -sSL https://raw.githubusercontent.com/laurawu0122/study-tracker/main/deploy-prod.sh | bash
+# 安装依赖
+npm install
 
-# 等待30秒后访问
+# 配置环境变量
+cp env.example .env
+# 编辑 .env 文件，配置数据库等信息
+
+# 初始化数据库
+npm run db:migrate
+npm run db:seed
+
+# 启动应用
+npm start
+
+# 访问应用
 open http://localhost:3001
 ```
 
 ### 默认账号信息
 - **管理员账号**：admin
-- **默认密码**：Admin123!
+- **默认密码**：请查看 ADMIN_CREDENTIALS.md 文件
 - **管理员地址**：http://localhost:3001/admin
 
 ### 基本功能
@@ -269,7 +231,7 @@ open http://localhost:3001
 
 **管理员登录信息**：
 - 用户名：admin
-- 密码：Admin123!
+- 密码：请查看 ADMIN_CREDENTIALS.md 文件
 - 登录地址：http://localhost:3001/admin
 
 ## 📁 项目结构
@@ -293,7 +255,9 @@ study-tracker/
 ├── scripts/               # 脚本文件
 ├── uploads/               # 上传文件
 ├── public/                # 公共文件
-└── docs/                  # 文档
+├── docs/                  # 文档
+├── docker-compose.yml     # Docker 配置
+└── Dockerfile             # Docker 镜像
 ```
 
 ## 🔧 开发指南
@@ -314,27 +278,6 @@ npm run analyze:css
 
 # 优化构建
 npm run build:optimized
-```
-
-### Docker 开发命令
-```bash
-# 构建 Docker 镜像
-npm run docker:build
-
-# 构建开发环境镜像
-npm run docker:build-dev
-
-# 启动 Docker 服务
-npm run docker:up
-
-# 启动开发环境服务
-npm run docker:up-dev
-
-# 查看 Docker 日志
-npm run docker:logs
-
-# 停止 Docker 服务
-npm run docker:down
 ```
 
 ### 数据库操作
@@ -377,6 +320,7 @@ npm run workflow
 - **CSRF 防护** - CSRF 令牌验证
 - **速率限制** - 防止暴力攻击
 - **环境变量** - 敏感信息隔离
+- **Helmet 安全头** - 自动设置安全 HTTP 头
 
 ## 📈 性能优化
 
@@ -385,6 +329,57 @@ npm run workflow
 - **数据库索引** - 优化的查询性能
 - **连接池** - 数据库连接复用
 - **缓存策略** - 合理的缓存配置
+- **PM2 进程管理** - 生产环境进程管理
+
+## 🐳 Docker 部署
+
+### Docker Compose 配置
+项目包含完整的 Docker 配置，支持一键部署：
+
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: study_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
+```
+
+### 生产环境部署
+```bash
+# 构建并启动服务
+docker-compose -f docker-compose.prod.yml up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f app
+
+# 停止服务
+docker-compose down
+```
 
 ## 🤝 贡献指南
 
@@ -400,9 +395,8 @@ npm run workflow
 
 ## 📚 相关文档
 
-- [Docker 部署指南](DOCKER_DEPLOYMENT.md) - 详细的 Docker 部署说明
-- [数据库设置指南](DATABASE_SETUP.md) - 数据库配置和迁移说明
-- [安全配置指南](SECURITY_CHECKLIST.md) - 安全配置最佳实践
+- [ADMIN_CREDENTIALS.md](ADMIN_CREDENTIALS.md) - 管理员账号信息（本地文件，不提交到仓库）
+- [LOGGING_GUIDE.md](docs/LOGGING_GUIDE.md) - 日志管理指南
 
 ## 🙏 致谢
 
@@ -411,7 +405,6 @@ npm run workflow
 - [PostgreSQL](https://www.postgresql.org/) - 数据库
 - [Knex.js](http://knexjs.org/) - SQL 查询构建器
 - [HTMX](https://htmx.org/) - 现代 JavaScript 库
-- [Docker](https://www.docker.com/) - 容器化平台
 
 ## 📞 联系方式
 

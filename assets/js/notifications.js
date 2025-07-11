@@ -44,7 +44,7 @@ class NotificationsPage {
     // 加载统计数据
     async loadStats() {
         try {
-            const response = await fetch('/api/notifications/stats');
+            const response = await fetch(getApiUrl('/api/notifications/stats'));
             if (response.ok) {
                 this.stats = await response.json();
                 this.renderStats();
@@ -132,7 +132,7 @@ class NotificationsPage {
     // 加载学习洞察
     async loadInsights() {
         try {
-            const response = await fetch('/api/notifications/insights');
+            const response = await fetch(getApiUrl('/api/notifications/insights'));
             if (response.ok) {
                 const data = await response.json();
                 this.insights = data.insights;
@@ -154,7 +154,7 @@ class NotificationsPage {
         if (this.insights.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-8">
-                    <p class="text-gray-500 dark:text-gray-400">暂无学习洞察</p>
+                    <p class="text-gray-500 dark:text-gray-400">演示学习洞察</p>
                 </div>
             `;
             return;
@@ -195,7 +195,7 @@ class NotificationsPage {
                     <p class="text-sm text-gray-500 dark:text-gray-400">学习次数</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.topProject || '无'}</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">${data.stats.topProject || 'JavaScript'}</p>
                     <p class="text-sm text-gray-500 dark:text-gray-400">专注项目</p>
                 </div>
             </div>
@@ -230,7 +230,7 @@ class NotificationsPage {
                 this.navigateToAnalytics();
                 break;
             default:
-                console.log('未知的洞察操作:', action);
+                console.log('未识别的洞察操作:', action);
         }
     }
     
@@ -280,7 +280,7 @@ class NotificationsPage {
     async loadSettings() {
         try {
             console.log('开始加载通知设置...');
-            const response = await fetch('/api/notifications/settings');
+            const response = await fetch(getApiUrl('/api/notifications/settings'));
             console.log('加载设置响应状态:', response.status);
             
             if (response.ok) {
@@ -364,7 +364,7 @@ class NotificationsPage {
             const filterType = document.getElementById('filterType')?.value || 'all';
             const unreadOnly = document.getElementById('unreadOnly')?.checked || false;
             
-            let url = `/api/notifications?page=${this.currentPage}&limit=10`;
+            let url = getApiUrl(`/api/notifications?page=${this.currentPage}&limit=10`);
             if (filterType !== 'all') url += `&type=${filterType}`;
             if (unreadOnly) url += `&unread=true`;
             
@@ -516,7 +516,7 @@ class NotificationsPage {
     // 标记已读
     async markAsRead(id) {
         try {
-            const response = await fetch(`/api/notifications/${id}/read`, {
+            const response = await fetch(getApiUrl(`/api/notifications/${id}/read`), {
                 method: 'PUT'
             });
             if (response.ok) {
@@ -540,7 +540,7 @@ class NotificationsPage {
         if (!confirmed) return;
         
         try {
-            const response = await fetch(`/api/notifications/${id}`, {
+            const response = await fetch(getApiUrl(`/api/notifications/${id}`), {
                 method: 'DELETE'
             });
             if (response.ok) {
@@ -557,7 +557,7 @@ class NotificationsPage {
     // 标记全部已读
     async markAllAsRead() {
         try {
-            const response = await fetch('/api/notifications/read-all', {
+            const response = await fetch(getApiUrl('/api/notifications/read-all'), {
                 method: 'PUT'
             });
             if (response.ok) {
@@ -582,7 +582,7 @@ class NotificationsPage {
         if (!confirmed) return;
         
         try {
-            const response = await fetch('/api/notifications/clear-all', {
+            const response = await fetch(getApiUrl('/api/notifications/clear-all'), {
                 method: 'DELETE'
             });
             if (response.ok) {
@@ -623,7 +623,7 @@ class NotificationsPage {
         console.log('准备保存的设置:', settings);
         
         try {
-            const response = await fetch('/api/notifications/settings', {
+            const response = await fetch(getApiUrl('/api/notifications/settings'), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -895,52 +895,8 @@ class NotificationsPage {
 
     // 显示Toast通知
     showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl transition-all duration-300 transform translate-x-full max-w-sm`;
-        
-        const colors = {
-            success: 'bg-green-500 text-white border-l-4 border-green-600',
-            error: 'bg-red-500 text-white border-l-4 border-red-600',
-            warning: 'bg-yellow-500 text-white border-l-4 border-yellow-600',
-            info: 'bg-blue-500 text-white border-l-4 border-blue-600'
-        };
-        
-        const icons = {
-            success: 'fas fa-check-circle',
-            error: 'fas fa-exclamation-circle',
-            warning: 'fas fa-exclamation-triangle',
-            info: 'fas fa-info-circle'
-        };
-        
-        toast.className += ` ${colors[type] || colors.info}`;
-        toast.innerHTML = `
-            <div class="flex items-start">
-                <i class="${icons[type] || icons.info} mr-3 mt-0.5 text-lg"></i>
-                <div class="flex-1">
-                    <div class="font-medium">${message}</div>
-                </div>
-                <button class="ml-3 text-white hover:text-gray-200 transition-colors" onclick="this.parentElement.parentElement.remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        // 显示动画
-        setTimeout(() => {
-            toast.classList.remove('translate-x-full');
-        }, 100);
-        
-        // 自动隐藏
-        setTimeout(() => {
-            toast.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (document.body.contains(toast)) {
-                    document.body.removeChild(toast);
-                }
-            }, 300);
-        }, 3000);
+        // 使用演示模式通知系统
+        window.demoModeShowToast(message, type);
     }
     
     // 销毁方法
@@ -952,4 +908,9 @@ class NotificationsPage {
 }
 
 // 暴露到全局作用域
-window.NotificationsPage = NotificationsPage; 
+window.NotificationsPage = NotificationsPage;
+
+// fetch 路径适配函数
+function getApiUrl(path) {
+  return window.isDemo ? `/demo${path}` : path;
+} 

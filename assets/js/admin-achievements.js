@@ -1,13 +1,6 @@
 // 成就管理JavaScript文件
 console.log('🎯 成就管理JavaScript文件已加载 - ' + new Date().toLocaleTimeString());
 
-// 防止重复声明
-if (typeof window.AchievementManager !== 'undefined') {
-  console.log('⚠️ AchievementManager 已存在，跳过重复声明');
-} else {
-  console.log('✅ 首次加载 AchievementManager');
-}
-
 // 防抖函数
 function debounce(func, wait) {
   let timeout;
@@ -20,6 +13,9 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+// 全局变量，防止重复初始化
+let achievementManager;
 
 // 成就管理页面类
 class AchievementManager {
@@ -34,116 +30,184 @@ class AchievementManager {
       category: '',
       status: ''
     };
-    this.retryCount = 0;
+    this.selectedIcon = null;
+    this.currentEditingAchievement = null;
+    this.currentEditingCategory = null;
+    this.uploading = false;
+    this.statsRefreshInterval = null; // 统计信息刷新定时器
+    
     this.init();
   }
-  
-  // 检查是否在成就管理页面
-  checkIfAchievementPage() {
-    // 方法1：检查URL路径
-    if (window.location.pathname.includes('admin') && window.location.hash.includes('achievements')) {
-      return true;
-    }
-    
-    // 方法2：检查当前激活的标签页
-    const activeTab = document.querySelector('.tab-button.active, .nav-link.active');
-    if (activeTab && activeTab.textContent.includes('成就')) {
-      return true;
-    }
-    
-    // 方法3：检查页面内容
-    const achievementButtons = document.querySelectorAll('#downloadIconsBtn, #addCategoryBtn, #addAchievementBtn');
-    if (achievementButtons.length > 0) {
-      return true;
-    }
-    
-    // 方法4：检查成就相关的DOM元素
-    const achievementElements = document.querySelectorAll('#achievementsTableBody, #achievementModal, #categoryModal');
-    if (achievementElements.length > 0) {
-      return true;
-    }
-    
-    return false;
-  }
-  
+
   async init() {
-    console.log('🚀 开始初始化成就管理器...');
-    // 等待DOM完全加载
-    if (document.readyState === 'loading') {
-      console.log('⏳ DOM还在加载中，等待...');
-      await new Promise(resolve => {
-        document.addEventListener('DOMContentLoaded', resolve);
-      });
-    }
+    console.log('🚀 初始化成就管理器');
+    // 临时设置页面标识，让EventManager能正确识别当前页面
+    document.body.setAttribute('data-page', 'admin-achievements');
     
-      // 检查是否在成就管理页面 - 改进检测逻辑
-  const isAchievementPage = this.checkIfAchievementPage();
-  
-  console.log('📄 页面检查结果:', {
-    isAchievementPage: isAchievementPage
-  });
-  
-  if (!isAchievementPage) {
-    console.log('❌ 不在成就管理页面，跳过初始化');
-    return;
-  }
-    
-    // 等待更长时间确保所有元素都加载完成
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // 检查必要的DOM元素是否存在
-    const requiredElements = [
-      'totalAchievements',
-      'totalCategories', 
-      'activeUsers',
-      'totalPoints',
-      'achievementsTableBody'
-    ];
-    
-    const missingElements = requiredElements.filter(id => !document.getElementById(id));
-    if (missingElements.length > 0) {
-      console.warn('缺少必要的DOM元素:', missingElements);
-      // 等待更长时间后重试，最多重试3次
-      if (this.retryCount < 3) {
-        this.retryCount = (this.retryCount || 0) + 1;
-        console.log(`重试初始化 (${this.retryCount}/3)...`);
-        setTimeout(() => this.init(), 1000);
-        return;
-      } else {
-        console.error('初始化失败：DOM元素未找到');
-        return;
-      }
-    }
-    
-    console.log('成就管理页面初始化开始...');
     await this.loadCategories();
     await this.loadAchievements();
+    await this.loadStats();
     this.setupEventListeners();
-    await this.updateStats();
-    console.log('成就管理页面初始化完成');
+    this.setupFilters();
+    
+    // 设置定时刷新统计信息（每30秒刷新一次）
+    this.statsRefreshInterval = setInterval(() => {
+      console.log('📊 定时刷新成就统计信息...');
+      this.loadStats();
+    }, 30000);
+    
+    // 页面卸载时清理定时器
+    window.addEventListener('beforeunload', () => {
+      this.cleanup();
+    });
   }
-  
-  async loadCategories() {
-    try {
-      const response = await fetch('/api/admin/achievement-categories');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          this.categories = result.data || [];
-          this.populateCategoryFilters();
-        } else {
-          console.error('加载分类失败: API返回格式错误');
-        }
-      } else {
-        console.error('加载分类失败:', response.statusText);
-      }
-    } catch (error) {
-      console.error('加载分类出错:', error);
+
+  // EventManager 需要的 buttonClick 方法
+  buttonClick(data, event) {
+    console.log('🎯 AchievementManager.buttonClick 被调用', data, event);
+    const { action, target } = data;
+    
+    switch (action) {
+      case 'addAchievementBtn':
+        this.showAchievementModal();
+        break;
+      case 'addCategoryBtn':
+        this.showCategoryModal();
+        break;
+      case 'downloadIconsBtn':
+        this.downloadIcons();
+        break;
+      case 'iconPickerBtn':
+        this.showIconPickerModal();
+        break;
+      case 'uploadIconBtn':
+        this.triggerIconUpload();
+        break;
+      case 'resetFiltersBtn':
+        this.resetFilters();
+        break;
+      default:
+        console.warn('未识别的按钮动作:', action);
     }
   }
-  
+
+  // 清理定时器
+  cleanup() {
+    if (this.statsRefreshInterval) {
+      clearInterval(this.statsRefreshInterval);
+      this.statsRefreshInterval = null;
+      console.log('📊 清理成就统计信息刷新定时器');
+    }
+  }
+
+  // 合并后的事件监听器
+  setupEventListeners() {
+    // 按钮点击事件（EventManager分发用）
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      // 按钮分发
+      if (target.id === 'addAchievementBtn' || target.closest('#addAchievementBtn')) {
+        e.preventDefault();
+        this.showAchievementModal();
+      }
+      if (target.id === 'addCategoryBtn' || target.closest('#addCategoryBtn')) {
+        e.preventDefault();
+        this.showCategoryModal();
+      }
+      if (target.id === 'downloadIconsBtn' || target.closest('#downloadIconsBtn')) {
+        e.preventDefault();
+        this.downloadIcons();
+      }
+      if (target.id === 'iconPickerBtn' || target.closest('#iconPickerBtn')) {
+        e.preventDefault();
+        this.showIconPickerModal();
+      }
+      if (target.id === 'uploadIconBtn' || target.closest('#uploadIconBtn')) {
+        e.preventDefault();
+        this.triggerIconUpload();
+      }
+      if (target.id === 'resetFiltersBtn' || target.closest('#resetFiltersBtn')) {
+        e.preventDefault();
+        this.resetFilters();
+      }
+      // 图标选择器点击事件
+      if (e.target.classList.contains('icon-item') || e.target.closest('.icon-item')) {
+        const item = e.target.classList.contains('icon-item') ? e.target : e.target.closest('.icon-item');
+        // 移除所有选中
+        document.querySelectorAll('.icon-item.selected').forEach(el => el.classList.remove('selected'));
+        // 当前项加选中
+        item.classList.add('selected');
+        // 自动滚动到可见
+        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        // 触发原有逻辑
+        this.selectIcon(item.dataset.icon);
+      }
+    });
+
+    // 表单提交事件
+    document.addEventListener('submit', (e) => {
+      if (e.target.id === 'achievementForm') {
+        e.preventDefault();
+        this.saveAchievement();
+      }
+      if (e.target.id === 'categoryForm') {
+        e.preventDefault();
+        this.saveCategory();
+      }
+    });
+  }
+
+  // 设置筛选器
+  setupFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce((e) => {
+        this.filters.search = e.target.value;
+        this.currentPage = 1;
+        this.loadAchievements();
+      }, 300));
+    }
+
+    if (categoryFilter) {
+      categoryFilter.addEventListener('change', (e) => {
+        this.filters.category = e.target.value;
+        this.currentPage = 1;
+        this.loadAchievements();
+      });
+    }
+
+    if (statusFilter) {
+      statusFilter.addEventListener('change', (e) => {
+        this.filters.status = e.target.value;
+        this.currentPage = 1;
+        this.loadAchievements();
+      });
+    }
+  }
+
+  // 重置筛选器
+  resetFilters() {
+    this.filters = { search: '', category: '', status: '' };
+    this.currentPage = 1;
+    
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (categoryFilter) categoryFilter.value = '';
+    if (statusFilter) statusFilter.value = '';
+    
+    this.loadAchievements();
+  }
+
+  // 加载成就列表
   async loadAchievements() {
     try {
+      console.log('📋 加载成就列表');
       const params = new URLSearchParams({
         page: this.currentPage,
         limit: this.pageSize,
@@ -151,688 +215,984 @@ class AchievementManager {
         category: this.filters.category,
         status: this.filters.status
       });
-      
-      const response = await fetch(`/api/admin/achievements?${params}`);
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          this.achievements = result.achievements || [];
-          this.renderAchievements();
-          this.renderPagination(result.pagination);
-        } else {
-          console.error('加载成就失败: API返回格式错误');
+
+      const response = await fetch(this.getApiUrl(`/api/admin/achievements?${params}`), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
         }
-      } else {
-        console.error('加载成就失败:', response.statusText);
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      this.achievements = data.achievements || [];
+      this.renderAchievements();
+      this.renderPagination(data.pagination);
     } catch (error) {
-      console.error('加载成就出错:', error);
+      console.error('获取成就列表失败:', error);
+      this.showToast('获取成就列表失败', 'error');
     }
   }
-  
-  populateCategoryFilters() {
-    const categoryFilter = document.getElementById('categoryFilter');
-    const achievementCategory = document.getElementById('achievementCategory');
-    
-    if (categoryFilter) {
-      categoryFilter.innerHTML = '<option value="">全部分类</option>';
-      this.categories.forEach(category => {
-        categoryFilter.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-      });
-    }
-    
-    if (achievementCategory) {
-      achievementCategory.innerHTML = '<option value="">选择分类</option>';
-      this.categories.forEach(category => {
-        achievementCategory.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-      });
-    }
-  }
-  
+
+  // 渲染成就列表
   renderAchievements() {
     const tbody = document.getElementById('achievementsTableBody');
     if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    if (this.achievements.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-            暂无成就数据
-          </td>
-        </tr>
-      `;
-      return;
-    }
-    
-    this.achievements.forEach(achievement => {
-      const category = this.categories.find(c => c.id === achievement.category_id);
-      const row = document.createElement('tr');
-      row.innerHTML = `
+
+    tbody.innerHTML = this.achievements.map(achievement => `
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
         <td class="px-6 py-4 whitespace-nowrap">
           <div class="flex items-center">
-            <div class="flex-shrink-0 h-10 w-10">
-              <img class="h-10 w-10 rounded-full" src="${achievement.icon || '/assets/ico/default-achievement.svg'}" alt="${achievement.name}">
-            </div>
-            <div class="ml-4">
-              <div class="text-sm font-medium text-gray-900 dark:text-white">${achievement.name}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">${achievement.description || ''}</div>
+            <div class="w-8 h-8 flex items-center justify-center">
+              ${this.renderIcon(achievement.icon)}
             </div>
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${category ? category.name : '未分类'}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${this.getTriggerTypeText(achievement.trigger_type)} (${achievement.required_count}次)
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-          ${achievement.points || 0}
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm font-medium text-gray-900 dark:text-white">${achievement.name}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">${achievement.description || ''}</div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
-          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${achievement.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">
+          <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            ${achievement.category_name || '未分类'}
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${this.getTriggerTypeText(achievement.trigger_type)} ${achievement.required_count}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+          ${achievement.points} 积分
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${achievement.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">
             ${achievement.is_active ? '启用' : '禁用'}
           </span>
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <button class="text-blue-600 hover:text-blue-900 mr-3 edit-achievement-btn" data-id="${achievement.id}">编辑</button>
-          <button class="text-red-600 hover:text-red-900 delete-achievement-btn" data-id="${achievement.id}">删除</button>
+          <button onclick="achievementManager.editAchievement(${achievement.id})" 
+                  class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+            编辑
+          </button>
+          <button onclick="achievementManager.deleteAchievement(${achievement.id})" 
+                  class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+            删除
+          </button>
         </td>
-      `;
-      tbody.appendChild(row);
-    });
-    
-    this.bindAchievementActions();
+      </tr>
+    `).join('');
   }
-  
+
+  // 渲染图标
+  renderIcon(icon) {
+    if (!icon) {
+      return '<span class="text-gray-400 text-lg">🏆</span>';
+    }
+    
+    if (icon.startsWith('http') || icon.startsWith('/')) {
+      return `<img src="${icon}" alt="图标" class="w-6 h-6 object-contain">`;
+    }
+    
+    if (icon.length <= 2) {
+      return `<span class="text-lg">${icon}</span>`;
+    }
+    
+    return `<img src="${icon}" alt="图标" class="w-6 h-6 object-contain">`;
+  }
+
+  // 获取触发类型文本
   getTriggerTypeText(triggerType) {
-    const triggerTypes = {
+    const types = {
       'total_duration': '总学习时长',
+      'total_sessions': '总学习次数',
       'consecutive_days': '连续学习天数',
-      'project_completion': '项目完成',
-      'daily_frequency': '每日学习频率',
-      'weekly_frequency': '每周学习频率',
-      'monthly_frequency': '每月学习频率',
-      'efficiency': '学习效率',
-      'milestone': '里程碑'
+      'total_projects': '完成项目数'
     };
-    return triggerTypes[triggerType] || triggerType;
+    return types[triggerType] || triggerType;
   }
-  
+
+  // 渲染分页
   renderPagination(pagination) {
-    const paginationEl = document.getElementById('pagination');
-    if (!paginationEl || !pagination) return;
+    const paginationDiv = document.getElementById('pagination');
+    if (!paginationDiv || !pagination) return;
+
+    const { page, totalPages, total } = pagination;
     
-    const { currentPage, totalPages, total } = pagination;
-    
-    paginationEl.innerHTML = `
+    let paginationHTML = `
       <div class="flex items-center justify-between">
         <div class="text-sm text-gray-700 dark:text-gray-300">
-          显示第 ${(currentPage - 1) * this.pageSize + 1} 到 ${Math.min(currentPage * this.pageSize, total)} 条，共 ${total} 条记录
+          显示第 ${(page - 1) * this.pageSize + 1} 到 ${Math.min(page * this.pageSize, total)} 条，共 ${total} 条记录
         </div>
         <div class="flex space-x-2">
-          <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}" 
-                  ${currentPage === 1 ? 'disabled' : ''} onclick="achievementManager.goToPage(${currentPage - 1})">
-            上一页
-          </button>
-          <span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-            第 ${currentPage} 页，共 ${totalPages} 页
-          </span>
-          <button class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}" 
-                  ${currentPage === totalPages ? 'disabled' : ''} onclick="achievementManager.goToPage(${currentPage + 1})">
-            下一页
-          </button>
-        </div>
-      </div>
     `;
+
+    // 上一页
+    if (page > 1) {
+      paginationHTML += `
+        <button onclick="achievementManager.goToPage(${page - 1})" 
+                class="px-3 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
+          上一页
+        </button>
+      `;
+    }
+
+    // 页码
+    for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) {
+      paginationHTML += `
+        <button onclick="achievementManager.goToPage(${i})" 
+                class="px-3 py-1 text-sm ${i === page ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'} rounded-md">
+          ${i}
+        </button>
+      `;
+    }
+
+    // 下一页
+    if (page < totalPages) {
+      paginationHTML += `
+        <button onclick="achievementManager.goToPage(${page + 1})" 
+                class="px-3 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
+          下一页
+        </button>
+      `;
+    }
+
+    paginationHTML += '</div></div>';
+    paginationDiv.innerHTML = paginationHTML;
   }
-  
+
+  // 跳转到指定页面
   goToPage(page) {
     this.currentPage = page;
     this.loadAchievements();
   }
-  
-  async updateStats() {
+
+  // 加载分类列表
+  async loadCategories() {
     try {
-      const response = await fetch('/api/admin/achievement-stats');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          const stats = result.data;
-          
-          // 检查DOM元素是否存在
-          const totalAchievementsEl = document.getElementById('totalAchievements');
-          const totalCategoriesEl = document.getElementById('totalCategories');
-          const activeUsersEl = document.getElementById('activeUsers');
-          const totalPointsEl = document.getElementById('totalPoints');
-          
-          if (totalAchievementsEl) {
-            totalAchievementsEl.textContent = stats.total_achievements || 0;
-          }
-          if (totalCategoriesEl) {
-            totalCategoriesEl.textContent = stats.total_categories || 0;
-          }
-          if (activeUsersEl) {
-            activeUsersEl.textContent = stats.active_users || 0;
-          }
-          if (totalPointsEl) {
-            totalPointsEl.textContent = stats.total_points || 0;
-          }
+      console.log('📂 加载分类列表');
+      const response = await fetch(this.getApiUrl('/api/admin/achievement-categories'), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      this.categories = data.data || [];
+      this.renderCategoryOptions();
     } catch (error) {
-      console.error('更新统计信息失败:', error);
+      console.error('获取分类列表失败:', error);
     }
   }
-  
-  setupEventListeners() {
-    // 搜索和筛选
-    const searchInput = document.getElementById('searchInput');
+
+  // 渲染分类选项
+  renderCategoryOptions() {
+    const categorySelect = document.getElementById('achievementCategory');
     const categoryFilter = document.getElementById('categoryFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const refreshBtn = document.getElementById('refreshBtn');
     
-    if (searchInput) {
-      searchInput.addEventListener('input', debounce(() => {
-        this.filters.search = searchInput.value;
-        this.currentPage = 1;
-        this.loadAchievements();
-      }, 300));
+    const options = this.categories.map(category => 
+      `<option value="${category.id}">${category.name}</option>`
+    ).join('');
+
+    if (categorySelect) {
+      categorySelect.innerHTML = '<option value="">选择分类</option>' + options;
     }
     
     if (categoryFilter) {
-      categoryFilter.addEventListener('change', () => {
-        this.filters.category = categoryFilter.value;
-        this.currentPage = 1;
-        this.loadAchievements();
-      });
+      categoryFilter.innerHTML = '<option value="">所有分类</option>' + options;
     }
-    
-    if (statusFilter) {
-      statusFilter.addEventListener('change', () => {
-        this.filters.status = statusFilter.value;
-        this.currentPage = 1;
-        this.loadAchievements();
-      });
-    }
-    
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
-        this.loadAchievements();
-        this.updateStats();
-      });
-    }
-    
-    // 添加按钮 - 使用事件委托确保按钮可用
-    console.log('🔧 设置按钮事件监听器...');
-    document.addEventListener('click', (e) => {
-      console.log('点击事件触发，目标ID:', e.target.id, '目标类名:', e.target.className);
-      if (e.target.id === 'addAchievementBtn' || e.target.closest('#addAchievementBtn')) {
-        console.log('✅ 添加成就按钮被点击');
-        this.showAchievementModal();
-      } else if (e.target.id === 'addCategoryBtn' || e.target.closest('#addCategoryBtn')) {
-        console.log('✅ 添加分类按钮被点击');
-        this.showCategoryModal();
-      } else if (e.target.id === 'downloadIconsBtn' || e.target.closest('#downloadIconsBtn')) {
-        console.log('✅ 下载图标按钮被点击');
-        this.downloadIcons();
-      }
-    });
-    console.log('✅ 按钮事件监听器设置完成');
-    
-    // 表单事件
-    const achievementForm = document.getElementById('achievementForm');
-    if (achievementForm) {
-      achievementForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.saveAchievement();
-      });
-    }
-    
-    const categoryForm = document.getElementById('categoryForm');
-    if (categoryForm) {
-      categoryForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        this.saveCategory();
-      });
-    }
-    
-    // 触发类型变化
-    const triggerTypeSelect = document.getElementById('achievementTriggerType');
-    if (triggerTypeSelect) {
-      triggerTypeSelect.addEventListener('change', () => {
-        this.updateTriggerConfig(triggerTypeSelect.value);
-      });
-    }
-    
-    // 图标输入变化
-    const iconInput = document.getElementById('achievementIcon');
-    if (iconInput) {
-      iconInput.addEventListener('input', () => {
-        this.updateIconPreview(iconInput.value);
-      });
-    }
-    
-    // 图标选择器按钮
-    const iconPickerBtn = document.getElementById('iconPickerBtn');
-    if (iconPickerBtn) {
-      iconPickerBtn.addEventListener('click', () => {
-        this.showIconPicker();
-      });
-    }
-    
-    // 模态框关闭事件
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal') || e.target.closest('.modal-close-btn')) {
-        const modal = e.target.classList.contains('modal') ? e.target : e.target.closest('.modal');
-        if (modal) {
-          modal.classList.add('hidden');
+  }
+
+  // 加载统计数据
+  async loadStats() {
+    try {
+      console.log('📊 加载统计数据');
+      const response = await fetch(this.getApiUrl('/api/admin/achievement-stats'), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        this.renderStats(result.data);
+      } else {
+        console.error('统计数据格式错误:', result);
+      }
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+    }
+  }
+
+  // 渲染统计数据
+  renderStats(stats) {
+    console.log('📊 渲染统计数据:', stats);
+    const elements = {
+      totalAchievements: stats.totalAchievements || 0,
+      totalCategories: stats.totalCategories || 0,
+      totalUsers: stats.activeUsers || 0, // API返回的是activeUsers
+      totalPoints: stats.totalPoints || 0
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value.toLocaleString();
+        console.log(`✅ 更新 ${id}: ${value}`);
+      } else {
+        console.warn(`⚠️ 找不到元素: ${id}`);
       }
     });
   }
-  
-  bindAchievementActions() {
-    // 绑定编辑按钮
-    document.querySelectorAll('.edit-achievement-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        this.editAchievement(id);
-      });
-    });
+
+  // 显示成就模态框
+  async showAchievementModal(achievement = null) {
+    console.log('🎯 显示成就模态框', achievement);
+    this.currentEditingAchievement = achievement;
     
-    // 绑定删除按钮
-    document.querySelectorAll('.delete-achievement-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.target.dataset.id;
-        this.deleteAchievement(id);
-      });
-    });
-  }
-  
-  showAchievementModal(achievement = null) {
     const modal = document.getElementById('achievementModal');
-    const modalTitle = document.getElementById('modalTitle');
+    const modalTitle = document.getElementById('achievementModalTitle');
     const form = document.getElementById('achievementForm');
-    const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
     
+    if (!modal || !modalTitle || !form) {
+      console.error('模态框元素未找到');
+      return;
+    }
+
+    // 设置标题
+    modalTitle.textContent = achievement ? '编辑成就' : '添加成就';
+    
+    // 重置表单
+    form.reset();
+    
+    // 重新加载分类选项，确保显示最新的分类列表
+    await this.loadCategories();
+    
+    // 填充表单数据
     if (achievement) {
-      modalTitle.textContent = '编辑成就';
       this.populateAchievementForm(achievement);
     } else {
-      modalTitle.textContent = '添加成就';
-      form.reset();
-      document.getElementById('achievementId').value = '';
+      // 设置默认值
+      const pointsField = document.getElementById('achievementPoints');
+      const countField = document.getElementById('requiredCount');
+      const activeField = document.getElementById('achievementActive');
+      
+      if (pointsField) pointsField.value = '0';
+      if (countField) countField.value = '1';
+      if (activeField) activeField.checked = true;
     }
     
+    // 显示模态框 - 修复显示逻辑
     modal.classList.remove('hidden');
-    // 动画显示内容
-    setTimeout(() => {
-      if (modalContent) {
-        modalContent.classList.remove('opacity-0', 'scale-95');
-      }
-    }, 10);
-  }
-  
-  showCategoryModal(category = null) {
-    const modal = document.getElementById('categoryModal');
-    const modalTitle = document.getElementById('categoryModalTitle');
-    const form = document.getElementById('categoryForm');
-    const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
     
-    if (category) {
-      modalTitle.textContent = '编辑分类';
-      this.populateCategoryForm(category);
-    } else {
-      modalTitle.textContent = '添加分类';
-      form.reset();
-      document.getElementById('categoryId').value = '';
+    // 获取内层容器并修复其样式 - 使用更精确的选择器
+    const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+    if (modalContent) {
+      modalContent.classList.remove('opacity-0');
+      modalContent.classList.remove('scale-95');
+      modalContent.classList.add('opacity-100');
+      modalContent.classList.add('scale-100');
     }
     
-    modal.classList.remove('hidden');
-    // 动画显示内容
-    setTimeout(() => {
-      if (modalContent) {
-        modalContent.classList.remove('opacity-0', 'scale-95');
-      }
-    }, 10);
+    // 更新图标预览
+    this.updateIconPreview();
   }
-  
+
+  // 填充成就表单
   populateAchievementForm(achievement) {
-    document.getElementById('achievementId').value = achievement.id;
-    document.getElementById('achievementName').value = achievement.name;
-    document.getElementById('achievementCategory').value = achievement.category_id;
-    document.getElementById('achievementDescription').value = achievement.description || '';
-    document.getElementById('achievementIcon').value = achievement.icon || '';
-    document.getElementById('achievementBadgeStyle').value = achievement.badge_style || 'default';
-    document.getElementById('achievementLevel').value = achievement.level || '1';
-    document.getElementById('achievementTriggerType').value = achievement.trigger_type;
-    document.getElementById('achievementRequiredCount').value = achievement.required_count || 1;
-    document.getElementById('achievementPoints').value = achievement.points || 0;
-    document.getElementById('achievementSortOrder').value = achievement.sort_order || 0;
-    document.getElementById('achievementStatus').value = achievement.is_active ? 'true' : 'false';
-    
-    this.updateTriggerConfig(achievement.trigger_type);
-  }
-  
-  populateCategoryForm(category) {
-    document.getElementById('categoryId').value = category.id;
-    document.getElementById('categoryName').value = category.name;
-    document.getElementById('categoryDescription').value = category.description || '';
-    document.getElementById('categoryIcon').value = category.icon || '';
-    document.getElementById('categorySortOrder').value = category.sort_order || 0;
-  }
-  
-  updateTriggerConfig(triggerType) {
-    const configSection = document.getElementById('triggerConfigSection');
-    const configFields = document.getElementById('triggerConfigFields');
-    
-    if (!configSection || !configFields) return;
-    
-    configFields.innerHTML = '';
-    
-    if (triggerType === 'total_duration') {
-      configFields.innerHTML = `
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">目标时长（分钟）</label>
-          <input type="number" name="trigger_config[target_duration]" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
-        </div>
-      `;
-      configSection.classList.remove('hidden');
-    } else if (triggerType === 'consecutive_days') {
-      configFields.innerHTML = `
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">连续天数</label>
-          <input type="number" name="trigger_config[consecutive_days]" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
-        </div>
-      `;
-      configSection.classList.remove('hidden');
-    } else {
-      configSection.classList.add('hidden');
-    }
-  }
-  
-  async saveAchievement() {
-    const form = document.getElementById('achievementForm');
-    const formData = new FormData(form);
-    const achievementId = formData.get('id');
-    
-    try {
-      const response = await fetch(`/api/admin/achievements${achievementId ? `/${achievementId}` : ''}`, {
-        method: achievementId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(Object.fromEntries(formData))
-      });
-      
-      if (response.ok) {
-        closeAchievementModal();
-        this.loadAchievements();
-        this.updateStats();
-        this.showNotification(achievementId ? '成就更新成功' : '成就创建成功', 'success');
-      } else {
-        const error = await response.json();
-        this.showNotification(`保存失败: ${error.message || '未知错误'}`, 'error');
-      }
-    } catch (error) {
-      console.error('保存成就失败:', error);
-      this.showNotification('保存失败，请重试', 'error');
-    }
-  }
-  
-  async saveCategory() {
-    const form = document.getElementById('categoryForm');
-    const formData = new FormData(form);
-    const categoryId = formData.get('id');
-    
-    try {
-      const response = await fetch(`/api/admin/achievement-categories${categoryId ? `/${categoryId}` : ''}`, {
-        method: categoryId ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(Object.fromEntries(formData))
-      });
-      
-      if (response.ok) {
-        closeCategoryModal();
-        await this.loadCategories();
-        this.loadAchievements();
-        this.updateStats();
-        this.showNotification(categoryId ? '分类更新成功' : '分类创建成功', 'success');
-      } else {
-        const error = await response.json();
-        this.showNotification(`保存失败: ${error.message || '未知错误'}`, 'error');
-      }
-    } catch (error) {
-      console.error('保存分类失败:', error);
-      this.showNotification('保存失败，请重试', 'error');
-    }
-  }
-  
-  async editAchievement(id) {
-    try {
-      const response = await fetch(`/api/admin/achievements/${id}`);
-      if (response.ok) {
-        const achievement = await response.json();
-        this.showAchievementModal(achievement);
-      } else {
-        this.showNotification('加载成就信息失败', 'error');
-      }
-    } catch (error) {
-      console.error('编辑成就失败:', error);
-      this.showNotification('编辑失败，请重试', 'error');
-    }
-  }
-  
-  async deleteAchievement(id) {
-    const achievement = this.achievements.find(a => a.id === id);
-    if (!achievement) return;
-    
-    const confirmed = await this.showConfirmDialog(
-      '删除成就',
-      `确定要删除成就"${achievement.name}"吗？此操作不可恢复！`,
-      '删除',
-      '取消'
-    );
-    
-    if (!confirmed) return;
-    
-    try {
-      const response = await fetch(`/api/admin/achievements/${id}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        this.loadAchievements();
-        this.updateStats();
-        this.showNotification('成就删除成功', 'success');
-      } else {
-        const error = await response.json();
-        this.showNotification(`删除失败: ${error.message || '未知错误'}`, 'error');
-      }
-    } catch (error) {
-      console.error('删除成就失败:', error);
-      this.showNotification('删除失败，请重试', 'error');
-    }
-  }
-  
-  // 图标下载功能
-  async downloadIcons() {
-    const downloadBtn = document.getElementById('downloadIconsBtn');
-    if (!downloadBtn) return;
-    
-    // 显示确认对话框
-    const confirmed = await this.showConfirmDialog(
-      '下载成就图标',
-      '确定要下载所有成就图标吗？这将从远程服务器获取最新的图标文件。',
-      '开始下载',
-      '取消'
-    );
-    
-    if (!confirmed) return;
-    
-    // 显示加载状态
-    const originalText = downloadBtn.innerHTML;
-    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>下载中...';
-    downloadBtn.disabled = true;
-    
-    try {
-      const response = await fetch('/api/admin/achievements/download-icons', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    const fields = {
+      achievementId: achievement.id,
+      achievementName: achievement.name,
+      achievementCategory: achievement.category_id,
+      achievementDescription: achievement.description || '',
+      achievementIcon: achievement.icon || '',
+      triggerType: achievement.trigger_type,
+      requiredCount: achievement.required_count || 1,
+      achievementPoints: achievement.points || 0,
+      achievementActive: achievement.is_active
+    };
+
+    Object.entries(fields).forEach(([fieldId, value]) => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        if (element.type === 'checkbox') {
+          element.checked = value;
+        } else {
+          element.value = value;
         }
-      });
+      }
+    });
+  }
+
+  // 关闭成就模态框
+  closeAchievementModal() {
+    console.log('❌ 关闭成就模态框');
+    const modal = document.getElementById('achievementModal');
+    if (modal) {
+      modal.classList.add('hidden');
       
+      // 获取内层容器并修复其样式 - 使用更精确的选择器
+      const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+      if (modalContent) {
+        modalContent.classList.remove('opacity-100');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+      }
+    }
+    this.currentEditingAchievement = null;
+    this.selectedIcon = null;
+  }
+
+  // 保存成就
+  async saveAchievement() {
+    try {
+      console.log('💾 保存成就');
+      const form = document.getElementById('achievementForm');
+      const formData = new FormData(form);
+      
+      const achievementData = {
+        name: formData.get('name'),
+        category_id: formData.get('category_id'),
+        description: formData.get('description'),
+        icon: formData.get('icon'),
+        trigger_type: formData.get('trigger_type'),
+        required_count: parseInt(formData.get('required_count')),
+        points: parseInt(formData.get('points')),
+        is_active: formData.get('is_active') === 'on'
+      };
+
+      if (this.currentEditingAchievement) {
+        achievementData.id = this.currentEditingAchievement.id;
+      }
+
+      const url = this.currentEditingAchievement 
+        ? this.getApiUrl(`/api/admin/achievements/${this.currentEditingAchievement.id}`)
+        : this.getApiUrl('/api/admin/achievements');
+      
+      const method = this.currentEditingAchievement ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`
+        },
+        body: JSON.stringify(achievementData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const result = await response.json();
       
       if (result.success) {
-        // 显示详细结果
-        this.showDownloadResults(result.results);
-        // 刷新成就列表以显示新图标
+        this.showToast(this.currentEditingAchievement ? '成就更新成功' : '成就创建成功', 'success');
+        this.closeAchievementModal();
         await this.loadAchievements();
-        this.showNotification('图标下载完成！', 'success');
+        await this.loadStats();
       } else {
-        this.showNotification(`下载失败: ${result.message || '未知错误'}`, 'error');
+        throw new Error(result.message || '保存失败');
       }
     } catch (error) {
-      console.error('图标下载失败:', error);
-      this.showNotification('图标下载失败，请重试', 'error');
-    } finally {
-      // 恢复按钮状态
-      downloadBtn.innerHTML = originalText;
-      downloadBtn.disabled = false;
+      console.error('保存成就失败:', error);
+      this.showToast('保存失败: ' + error.message, 'error');
     }
   }
-  
-  // 显示下载结果
-  showDownloadResults(results) {
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
-    modal.innerHTML = `
-      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">图标下载结果</h3>
-          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div class="px-6 py-4 max-h-[60vh] overflow-y-auto">
-          <div class="space-y-2">
-            ${results.map(result => `
-              <div class="flex items-center text-sm">
-                <span class="mr-2">${result.includes('✅') ? '✅' : '❌'}</span>
-                <span class="${result.includes('✅') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${result}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-          <button onclick="this.closest('.fixed').remove()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-            确定
-          </button>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  }
-  
-  // 更新图标预览
-  updateIconPreview(iconPath) {
-    const iconPreview = document.getElementById('iconPreview');
-    if (!iconPreview) return;
-    
-    iconPreview.innerHTML = '';
-    const val = iconPath.trim();
-    
-    if (!val) return;
-    
-    if (val.endsWith('.svg')) {
-      // SVG文件
-      iconPreview.innerHTML = `<img src="${val}" alt="icon" class="w-8 h-8 object-contain">`;
-    } else if (val.endsWith('.png') || val.endsWith('.jpg') || val.endsWith('.jpeg') || val.endsWith('.gif') || val.startsWith('data:image')) {
-      // 图片文件
-      iconPreview.innerHTML = `<img src="${val}" alt="icon" class="w-8 h-8 object-contain">`;
-    } else if (val.startsWith('<svg')) {
-      // SVG代码
-      iconPreview.innerHTML = val;
-    } else {
-      // 其他情况
-      iconPreview.textContent = '';
+
+  // 编辑成就
+  async editAchievement(id) {
+    try {
+      console.log('✏️ 编辑成就', id);
+      const response = await fetch(this.getApiUrl(`/api/admin/achievements/${id}`), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.achievement) {
+        this.showAchievementModal(data.achievement);
+      }
+    } catch (error) {
+      console.error('编辑成就失败:', error);
+      this.showToast('获取成就详情失败', 'error');
     }
   }
-  
-  // 显示图标选择器
-  showIconPicker() {
-    // 这里可以实现一个图标选择器模态框
-    // 暂时简单提示用户输入路径
-    const iconInput = document.getElementById('achievementIcon');
-    if (iconInput) {
-      const path = prompt('请输入图标路径（例如：/assets/ico/project-gold.svg）');
-      if (path) {
-        iconInput.value = path;
-        this.updateIconPreview(path);
+
+  // 删除成就
+  async deleteAchievement(id) {
+    try {
+      console.log('🗑️ 删除成就', id);
+      
+      // 获取成就信息用于显示名称
+      const achievement = this.achievements.find(a => a.id === id);
+      if (!achievement) {
+        this.showToast('成就不存在', 'error');
+        return;
+      }
+
+      // 使用自定义确认对话框
+      const confirmed = await this.showConfirmDialog(
+        '删除成就',
+        `确定要删除成就"${achievement.name}"吗？此操作不可撤销！`,
+        '删除',
+        '取消'
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const response = await fetch(this.getApiUrl(`/api/admin/achievements/${id}`), {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        this.showToast('成就删除成功', 'success');
+        await this.loadAchievements();
+        await this.loadStats();
+      } else {
+        throw new Error(result.message || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除成就失败:', error);
+      this.showToast('删除失败: ' + error.message, 'error');
+    }
+  }
+
+  // 显示分类模态框
+  showCategoryModal(category = null) {
+    console.log('📂 显示分类模态框', category);
+    this.currentEditingCategory = category;
+    
+    const modal = document.getElementById('categoryModal');
+    const modalTitle = document.getElementById('categoryModalTitle');
+    const form = document.getElementById('categoryForm');
+    
+    if (!modal || !modalTitle || !form) {
+      console.error('分类模态框元素未找到');
+      return;
+    }
+
+    // 设置标题
+    modalTitle.textContent = category ? '编辑分类' : '添加分类';
+    
+    // 重置表单
+    form.reset();
+    
+    // 填充表单数据
+    if (category) {
+      this.populateCategoryForm(category);
+    }
+    
+    // 显示模态框 - 修复显示逻辑
+    modal.classList.remove('hidden');
+    
+    // 获取内层容器并修复其样式 - 使用更精确的选择器
+    const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+    if (modalContent) {
+      modalContent.classList.remove('opacity-0');
+      modalContent.classList.remove('scale-95');
+      modalContent.classList.add('opacity-100');
+      modalContent.classList.add('scale-100');
+    }
+  }
+
+  // 填充分类表单
+  populateCategoryForm(category) {
+    const fields = {
+      categoryId: category.id,
+      categoryName: category.name,
+      categoryDescription: category.description || ''
+    };
+
+    Object.entries(fields).forEach(([fieldId, value]) => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.value = value;
+      }
+    });
+  }
+
+  // 关闭分类模态框
+  closeCategoryModal() {
+    console.log('❌ 关闭分类模态框');
+    const modal = document.getElementById('categoryModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      // 获取内层容器并修复其样式 - 使用更精确的选择器
+      const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+      if (modalContent) {
+        modalContent.classList.remove('opacity-100');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+      }
+    }
+    this.currentEditingCategory = null;
+  }
+
+  // 保存分类
+  async saveCategory() {
+    try {
+      console.log('💾 保存分类');
+      const form = document.getElementById('categoryForm');
+      const formData = new FormData(form);
+      
+      const categoryData = {
+        name: formData.get('name'),
+        description: formData.get('description')
+      };
+
+      if (this.currentEditingCategory) {
+        categoryData.id = this.currentEditingCategory.id;
+      }
+
+      const response = await fetch(this.getApiUrl('/api/admin/achievement-categories'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`
+        },
+        body: JSON.stringify(categoryData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        this.showToast(this.currentEditingCategory ? '分类更新成功' : '分类创建成功', 'success');
+        this.closeCategoryModal();
+        
+        // 重新加载分类列表和统计数据
+        await this.loadCategories();
+        await this.loadStats();
+        
+        // 如果成就弹窗是打开的，也要更新其中的分类选择器
+        const achievementModal = document.getElementById('achievementModal');
+        if (achievementModal && !achievementModal.classList.contains('hidden')) {
+          this.renderCategoryOptions();
+        }
+      } else {
+        throw new Error(result.message || '保存失败');
+      }
+    } catch (error) {
+      console.error('保存分类失败:', error);
+      this.showToast('保存失败: ' + error.message, 'error');
+    }
+  }
+
+  // 显示图标选择器模态框
+  showIconPickerModal() {
+    console.log('🎨 显示图标选择器模态框');
+    const modal = document.getElementById('iconPickerModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      // 获取内层容器并修复其样式 - 使用更精确的选择器
+      const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+      if (modalContent) {
+        modalContent.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('opacity-100');
+        modalContent.classList.add('scale-100');
+      }
+      this.loadIcons();
+      // 自动高亮当前选中
+      setTimeout(() => {
+        if (this.selectedIcon) {
+          document.querySelectorAll('.icon-item.selected').forEach(el => el.classList.remove('selected'));
+          const current = document.querySelector('.icon-item[data-icon="' + this.selectedIcon + '"]');
+          if (current) current.classList.add('selected');
+        }
+      }, 50);
+    }
+  }
+
+  // 关闭图标选择器模态框
+  closeIconPickerModal() {
+    console.log('❌ 关闭图标选择器模态框');
+    const modal = document.getElementById('iconPickerModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      // 获取内层容器并修复其样式 - 使用更精确的选择器
+      const modalContent = modal.querySelector('.bg-white.dark\\:bg-gray-900.rounded-2xl.shadow-2xl');
+      if (modalContent) {
+        modalContent.classList.remove('opacity-100');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
       }
     }
   }
-  
-  // 显示通知消息
-  showNotification(message, type = 'info') {
-    // 创建通知元素
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl transition-all duration-300 transform translate-x-full max-w-sm`;
-    
-    const colors = {
-      success: 'bg-green-500 text-white border-l-4 border-green-600',
-      error: 'bg-red-500 text-white border-l-4 border-red-600',
-      warning: 'bg-yellow-500 text-white border-l-4 border-yellow-600',
-      info: 'bg-blue-500 text-white border-l-4 border-blue-600'
-    };
-    
-    const icons = {
-      success: 'fas fa-check-circle',
-      error: 'fas fa-exclamation-circle',
-      warning: 'fas fa-exclamation-triangle',
-      info: 'fas fa-info-circle'
-    };
-    
-    notification.className += ` ${colors[type] || colors.info}`;
-    notification.innerHTML = `
-      <div class="flex items-start">
-        <i class="${icons[type] || icons.info} mr-3 mt-0.5 text-lg"></i>
-        <div class="flex-1">
-          <div class="font-medium">${message}</div>
-        </div>
-        <button class="ml-3 text-white hover:text-gray-200 transition-colors" onclick="this.parentElement.parentElement.remove()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // 显示动画
-    setTimeout(() => {
-      notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // 自动隐藏（成功和错误消息显示更长时间）
-    const duration = type === 'success' || type === 'error' ? 5000 : 3000;
-    setTimeout(() => {
-      notification.classList.add('translate-x-full');
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }, duration);
+
+  // 加载图标
+  async loadIcons() {
+    try {
+      console.log('🖼️ 加载图标');
+      const loading = document.getElementById('iconLoading');
+      const grid = document.getElementById('iconGrid');
+      const noResults = document.getElementById('iconNoResults');
+      
+      if (loading) loading.classList.remove('hidden');
+      if (grid) grid.innerHTML = '';
+      if (noResults) noResults.classList.add('hidden');
+
+      // 加载Emoji图标
+      const emojiIcons = this.getEmojiIcons();
+      
+      // 加载系统图标
+      const systemIcons = await this.getSystemIcons();
+      
+      // 加载自定义图标
+      const customIcons = await this.getCustomIcons();
+      
+      // 合并所有图标
+      const allIcons = [
+        ...emojiIcons.map(icon => ({ ...icon, category: 'emoji' })),
+        ...systemIcons.map(icon => ({ ...icon, category: 'system' })),
+        ...customIcons.map(icon => ({ ...icon, category: 'custom' }))
+      ];
+
+      this.renderIcons(allIcons);
+      
+      if (loading) loading.classList.add('hidden');
+    } catch (error) {
+      console.error('加载图标失败:', error);
+      this.showToast('加载图标失败', 'error');
+    }
   }
-  
-  // 显示确认对话框（与通知中心样式一致）
+
+  // 获取Emoji图标
+  getEmojiIcons() {
+    return [
+      '🏆', '🥇', '🥈', '🥉', '⭐', '🌟', '💎', '🎖️', '🏅', '🎯',
+      '📚', '📖', '📝', '✏️', '🖊️', '📐', '🧮', '📊', '📈', '💡',
+      '🎨', '🎭', '🎬', '🎤', '🎧', '🎼', '🎹', '🎸', '🎺', '🎻',
+      '🎮', '🎲', '🧩', '💸', '💰', '💳', '🔨', '🛠️', '🔧', '⚙️'
+    ].map(emoji => ({
+      id: emoji,
+      name: emoji,
+      path: emoji,
+      type: 'emoji'
+    }));
+  }
+
+  // 获取系统图标
+  async getSystemIcons() {
+    try {
+      const response = await fetch(this.getApiUrl('/api/admin/icons/system'), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.icons || [];
+    } catch (error) {
+      console.error('获取系统图标失败:', error);
+      return [];
+    }
+  }
+
+  // 获取自定义图标
+  async getCustomIcons() {
+    try {
+      const response = await fetch(this.getApiUrl('/api/admin/icons/custom'), {
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.icons || [];
+    } catch (error) {
+      console.error('获取自定义图标失败:', error);
+      return [];
+    }
+  }
+
+  // 渲染图标网格
+  renderIcons(icons) {
+    const grid = document.getElementById('iconGrid');
+    const loading = document.getElementById('iconLoading');
+    
+    if (!grid) return;
+
+    // 隐藏加载状态
+    if (loading) loading.classList.add('hidden');
+
+    // 过滤图标
+    let filteredIcons = icons;
+    
+    if (filteredIcons.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-5 text-center py-8 text-gray-500">
+          <div class="text-4xl mb-2">😕</div>
+          <p>演示图标</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 渲染emoji网格（每行10个）
+    grid.innerHTML = filteredIcons.map(icon => {
+      const isEmoji = icon.type === 'emoji' || icon.path.length <= 2;
+      const iconContent = isEmoji ? icon.path : this.renderIcon(icon.path);
+      return `
+        <div class="icon-item flex items-center justify-center cursor-pointer p-2 m-1 rounded-lg border border-transparent hover:bg-blue-50 hover:border-blue-200 transition-all duration-200 select-none text-2xl"
+             data-icon="${icon.path}"
+             title="${icon.name || icon.path}">
+          ${iconContent}
+        </div>
+      `;
+    }).join('');
+    // 设置grid样式
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))';
+    grid.style.gap = '8px';
+  }
+
+  // 选择图标
+  selectIcon(iconPath) {
+    console.log('✅ 选择图标:', iconPath);
+    this.selectedIcon = iconPath;
+    
+    // 更新选择状态
+    document.querySelectorAll('.icon-item').forEach(item => {
+      item.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'border-blue-300', 'dark:border-blue-600');
+      if (item.dataset.icon === iconPath) {
+        item.classList.add('bg-blue-100', 'dark:bg-blue-900', 'border-blue-300', 'dark:border-blue-600');
+      }
+    });
+    
+    // 更新成就表单中的图标字段
+    const iconInput = document.getElementById('achievementIcon');
+    if (iconInput) {
+      iconInput.value = iconPath;
+      this.updateIconPreview();
+    }
+  }
+
+  // 选择当前图标
+  selectCurrentIcon() {
+    if (this.selectedIcon) {
+      this.closeIconPickerModal();
+      this.showToast('图标选择成功', 'success');
+    } else {
+      this.showToast('请先选择一个图标', 'warning');
+    }
+  }
+
+  // 触发图标上传（加锁防止多次弹窗）
+  triggerIconUpload() {
+    if (this.uploading) return; // 防止多次触发
+    this.uploading = true;
+    const fileInput = document.getElementById('iconFileInput');
+    if (fileInput) {
+      // 清空上次选择，防止同一文件无法重复上传
+      fileInput.value = '';
+      
+      // 每次点击时重新绑定change事件，确保input元素有效
+      const changeHandler = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          this.handleIconUpload(file);
+        }
+        this.uploading = false;
+        // 解绑事件，防止重复绑定
+        fileInput.removeEventListener('change', changeHandler);
+      };
+      
+      fileInput.addEventListener('change', changeHandler);
+      fileInput.click();
+    } else {
+      this.uploading = false;
+    }
+  }
+
+  // 处理图标上传
+  async handleIconUpload(file) {
+    if (!file) return;
+
+    try {
+      console.log('📤 上传图标:', file.name);
+      
+      const formData = new FormData();
+      formData.append('icon', file);
+
+      const response = await fetch(this.getApiUrl('/api/upload/achievement-icon'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        this.showToast('图标上传成功', 'success');
+        
+        // 更新图标输入框
+        const iconInput = document.getElementById('achievementIcon');
+        if (iconInput) {
+          iconInput.value = result.data.path;
+          this.updateIconPreview();
+        }
+        
+        // 重新加载图标选择器
+        if (document.getElementById('iconPickerModal') && !document.getElementById('iconPickerModal').classList.contains('hidden')) {
+          this.loadIcons();
+        }
+      } else {
+        throw new Error(result.error || '上传失败');
+      }
+    } catch (error) {
+      console.error('图标上传失败:', error);
+      this.showToast('图标上传失败: ' + error.message, 'error');
+      this.uploading = false; // 确保在错误时也重置状态
+    }
+  }
+
+  // 更新图标预览
+  updateIconPreview() {
+    const iconInput = document.getElementById('achievementIcon');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewText = document.getElementById('previewText');
+    const previewPath = document.getElementById('previewPath');
+    
+    if (!iconInput || !previewContainer || !previewText || !previewPath) return;
+
+    const iconPath = iconInput.value.trim();
+    
+    if (!iconPath) {
+      previewContainer.innerHTML = '<span class="text-gray-400 text-xs">预览</span>';
+      previewPath.textContent = '';
+      return;
+    }
+
+    previewPath.textContent = iconPath;
+    
+    if (iconPath.length <= 2) {
+      // Emoji
+      previewContainer.innerHTML = `<span class="text-lg">${iconPath}</span>`;
+    } else if (iconPath.startsWith('http') || iconPath.startsWith('/')) {
+      // 图片路径
+      previewContainer.innerHTML = `<img src="${iconPath}" alt="图标" class="w-6 h-6 object-contain">`;
+    } else {
+      // 其他
+      previewContainer.innerHTML = `<span class="text-gray-400 text-xs">预览</span>`;
+    }
+  }
+
+  // 下载图标
+  async downloadIcons() {
+    try {
+      console.log('📥 下载图标');
+      
+      const response = await fetch(this.getApiUrl('/api/admin/achievements/download-icons'), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.getToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        this.showToast('图标下载完成: ' + result.message, 'success');
+        console.log('下载结果:', result.results);
+      } else {
+        throw new Error(result.error || '下载失败');
+      }
+    } catch (error) {
+      console.error('下载图标失败:', error);
+      this.showToast('下载图标失败: ' + error.message, 'error');
+    }
+  }
+
+  // 获取Token
+  getToken() {
+    return localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+  }
+
+  // 显示Toast消息
+  showToast(message, type = 'info') {
+    // 使用演示模式通知系统
+    window.demoModeShowToast(message, type);
+  }
+
+  // 处理上传图标按钮点击
+  handleUploadIconClick() {
+    console.log('📤 处理上传图标按钮点击');
+    this.triggerIconUpload();
+  }
+
+  // 显示图标选择器
+  showIconPicker() {
+    console.log('🎨 显示图标选择器');
+    this.showIconPickerModal();
+  }
+
+  // 处理文件输入框点击
+  handleFileInputClick() {
+    console.log('📁 处理文件输入框点击');
+    const fileInput = document.getElementById('iconFileInput');
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  // 更新触发器配置
+  updateTriggerConfig(triggerType) {
+    console.log('⚙️ 更新触发器配置:', triggerType);
+    // 这里可以根据触发器类型显示/隐藏相关配置字段
+  }
+
+  // 显示确认对话框
   showConfirmDialog(title, message, confirmText = '确定', cancelText = '取消') {
     return new Promise((resolve) => {
       // 创建模态框
@@ -849,10 +1209,10 @@ class AchievementManager {
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">${title}</h3>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-6">${message}</p>
             <div class="flex space-x-3">
-              <button id="cancelBtn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
+              <button type="button" class="confirm-cancel-btn flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300">
                 ${cancelText}
               </button>
-              <button id="confirmBtn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300">
+              <button type="button" class="confirm-confirm-btn flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300">
                 ${confirmText}
               </button>
             </div>
@@ -862,90 +1222,162 @@ class AchievementManager {
 
       document.body.appendChild(modal);
 
-      // 绑定事件
-      const confirmBtn = modal.querySelector('#confirmBtn');
-      const cancelBtn = modal.querySelector('#cancelBtn');
+      // 使用类选择器而不是ID，避免与全局监听器冲突
+      const confirmBtn = modal.querySelector('.confirm-confirm-btn');
+      const cancelBtn = modal.querySelector('.confirm-cancel-btn');
+
+      let isResolved = false;
 
       const cleanup = () => {
-        document.body.removeChild(modal);
+        if (isResolved) return;
+        isResolved = true;
+        
+        // 移除ESC键监听器
+        document.removeEventListener('keydown', handleEsc);
+        
+        // 安全移除模态框
+        if (document.body.contains(modal)) {
+          document.body.removeChild(modal);
+        }
       };
 
-      confirmBtn.addEventListener('click', () => {
+      // 确认按钮事件
+      const handleConfirm = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         cleanup();
         resolve(true);
-      });
+      };
 
-      cancelBtn.addEventListener('click', () => {
+      // 取消按钮事件
+      const handleCancel = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         cleanup();
         resolve(false);
-      });
+      };
+
+      // 绑定事件监听器
+      confirmBtn.addEventListener('click', handleConfirm, { once: true });
+      cancelBtn.addEventListener('click', handleCancel, { once: true });
 
       // 点击背景关闭
-      modal.addEventListener('click', (e) => {
+      const handleBackgroundClick = (e) => {
         if (e.target === modal) {
+          e.preventDefault();
+          e.stopPropagation();
           cleanup();
           resolve(false);
         }
-      });
+      };
+      modal.addEventListener('click', handleBackgroundClick, { once: true });
 
       // ESC键关闭
       const handleEsc = (e) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
           cleanup();
           resolve(false);
-          document.removeEventListener('keydown', handleEsc);
         }
       };
       document.addEventListener('keydown', handleEsc);
     });
   }
+
+  // fetch 路径适配函数
+  getApiUrl(path) {
+    return window.isDemo ? `/demo${path}` : path;
+  }
+}
+
+// 初始化函数
+function initializeAchievementManager() {
+  if (!achievementManager) {
+    achievementManager = new AchievementManager();
+    window.achievementManager = achievementManager;
+    window.AchievementManager = { instance: achievementManager };
+    if (window.EventManager) {
+      window.EventManager.registerPageManager('admin-achievements', achievementManager);
+    }
+  }
+  return achievementManager;
+}
+
+// DOMContentLoaded 或 SPA 入口调用
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeAchievementManager);
+} else {
+  initializeAchievementManager();
 }
 
 // 全局函数
 function closeAchievementModal() {
-  const modal = document.getElementById('achievementModal');
-  const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
-  
-  if (modalContent) {
-    modalContent.classList.add('opacity-0', 'scale-95');
+  if (achievementManager) {
+    achievementManager.closeAchievementModal();
   }
-  
-  setTimeout(() => {
-    modal.classList.add('hidden');
-  }, 300); // 等待动画结束
 }
 
 function closeCategoryModal() {
-  const modal = document.getElementById('categoryModal');
-  const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-900');
-  
-  if (modalContent) {
-    modalContent.classList.add('opacity-0', 'scale-95');
+  if (achievementManager) {
+    achievementManager.closeCategoryModal();
   }
-  
-  setTimeout(() => {
-    modal.classList.add('hidden');
-  }, 300); // 等待动画结束
 }
 
-// 初始化成就管理器
-console.log('🎬 准备初始化成就管理器...');
-
-// 检查是否已经有实例
-if (window.achievementManager) {
-  console.log('✅ 成就管理器实例已存在，跳过自动初始化');
-} else {
-  let achievementManager;
-  if (document.readyState === 'loading') {
-    console.log('⏳ DOM还在加载，等待DOMContentLoaded事件...');
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('✅ DOMContentLoaded事件触发，创建AchievementManager实例');
-      achievementManager = new AchievementManager();
-      window.achievementManager = achievementManager;
-    });
-  } else {
-    console.log('✅ DOM已加载完成，直接创建AchievementManager实例');
-    achievementManager = new AchievementManager();
-    window.achievementManager = achievementManager;
+function closeIconPickerModal() {
+  if (achievementManager) {
+    achievementManager.closeIconPickerModal();
   }
-} 
+}
+
+function saveAchievement() {
+  if (achievementManager) {
+    achievementManager.saveAchievement();
+  }
+}
+
+function saveCategory() {
+  if (achievementManager) {
+    achievementManager.saveCategory();
+  }
+}
+
+function selectCurrentIcon() {
+  if (achievementManager) {
+    achievementManager.selectCurrentIcon();
+  }
+}
+
+// 图标选择器搜索和筛选
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('iconSearchInput');
+  const categoryFilter = document.getElementById('iconCategoryFilter');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(() => {
+      if (achievementManager) {
+        achievementManager.loadIcons();
+      }
+    }, 300));
+  }
+  
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', () => {
+      if (achievementManager) {
+        achievementManager.loadIcons();
+      }
+    });
+  }
+  
+  // 图标输入框变化时更新预览
+  const iconInput = document.getElementById('achievementIcon');
+  if (iconInput) {
+    iconInput.addEventListener('input', () => {
+      if (achievementManager) {
+        achievementManager.updateIconPreview();
+      }
+    });
+  }
+});
+
+console.log('✅ 成就管理JavaScript文件加载完成');

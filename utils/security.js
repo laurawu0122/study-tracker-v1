@@ -18,8 +18,8 @@ const SECURITY_CONFIG = {
         sameSite: process.env.SESSION_SAME_SITE || 'strict'
     },
     rateLimit: {
-        maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5,
-        lockoutDuration: parseInt(process.env.LOCKOUT_DURATION_MINUTES) || 15
+        maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 10,
+        lockoutDuration: parseInt(process.env.LOCKOUT_DURATION_MINUTES) || 5
     }
 };
 
@@ -148,7 +148,12 @@ function logSecurityEvent(event, details = {}, req = null) {
 // 检查IP地址是否被锁定
 const lockedIPs = new Map();
 
-function isIPLocked(ip) {
+function isIPLocked(ip, username = null) {
+    // 管理员账号永不被锁定
+    if (username === 'admin') {
+        return false;
+    }
+    
     const lockInfo = lockedIPs.get(ip);
     if (!lockInfo) return false;
 
@@ -162,7 +167,12 @@ function isIPLocked(ip) {
 }
 
 // 记录登录失败
-function recordLoginFailure(ip) {
+function recordLoginFailure(ip, username = null) {
+    // 管理员账号永不记录失败
+    if (username === 'admin') {
+        return;
+    }
+    
     const now = Date.now();
     const lockInfo = lockedIPs.get(ip) || { count: 0, expiresAt: now + (SECURITY_CONFIG.rateLimit.lockoutDuration * 60 * 1000) };
     

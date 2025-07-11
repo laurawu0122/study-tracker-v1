@@ -1,58 +1,92 @@
-version: '2.4'
+version: '3.8'
 
 services:
+  # 主应用服务
+  app:
+    build: .
+    container_name: study-tracker-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=study_tracker
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-change-this-in-production
+      - DEFAULT_ADMIN_PASSWORD=Admin123!
+      - TRUST_PROXY=true
+      - SESSION_SECURE_COOKIES=false
+      - CORS_ORIGIN=http://localhost:3001
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./env.example:/app/.env:ro
+    networks:
+      - study-tracker-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   # PostgreSQL 数据库
   postgres:
     image: postgres:15-alpine
-    container_name: study-tracker-db
+    container_name: study-tracker-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: study_tracker
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - study-tracker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d study_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # Redis 缓存
+  # Redis 缓存（可选）
   redis:
     image: redis:7-alpine
     container_name: study-tracker-redis
     restart: unless-stopped
+    command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
     ports:
       - "6379:6379"
-
-  # 应用服务
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: study-tracker-app
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: study_tracker
-      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
-      JWT_REFRESH_SECRET: your-super-secret-refresh-jwt-key-change-this-in-production
-      DEFAULT_ADMIN_PASSWORD: Admin123!
-    volumes:
-      - uploads_data:/app/uploads
-      - ./logs:/app/logs
-    ports:
-      - "3001:3001"
-    depends_on:
-      - postgres
-      - redis
+    networks:
+      - study-tracker-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
-  uploads_data: 
+    driver: local
+
+networks:
+  study-tracker-network:
+    driver: bridge 

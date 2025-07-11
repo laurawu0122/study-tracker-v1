@@ -9,17 +9,7 @@ const { createNotification } = require('./notifications');
 const router = express.Router();
 
 // JWT middleware (import from auth.js)
-const authenticateToken = async (req, res, next) => {
-  const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: '未登录' });
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.userId };
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: '无效token' });
-  }
-};
+const { authenticateToken } = require('../middleware/auth');
 
 // Validation middleware for creating projects
 const validateProjectCreate = [
@@ -104,9 +94,20 @@ router.get('/', authenticateToken, async (req, res) => {
     const { page = 1, limit = 10, status, category, search } = req.query;
     const offset = (page - 1) * limit;
 
-    let query = db('study_projects')
-      .where('user_id', req.user.id)
-      .orderBy('created_at', 'desc');
+    // 构建基础查询
+    let query = db('study_projects');
+    
+    // 如果是普通用户，可以查看自己的项目或所有管理员创建的项目
+    if (req.user.role !== 'admin') {
+      // 动态获取所有管理员ID
+      const adminIds = await db('users').where('role', 'admin').pluck('id');
+      query = query.where(function() {
+        this.where('user_id', req.user.id)
+            .orWhereIn('user_id', adminIds);
+      });
+    } // 管理员不加user_id限制，可见所有项目
+
+    query = query.orderBy('created_at', 'desc');
 
     // Apply filters
     if (status) {
@@ -154,10 +155,19 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const project = await db('study_projects')
-      .where('id', id)
-      .where('user_id', req.user.id)
-      .first();
+    let query = db('study_projects').where('id', id);
+    
+    // 如果是普通用户，可以查看自己的项目或所有管理员创建的项目
+    if (req.user.role !== 'admin') {
+      // 动态获取所有管理员ID
+      const adminIds = await db('users').where('role', 'admin').pluck('id');
+      query = query.where(function() {
+        this.where('user_id', req.user.id)
+            .orWhereIn('user_id', adminIds);
+      });
+    } // 管理员不加user_id限制，可见所有项目
+
+    const project = await query.first();
 
     if (!project) {
       return res.status(404).json({ error: '项目不存在' });
@@ -192,7 +202,9 @@ router.post('/', authenticateToken, validateProjectCreate, async (req, res) => {
       difficulty_level,
       status,
       category,
-      notes
+      notes,
+      project_type,
+      rating_standards
     } = req.body;
 
     const [result] = await db('study_projects').insert({
@@ -207,6 +219,12 @@ router.post('/', authenticateToken, validateProjectCreate, async (req, res) => {
       status: status || 'in_progress',
       category,
       notes,
+      project_type: project_type || 'self_study',
+      rating_standards: rating_standards || JSON.stringify({
+        basic: { min: 30, target: 60, max: 120 },
+        intermediate: { min: 60, target: 120, max: 240 },
+        advanced: { min: 120, target: 240, max: 480 }
+      }),
       created_at: new Date(),
       updated_at: new Date()
     }).returning('id');
@@ -432,11 +450,20 @@ router.get('/:id/stats', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if project exists and belongs to user
-    const project = await db('study_projects')
-      .where('id', id)
-      .where('user_id', req.user.id)
-      .first();
+    // 检查项目是否存在且用户有权限访问
+    let query = db('study_projects').where('id', id);
+    
+    // 如果是普通用户，可以查看自己的项目或所有管理员创建的项目
+    if (req.user.role !== 'admin') {
+      // 动态获取所有管理员ID
+      const adminIds = await db('users').where('role', 'admin').pluck('id');
+      query = query.where(function() {
+        this.where('user_id', req.user.id)
+            .orWhereIn('user_id', adminIds);
+      });
+    } // 管理员不加user_id限制，可见所有项目
+
+    const project = await query.first();
 
     if (!project) {
       return res.status(404).json({ error: '项目不存在' });
@@ -523,10 +550,20 @@ router.get('/export', authenticateToken, async (req, res) => {
       projectIds = ids.split(',').map(id => parseInt(id));
     }
 
-    let query = db('study_projects')
-      .where('user_id', req.user.id)
-      .select('*')
-      .orderBy('created_at', 'desc');
+    // 构建查询
+    let query = db('study_projects');
+    
+    // 如果是普通用户，可以查看自己的项目或所有管理员创建的项目
+    if (req.user.role !== 'admin') {
+      // 动态获取所有管理员ID
+      const adminIds = await db('users').where('role', 'admin').pluck('id');
+      query = query.where(function() {
+        this.where('user_id', req.user.id)
+            .orWhereIn('user_id', adminIds);
+      });
+    } // 管理员不加user_id限制，可见所有项目
+
+    query = query.select('*').orderBy('created_at', 'desc');
 
     if (projectIds.length > 0) {
       query = query.whereIn('id', projectIds);
@@ -788,6 +825,115 @@ router.post('/import', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('导入文件错误:', error);
     res.status(500).json({ error: '导入失败，请检查文件格式' });
+  }
+});
+
+// 获取项目每日完成情况统计
+router.get('/:id/completion-stats', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { range = 'week' } = req.query;
+    // 1. 获取项目
+    const project = await db('study_projects').where('id', id).first();
+    if (!project) return res.status(404).json({ error: '项目不存在' });
+    // 2. 获取评级标准
+    let ratingStandards = project.rating_standards;
+    if (typeof ratingStandards === 'string') {
+      try { ratingStandards = JSON.parse(ratingStandards); } catch { ratingStandards = null; }
+    }
+    if (!ratingStandards) return res.status(400).json({ error: '项目未设置评级标准' });
+    // 3. 计算时间范围
+    const today = new Date();
+    let startDate, endDate;
+    if (range === 'week') {
+      const day = today.getDay() || 7;
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - day + 1);
+      endDate = new Date(today);
+    } else if (range === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    } else if (range === 'quarter') {
+      const quarter = Math.floor(today.getMonth() / 3);
+      startDate = new Date(today.getFullYear(), quarter * 3, 1);
+      endDate = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+    } else if (range === 'year') {
+      startDate = new Date(today.getFullYear(), 0, 1);
+      endDate = new Date(today.getFullYear(), 11, 31);
+    } else {
+      return res.status(400).json({ error: '无效的时间范围' });
+    }
+    // 4. 查询学习记录
+    const records = await db('study_sessions')
+      .where('user_id', req.user.id)
+      .andWhere('project_name', project.name)
+      .andWhereRaw('study_date::date >= ?::date', [startDate.toISOString().slice(0, 10)])
+      .andWhereRaw('study_date::date <= ?::date', [endDate.toISOString().slice(0, 10)])
+      .orderBy('study_date', 'asc');
+    // 5. 评级判断
+    function getLevel(duration) {
+      // 兼容 rating_standards 为区间数值
+      if (typeof ratingStandards.excellent === 'number') {
+        if (duration <= ratingStandards.excellent) return '优秀';
+        if (duration <= ratingStandards.good) return '良';
+        if (duration <= ratingStandards.average) return '中';
+        return '差';
+      }
+      // 兼容旧格式（有min/max）
+      if (ratingStandards.excellent && typeof ratingStandards.excellent.max === 'number') {
+        if (duration <= ratingStandards.excellent.max) return '优秀';
+        if (duration > ratingStandards.good.min && duration <= ratingStandards.good.max) return '良';
+        if (duration > ratingStandards.medium.min && duration <= ratingStandards.medium.max) return '中';
+        if (duration > ratingStandards.poor.min) return '差';
+      }
+      return '未知';
+    }
+    function isOnTime(level) {
+      return level === '优秀' || level === '良';
+    }
+    // 6. 组装结果
+    const dailyStats = records.map(r => {
+      const level = getLevel(r.duration);
+      // 确保日期格式正确，避免时区转换问题
+      let formattedDate = r.study_date;
+      if (formattedDate instanceof Date) {
+        formattedDate = `${formattedDate.getFullYear()}-${String(formattedDate.getMonth() + 1).padStart(2, '0')}-${String(formattedDate.getDate()).padStart(2, '0')}`;
+      } else if (typeof formattedDate === 'string' && formattedDate.includes('T')) {
+        // 如果是ISO字符串，提取日期部分
+        formattedDate = formattedDate.split('T')[0];
+      }
+      return {
+        date: formattedDate,
+        duration: r.duration,
+        level,
+        isOnTime: isOnTime(level)
+      };
+    });
+    // 7. 汇总统计
+    const summary = {
+      total: dailyStats.length,
+      onTime: dailyStats.filter(d => d.isOnTime).length,
+      overtime: dailyStats.filter(d => !d.isOnTime).length,
+      excellent: dailyStats.filter(d => d.level === '优秀').length,
+      good: dailyStats.filter(d => d.level === '良').length,
+      medium: dailyStats.filter(d => d.level === '中').length,
+      poor: dailyStats.filter(d => d.level === '差').length
+    };
+    res.json({
+      project: { 
+        id: project.id, 
+        name: project.name,
+        rating_standards: ratingStandards
+      },
+      range,
+      startDate: startDate.toISOString().slice(0, 10),
+      endDate: endDate.toISOString().slice(0, 10),
+      dailyStats,
+      summary
+    });
+  } catch (error) {
+    console.error('获取项目完成情况统计失败:', error);
+    res.status(500).json({ error: '获取项目完成情况统计失败' });
   }
 });
 

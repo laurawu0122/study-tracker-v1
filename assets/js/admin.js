@@ -74,7 +74,7 @@ function initializeAdminPage() {
       // Add a small delay to prevent rapid successive requests
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      const response = await fetch(`/api/admin/page/${tabName}`, {
+      const response = await fetch(getApiUrl(`/api/admin/page/${tabName}`), {
         credentials: 'include',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
@@ -137,9 +137,9 @@ function initializeAdminPage() {
       case 'config':
         initializeSystemConfig();
         break;
-      case 'testdata':
-        if (window.adminApp && window.adminApp.initTestDataManagement) {
-          window.adminApp.initTestDataManagement();
+      case 'data-management':
+        if (window.adminApp && window.adminApp.initDataManagement) {
+          window.adminApp.initDataManagement();
         }
         break;
     }
@@ -147,11 +147,21 @@ function initializeAdminPage() {
 
   // 成就管理功能
   function initializeAchievementManagement() {
-    console.log('初始化成就管理功能');
+    console.log('🔥 初始化成就管理功能');
     
     // 检查是否已经有实例
     if (window.achievementManager) {
-      console.log('✅ 成就管理器实例已存在，跳过初始化');
+      console.log('✅ 成就管理器实例已存在，重新初始化');
+      window.achievementManager.init(); // 强制重新初始化
+      // 确保 window.AchievementManager.instance 也存在
+      if (!window.AchievementManager) {
+        window.AchievementManager = {};
+      }
+      window.AchievementManager.instance = window.achievementManager;
+      console.log('🔥 重新初始化完成，实例状态:', {
+        achievementManager: !!window.achievementManager,
+        AchievementManagerInstance: !!window.AchievementManager?.instance
+      });
       return;
     }
     
@@ -161,25 +171,47 @@ function initializeAdminPage() {
       const script = document.createElement('script');
       script.src = '/assets/js/admin-achievements.js';
       script.onload = () => {
-        setTimeout(() => {
-          if (typeof AchievementManager !== 'undefined') {
-            const manager = new AchievementManager();
-            // 确保实例被暴露到全局作用域
-            window.achievementManager = manager;
-            console.log('✅ 成就管理器实例创建成功');
-          } else {
-            console.error('AchievementManager 类仍未找到');
+        // 立即创建实例，不使用setTimeout
+        if (typeof AchievementManager !== 'undefined') {
+          const manager = new AchievementManager();
+          // 确保实例被暴露到全局作用域
+          window.achievementManager = manager;
+          // 同时设置 window.AchievementManager.instance 以兼容 admin-event-manager.js
+          if (!window.AchievementManager) {
+            window.AchievementManager = {};
           }
-        }, 100);
+          window.AchievementManager.instance = manager;
+          console.log('✅ 成就管理器实例创建成功');
+          
+          // 等待EventManager注册完成后再初始化
+          setTimeout(() => {
+            if (window.achievementManager && window.achievementManager.init) {
+              window.achievementManager.init();
+            }
+          }, 50);
+        } else {
+          console.error('AchievementManager 类仍未找到');
+        }
       };
       document.body.appendChild(script);
     } else {
+      // 立即创建实例，不使用setTimeout
+      const manager = new AchievementManager();
+      // 确保实例被暴露到全局作用域
+      window.achievementManager = manager;
+      // 同时设置 window.AchievementManager.instance 以兼容 admin-event-manager.js
+      if (!window.AchievementManager) {
+        window.AchievementManager = {};
+      }
+      window.AchievementManager.instance = manager;
+      console.log('✅ 成就管理器实例创建成功');
+      
+      // 等待EventManager注册完成后再初始化
       setTimeout(() => {
-        const manager = new AchievementManager();
-        // 确保实例被暴露到全局作用域
-        window.achievementManager = manager;
-        console.log('✅ 成就管理器实例创建成功');
-      }, 100);
+        if (window.achievementManager && window.achievementManager.init) {
+          window.achievementManager.init();
+        }
+      }, 50);
     }
   }
 
@@ -293,11 +325,22 @@ function initializeAdminPage() {
     if (window.adminApp && window.adminApp.loadOperationLogs) {
       window.adminApp.loadOperationLogs();
     }
+    
+    // 同时调用全局函数确保操作日志显示
+    if (typeof loadRecentOperationLogs === 'function') {
+      loadRecentOperationLogs();
+    }
+    
     if (window.adminApp && window.adminApp.loadUserDataUserFilter) {
       window.adminApp.loadUserDataUserFilter();
     }
     if (window.adminApp && window.adminApp.loadLogsUserFilter) {
       window.adminApp.loadLogsUserFilter();
+    }
+    
+    // 绑定数据管理事件（包括备份按钮）
+    if (window.adminApp && window.adminApp.bindDataManagementEventsWithRetry) {
+      window.adminApp.bindDataManagementEventsWithRetry();
     }
   }
 
@@ -353,7 +396,7 @@ async function loadUsers(page = 1) {
       is_active: statusFilter
     });
 
-    const response = await fetch(`/api/admin/users?${params}`, {
+    const response = await fetch(getApiUrl(`/api/admin/users?${params}`), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -426,7 +469,7 @@ async function loadUsersPage(page) {
 // 数据管理相关函数
 async function loadDataStats() {
   try {
-    const response = await fetch('/api/admin/data/stats', {
+    const response = await fetch(getApiUrl('/api/admin/data/stats'), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -469,7 +512,7 @@ function renderDataStats(stats) {
 // 系统配置相关函数
 async function loadSystemConfig() {
   try {
-    const response = await fetch('/api/admin/config', {
+    const response = await fetch(getApiUrl('/api/admin/config'), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -517,7 +560,7 @@ async function saveSystemConfig() {
     const formData = new FormData(document.getElementById('configForm'));
     const config = Object.fromEntries(formData);
     
-    const response = await fetch('/api/admin/config', {
+    const response = await fetch(getApiUrl('/api/admin/config'), {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -540,7 +583,7 @@ async function saveSystemConfig() {
 // 统计分析相关函数
 async function loadStatisticsData() {
   try {
-    const response = await fetch('/api/admin/stats', {
+    const response = await fetch(getApiUrl('/api/admin/stats'), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -582,13 +625,13 @@ function renderStatistics(statistics) {
 function showSuccess(message) {
   // 这里可以添加成功提示的UI
   console.log('成功:', message);
-  alert('成功: ' + message);
+  window.demoModeAlert('成功: ' + message);
 }
 
 function showError(message) {
   // 这里可以添加错误提示的UI
   console.error('错误:', message);
-  alert('错误: ' + message);
+  window.demoModeAlert('错误: ' + message);
 }
 
 // 用户操作函数
@@ -597,7 +640,7 @@ async function editUser(id) {
   // 实现编辑用户功能
   try {
     // 获取用户信息
-    const response = await fetch(`/api/admin/users/${id}`, {
+    const response = await fetch(getApiUrl(`/api/admin/users/${id}`), {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
@@ -708,7 +751,7 @@ async function toggleUserStatus(userId) {
     const currentStatus = userRow.querySelector('.status-badge').textContent === '激活';
     const newStatus = !currentStatus;
 
-    const response = await fetch(`/api/admin/users/${userId}/toggle-status`, {
+    const response = await fetch(getApiUrl(`/api/admin/users/${userId}/toggle-status`), {
       method: 'PATCH',
       credentials: 'include',
       headers: {
@@ -732,11 +775,29 @@ async function toggleUserStatus(userId) {
 
 async function deleteUser(id) {
   console.log('删除用户:', id);
-  // 实现删除用户功能
+  
+  // 获取当前用户信息，判断是软删除还是硬删除
+  const userRow = document.querySelector(`tr[data-user-id="${id}"]`);
+  const isActive = userRow?.querySelector('.status-badge')?.textContent === '活跃';
+  
+  let title, message, confirmText;
+  
+  if (isActive) {
+    // 第一次删除：软删除
+    title = '软删除用户';
+    message = '确定要软删除这个用户吗？用户将被标记为非活跃状态，可以从非活跃用户列表中恢复。';
+    confirmText = '软删除';
+  } else {
+    // 第二次删除：硬删除
+    title = '强制删除用户';
+    message = '⚠️ 警告：此操作将永久删除用户及其所有数据，包括学习记录、项目、成就等，此操作不可撤销！确定要继续吗？';
+    confirmText = '强制删除';
+  }
+  
   const confirmed = await showConfirmDialog(
-    '删除用户',
-    '确定要删除这个用户吗？此操作不可撤销。',
-    '删除',
+    title,
+    message,
+    confirmText,
     '取消'
   );
   
@@ -745,7 +806,12 @@ async function deleteUser(id) {
   }
 
   try {
-    const response = await fetch(`/api/admin/users/${id}`, {
+    // 构建请求URL，非活跃用户使用强制删除
+    const url = isActive 
+      ? `/api/admin/users/${id}` 
+      : `/api/admin/users/${id}?forceDelete=true`;
+    
+    const response = await fetch(url, {
       method: 'DELETE',
       credentials: 'include',
       headers: {
@@ -797,13 +863,37 @@ class AdminApp {
             lastDiskSpaceUpdate: 0
         };
         
+        // 初始化事件管理器
+        this.initEventManager();
+        
         this.init();
+    }
+    
+    /**
+     * 初始化事件管理器
+     */
+    initEventManager() {
+        // 等待全局事件管理器加载
+        if (window.eventManager) {
+            this.adminEventManager = new AdminEventManager(this);
+            console.log('✅ AdminEventManager 已初始化');
+        } else {
+            // 如果全局事件管理器未加载，延迟初始化
+            setTimeout(() => {
+                this.initEventManager();
+            }, 100);
+        }
     }
 
     init() {
         console.log('AdminApp 初始化...');
         this.bindEvents();
         this.loadTabContent('users');
+        
+        // 全局拦截demo模式下的表单提交
+        if (window.isDemo) {
+            this.interceptDemoModeSubmissions();
+        }
     }
 
     // 工具方法
@@ -817,6 +907,14 @@ class AdminApp {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+    
+    // 拦截demo模式下的表单提交
+    interceptDemoModeSubmissions() {
+        // 使用新的精确按钮拦截系统
+        if (window.isDemo && typeof window.initDemoModeButtonInterception === 'function') {
+            window.initDemoModeButtonInterception();
+        }
     }
 
     bindEvents() {
@@ -883,7 +981,7 @@ class AdminApp {
             // Add a small delay to prevent rapid successive requests
             await new Promise(resolve => setTimeout(resolve, 200));
 
-            const response = await fetch(`/api/admin/page/${tabName}`, {
+            const response = await fetch(getApiUrl(`/api/admin/page/${tabName}`), {
                 credentials: 'include',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -955,33 +1053,42 @@ class AdminApp {
                 this.initDataManagement();
                 break;
             case 'achievements':
-                // 动态加载成就管理 JS
-                if (typeof AchievementManager === 'undefined') {
-                    const script = document.createElement('script');
-                    script.src = '/assets/js/admin-achievements.js';
-                    script.onload = () => {
-                        setTimeout(() => {
-                            if (typeof AchievementManager !== 'undefined') {
-                                new AchievementManager();
-                            } else {
-                                console.error('AchievementManager 类仍未找到');
-                            }
-                        }, 100);
-                    };
-                    document.body.appendChild(script);
+                console.log('🔥 调用 initializeAchievementManagement');
+                console.log('🔥 检查全局函数:', typeof initializeAchievementManagement);
+                console.log('🔥 检查 AchievementManager 类:', typeof AchievementManager);
+                // 调用全局函数
+                if (typeof initializeAchievementManagement === 'function') {
+                    console.log('🔥 调用 initializeAchievementManagement 函数');
+                    initializeAchievementManagement();
                 } else {
-                    setTimeout(() => {
-                        new AchievementManager();
-                    }, 100);
+                    console.error('❌ initializeAchievementManagement 函数未找到');
+                    // 备用方案：直接创建实例
+                    if (typeof AchievementManager !== 'undefined') {
+                        console.log('🔥 使用备用方案创建实例');
+                        const manager = new AchievementManager();
+                        window.achievementManager = manager;
+                        if (!window.AchievementManager) {
+                            window.AchievementManager = {};
+                        }
+                        window.AchievementManager.instance = manager;
+                        console.log('✅ 备用方案：成就管理器实例创建成功');
+                        console.log('🔥 实例状态:', {
+                            achievementManager: !!window.achievementManager,
+                            AchievementManagerInstance: !!window.AchievementManager?.instance
+                        });
+                    } else {
+                        console.error('❌ AchievementManager 类也未找到');
+                    }
                 }
                 break;
+
             case 'config':
                 console.log('🔥 调用 initSystemConfig');
                 this.initSystemConfig();
                 break;
-            case 'testdata':
-                console.log('🔥 调用 initTestDataManagement');
-                this.initTestDataManagement();
+            case 'data-management':
+                console.log('🔥 调用 initDataManagement');
+                this.initDataManagement();
                 break;
         }
     }
@@ -1114,7 +1221,7 @@ class AdminApp {
             if (statusFilter) params.append('status', statusFilter);
             
             const queryString = params.toString();
-            const url = queryString ? `/api/admin/users?${queryString}` : '/api/admin/users';
+            const url = queryString ? getApiUrl(`/api/admin/users?${queryString}`) : getApiUrl('/api/admin/users');
             
             console.log('loadUsers 开始请求:', {
                 url,
@@ -1125,7 +1232,12 @@ class AdminApp {
             });
             
             const startTime = Date.now();
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             const endTime = Date.now();
             
             console.log(`loadUsers 请求完成，耗时: ${endTime - startTime}ms`);
@@ -1180,7 +1292,7 @@ class AdminApp {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    <span class="status-badge inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                         ${user.is_active ? '活跃' : '非活跃'}
                     </span>
                 </td>
@@ -1313,6 +1425,16 @@ class AdminApp {
                 if (emailInput) emailInput.value = user.email;
                 if (roleSelect) roleSelect.value = user.role;
                 
+                // 填充积分信息
+                const currentPointsElement = document.getElementById('currentPoints');
+                const adjustedPointsElement = document.getElementById('adjustedPoints');
+                if (currentPointsElement) {
+                    currentPointsElement.textContent = user.points || 0;
+                }
+                if (adjustedPointsElement) {
+                    adjustedPointsElement.textContent = user.points || 0;
+                }
+                
                 // 编辑模式下密码字段变为可选
                 if (passwordInput) {
                     passwordInput.required = false;
@@ -1326,8 +1448,21 @@ class AdminApp {
                     if (icon) submitBtn.appendChild(icon);
                     submitBtn.appendChild(document.createTextNode(' 更新用户'));
                 }
+                
+                // 绑定积分调整实时计算
+                this.bindPointsCalculation();
             } else {
                 delete form.dataset.userId;
+                
+                // 重置积分显示
+                const currentPointsElement = document.getElementById('currentPoints');
+                const adjustedPointsElement = document.getElementById('adjustedPoints');
+                if (currentPointsElement) {
+                    currentPointsElement.textContent = '0';
+                }
+                if (adjustedPointsElement) {
+                    adjustedPointsElement.textContent = '0';
+                }
                 
                 // 添加模式下密码字段为必填
                 const passwordInput = document.getElementById('password');
@@ -1446,6 +1581,37 @@ class AdminApp {
         }
     }
 
+    // 绑定积分调整实时计算
+    bindPointsCalculation() {
+        const pointsAdjustmentInput = document.getElementById('pointsAdjustment');
+        const currentPointsElement = document.getElementById('currentPoints');
+        const adjustedPointsElement = document.getElementById('adjustedPoints');
+        
+        if (pointsAdjustmentInput && currentPointsElement && adjustedPointsElement) {
+            const calculateAdjustedPoints = () => {
+                const currentPoints = parseInt(currentPointsElement.textContent) || 0;
+                const adjustment = parseInt(pointsAdjustmentInput.value) || 0;
+                const newPoints = currentPoints + adjustment;
+                
+                adjustedPointsElement.textContent = newPoints;
+                
+                // 根据调整值设置颜色
+                if (adjustment > 0) {
+                    adjustedPointsElement.className = 'text-lg font-bold text-green-600 dark:text-green-400';
+                } else if (adjustment < 0) {
+                    adjustedPointsElement.className = 'text-lg font-bold text-red-600 dark:text-red-400';
+                } else {
+                    adjustedPointsElement.className = 'text-lg font-bold text-gray-600 dark:text-gray-400';
+                }
+            };
+            
+            // 移除之前的事件监听器
+            pointsAdjustmentInput.removeEventListener('input', calculateAdjustedPoints);
+            // 添加新的事件监听器
+            pointsAdjustmentInput.addEventListener('input', calculateAdjustedPoints);
+        }
+    }
+
     handleUserSubmit = async (e) => {
         e.preventDefault();
         
@@ -1463,6 +1629,36 @@ class AdminApp {
         const password = formData.get('password');
         if (!userId || password) {
             requestData.password = password;
+        }
+        
+        // 处理积分调整（仅在编辑模式下）
+        if (userId) {
+            const pointsAdjustment = formData.get('pointsAdjustment');
+            const pointsReason = formData.get('pointsReason');
+            
+            console.log('🔧 前端积分调整数据:', {
+                pointsAdjustment,
+                pointsReason,
+                userId
+            });
+            
+            if (pointsAdjustment && pointsReason) {
+                // 获取当前积分
+                const currentPointsElement = document.getElementById('currentPoints');
+                const currentPoints = currentPointsElement ? parseInt(currentPointsElement.textContent) || 0 : 0;
+                
+                // 计算新的积分值
+                const newPoints = currentPoints + parseInt(pointsAdjustment);
+                
+                console.log('🔧 积分计算:', {
+                    currentPoints,
+                    adjustment: parseInt(pointsAdjustment),
+                    newPoints
+                });
+                
+                requestData.points = newPoints;
+                requestData.pointsReason = pointsReason;
+            }
         }
         
         try {
@@ -1511,6 +1707,112 @@ class AdminApp {
         
         // 绑定事件
         this.bindDataManagementEvents();
+        
+        // 演示模式下禁用危险操作按钮
+        console.log('🔍 检查演示模式状态...');
+        console.log('window.isDemo:', window.isDemo);
+        console.log('typeof window.isDemo:', typeof window.isDemo);
+        console.log('window.isDemo === true:', window.isDemo === true);
+        
+        if (window.isDemo) {
+            console.log('🔒 检测到演示模式，禁用危险操作按钮');
+            this.disableDemoModeButtons();
+        } else {
+            console.log('🔒 当前不是演示模式，跳过按钮禁用');
+        }
+        
+        // 延迟检查按钮状态，确保DOM完全加载
+        setTimeout(() => {
+            console.log('🔍 延迟检查按钮状态...');
+            const buttons = ['backupDataBtn', 'importDataBtn', 'cleanDataBtn', 'resetDataBtn'];
+            buttons.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    console.log(`✅ 找到按钮 ${buttonId}:`, {
+                        disabled: button.disabled,
+                        text: button.textContent.trim(),
+                        classes: button.className
+                    });
+                } else {
+                    console.log(`❌ 未找到按钮 ${buttonId}`);
+                }
+            });
+        }, 1000);
+    }
+
+    // 演示模式下禁用危险操作按钮
+    disableDemoModeButtons() {
+        console.log('🔒 演示模式下禁用危险操作按钮...');
+        
+        // 需要禁用的按钮ID列表
+        const dangerousButtons = [
+            'backupDataBtn',    // 立即备份
+            'importDataBtn',    // 导入恢复
+            'cleanDataBtn',     // 开始清理
+            'resetDataBtn'      // 重置数据
+        ];
+        
+        let disabledCount = 0;
+        dangerousButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                console.log(`🔍 找到按钮 ${buttonId}，开始禁用...`);
+                
+                // 禁用按钮
+                button.disabled = true;
+                console.log(`✅ 设置 disabled = true`);
+                
+                // 添加演示模式样式
+                button.classList.add('opacity-50', 'cursor-not-allowed');
+                button.classList.remove('hover:bg-blue-700', 'hover:bg-purple-700', 'hover:bg-yellow-700', 'hover:bg-red-700');
+                console.log(`✅ 添加演示模式样式`);
+                
+                // 修改按钮文本，添加演示模式标识
+                const originalText = button.textContent.trim();
+                button.textContent = `${originalText} (演示模式禁用)`;
+                console.log(`✅ 修改按钮文本: "${originalText}" -> "${button.textContent.trim()}"`);
+                
+                // 添加提示信息
+                button.title = '演示模式下此功能不可用，请在生产环境中使用';
+                console.log(`✅ 添加提示信息`);
+                
+                disabledCount++;
+                console.log(`🔒 已禁用按钮: ${buttonId}`);
+            } else {
+                console.log(`⚠️ 未找到按钮: ${buttonId}`);
+            }
+        });
+        
+        console.log(`🔒 按钮禁用完成，共禁用了 ${disabledCount} 个按钮`);
+        
+        // 添加演示模式提示信息到页面
+        this.addDemoModeWarning();
+    }
+    
+    // 添加演示模式警告信息
+    addDemoModeWarning() {
+        // 查找数据操作区域
+        const dataOperationSection = document.querySelector('.bg-white.dark\\:bg-gray-800.shadow.rounded-lg.p-6');
+        if (dataOperationSection) {
+            // 在数据操作区域顶部添加警告信息
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg';
+            warningDiv.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-yellow-800 dark:text-yellow-200 font-medium">演示模式安全提示</span>
+                </div>
+                <p class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                    为了保护演示环境的数据安全，以下危险操作已被禁用：数据备份、数据导入恢复、数据清理、数据重置。
+                    这些功能仅在生产环境中可用。
+                </p>
+            `;
+            
+            // 插入到数据操作区域的第一个子元素之前
+            dataOperationSection.insertBefore(warningDiv, dataOperationSection.firstChild);
+        }
     }
 
     // 加载操作日志
@@ -1519,12 +1821,25 @@ class AdminApp {
             // 移除这行，不需要在操作日志中显示加载过程
             // this.addOperationLog('📋 正在加载操作日志...', 'info');
             
-            const response = await fetch('/api/admin/data/user-operation-logs?limit=10&page=1');
+            const response = await fetch(getApiUrl('/api/admin/data/user-operation-logs?limit=10&page=1'), {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
                     // 移除这行，不需要在操作日志中显示加载成功
                     // this.addOperationLog('✅ 操作日志加载成功', 'success');
+                    console.log('操作日志数据:', data);
+                    // 渲染日志表格
+                    if (typeof renderRecentLogsTable === 'function') {
+                        renderRecentLogsTable(data.logs);
+                    } else {
+                        console.error('renderRecentLogsTable 函数未找到');
+                    }
+                    // 渲染分页
                     this.renderLogsPagination(data.pagination);
                 } else {
                     this.addOperationLog('❌ 操作日志加载失败: ' + data.error, 'error');
@@ -1538,7 +1853,12 @@ class AdminApp {
     // 加载用户筛选选项（用于用户数据查看区域）
     async loadUserDataUserFilter() {
         try {
-            const response = await fetch('/api/admin/users?limit=1000');
+            const response = await fetch(getApiUrl('/api/admin/users?limit=1000'), {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && Array.isArray(data.users)) {
@@ -1571,7 +1891,12 @@ class AdminApp {
     async loadLogsUserFilter() {
         try {
             console.log('开始加载用户列表到logsUserFilter...');
-            const response = await fetch('/api/admin/users?all=1');
+            const response = await fetch(getApiUrl('/api/admin/users?all=1'), {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 console.log('获取到用户数据:', data);
@@ -1650,14 +1975,25 @@ class AdminApp {
             statusFilter
         });
         
+        // 构建查询参数
+        const params = new URLSearchParams();
+        if (searchTerm) params.append('search', searchTerm);
+        if (roleFilter) params.append('role', roleFilter);
+        if (statusFilter) params.append('status', statusFilter);
+        
         // 重新加载用户列表
-        this.loadUsers();
+        this.loadUsersWithParams(params.toString());
     }
 
     async loadUsersWithParams(queryString = '') {
         try {
-            const url = queryString ? `/api/admin/users?${queryString}` : '/api/admin/users';
-            const response = await fetch(url);
+            const url = queryString ? getApiUrl(`/api/admin/users?${queryString}`) : getApiUrl('/api/admin/users');
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
@@ -1692,7 +2028,7 @@ class AdminApp {
         console.log('执行编辑用户:', id);
         try {
             // 获取用户信息
-            const response = await fetch(`/api/admin/users/${id}`, {
+            const response = await fetch(getApiUrl(`/api/admin/users/${id}`), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1718,10 +2054,43 @@ class AdminApp {
 
     async performDeleteUser(id) {
         console.log('执行删除用户:', id);
+        
+        // 获取当前用户信息，判断是软删除还是硬删除
+        const userRow = document.querySelector(`tr[data-user-id="${id}"]`);
+        const statusBadge = userRow?.querySelector('.status-badge');
+        const statusText = statusBadge?.textContent?.trim();
+        const isActive = statusText === '活跃';
+        
+        // 添加详细的调试日志
+        console.log('删除用户调试信息:', {
+            userId: id,
+            userRow: !!userRow,
+            statusBadge: !!statusBadge,
+            statusText: statusText,
+            isActive: isActive,
+            currentFilter: document.getElementById('statusFilter')?.value || 'all'
+        });
+        
+        let title, message, confirmText;
+        
+        if (isActive) {
+            // 第一次删除：软删除
+            title = '软删除用户';
+            message = '此操作将暂时冻结账号登录！确定要继续吗？';
+            confirmText = '软删除';
+            console.log('执行软删除操作');
+        } else {
+            // 第二次删除：硬删除
+            title = '彻底删除用户';
+            message = '⚠️ 警告：此操作将永久删除用户及其所有数据，包括学习记录、项目、成就等，此操作不可撤销！确定要继续吗？';
+            confirmText = '彻底删除';
+            console.log('执行硬删除操作');
+        }
+        
         const confirmed = await this.showConfirmDialog(
-            '删除用户',
-            '确定要删除这个用户吗？此操作不可撤销。',
-            '删除',
+            title,
+            message,
+            confirmText,
             '取消'
         );
         
@@ -1730,7 +2099,12 @@ class AdminApp {
         }
 
         try {
-            const response = await fetch(`/api/admin/users/${id}`, {
+            // 构建请求URL，非活跃用户使用强制删除
+            const url = isActive 
+                ? `/api/admin/users/${id}` 
+                : `/api/admin/users/${id}?forceDelete=true`;
+            
+            const response = await fetch(url, {
                 method: 'DELETE',
                 credentials: 'include',
                 headers: {
@@ -1742,6 +2116,14 @@ class AdminApp {
             
             if (data.success) {
                 this.showMessage(data.message, 'success');
+                
+                // 如果是软删除，提示用户查看非活跃用户列表
+                if (isActive) {
+                    setTimeout(() => {
+                        this.showMessage('用户已被软删除，可以在"非活跃"筛选器中查看', 'info');
+                    }, 1000);
+                }
+                
                 this.loadUsers(); // 重新加载用户列表
             } else {
                 this.showMessage('删除用户失败: ' + data.error, 'error');
@@ -1755,37 +2137,45 @@ class AdminApp {
     bindUserActionEvents() {
         console.log('开始绑定用户操作事件...');
         
-        // 绑定编辑按钮事件
-        const editButtons = document.querySelectorAll('.edit-user-btn');
-        console.log('找到编辑按钮数量:', editButtons.length);
+        // 使用事件委托，在用户表格容器上绑定事件
+        const userTableContainer = document.getElementById('userTableBody')?.parentElement;
+        if (!userTableContainer) {
+            console.error('未找到用户表格容器');
+            return;
+        }
         
-        editButtons.forEach((button, index) => {
-            console.log(`绑定编辑按钮 ${index + 1}:`, button);
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const userId = e.target.dataset.userId;
-                console.log('编辑按钮被点击，用户ID:', userId);
-                this.editUser(userId);
-            });
-        });
+        // 移除之前的事件监听器（如果存在）
+        userTableContainer.removeEventListener('click', this.handleUserActionClick);
+        
+        // 绑定事件委托
+        userTableContainer.addEventListener('click', this.handleUserActionClick);
+        
+        console.log('用户操作事件绑定完成（使用事件委托）');
+    }
 
-        // 绑定删除按钮事件
-        const deleteButtons = document.querySelectorAll('.delete-user-btn');
-        console.log('找到删除按钮数量:', deleteButtons.length);
+    // 处理用户操作点击事件（事件委托）
+    handleUserActionClick = (e) => {
+        const target = e.target;
         
-        deleteButtons.forEach((button, index) => {
-            console.log(`绑定删除按钮 ${index + 1}:`, button);
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const userId = e.target.dataset.userId;
-                console.log('删除按钮被点击，用户ID:', userId);
-                this.deleteUser(userId);
-            });
-        });
+        // 检查是否是编辑按钮
+        if (target.classList.contains('edit-user-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = target.dataset.userId;
+            console.log('编辑按钮被点击，用户ID:', userId);
+            this.editUser(userId);
+            return;
+        }
         
-        console.log('用户操作事件绑定完成');
+        // 检查是否是删除按钮
+        if (target.classList.contains('delete-user-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = target.dataset.userId;
+            console.log('删除按钮被点击，用户ID:', userId);
+            this.deleteUser(userId);
+            return;
+        }
     }
 
     // 显示消息提示
@@ -1806,9 +2196,98 @@ class AdminApp {
         }, 3000);
     }
 
+    // 显示导入结果模态框
+    showImportResultModal(title, message, type = 'success') {
+        console.log(`显示导入结果模态框 [${type}]:`, title);
+        
+        return new Promise((resolve) => {
+            // 检查是否已存在模态框，如果存在则先移除
+            const existingModal = document.getElementById('importResultModal');
+            if (existingModal) {
+                document.body.removeChild(existingModal);
+                console.log('🗑️ 移除已存在的导入结果模态框');
+            }
+            
+            // 创建模态框
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+            modal.id = 'importResultModal';
+            
+            // 根据类型设置图标和颜色
+            const iconClass = type === 'success' ? 'fas fa-check-circle text-green-600 dark:text-green-400' : 
+                             type === 'error' ? 'fas fa-exclamation-circle text-red-600 dark:text-red-400' : 
+                             'fas fa-info-circle text-blue-600 dark:text-blue-400';
+            const bgColor = type === 'success' ? 'bg-green-100 dark:bg-green-900' : 
+                           type === 'error' ? 'bg-red-100 dark:bg-red-900' : 
+                           'bg-blue-100 dark:bg-blue-900';
+            
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 transform transition-all duration-300">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full ${bgColor} mb-4">
+                            <i class="${iconClass} text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">${title}</h3>
+                        <div class="text-sm text-gray-600 dark:text-gray-300 mb-6 text-left whitespace-pre-line max-h-64 overflow-y-auto">
+                            ${message}
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="importResultOkBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300">
+                                确定
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            console.log('✅ 导入结果模态框已添加到页面');
+
+            // 绑定事件
+            const okBtn = modal.querySelector('#importResultOkBtn');
+            
+            const cleanup = () => {
+                document.body.removeChild(modal);
+            };
+
+            okBtn.addEventListener('click', () => {
+                console.log('✅ 用户点击了确定按钮');
+                cleanup();
+                resolve(true);
+            });
+
+            // 点击背景关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    cleanup();
+                    resolve(true);
+                }
+            });
+
+            // ESC键关闭
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') {
+                    cleanup();
+                    resolve(true);
+                    document.removeEventListener('keydown', handleEsc);
+                }
+            };
+            document.addEventListener('keydown', handleEsc);
+        });
+    }
+
     // 显示确认对话框
     showConfirmDialog(title, message, confirmText = '确定', cancelText = '取消') {
+        console.log('🔍 显示确认对话框:', { title, message, confirmText, cancelText });
+        
         return new Promise((resolve) => {
+            // 检查是否已存在模态框，如果存在则先移除
+            const existingModal = document.getElementById('confirmModal');
+            if (existingModal) {
+                document.body.removeChild(existingModal);
+                console.log('🗑️ 移除已存在的确认对话框');
+            }
+            
             // 创建模态框
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
@@ -1835,21 +2314,29 @@ class AdminApp {
             `;
 
             document.body.appendChild(modal);
+            console.log('✅ 确认对话框已添加到页面');
 
             // 绑定事件
             const confirmBtn = modal.querySelector('#confirmBtn');
             const cancelBtn = modal.querySelector('#cancelBtn');
+            
+            console.log('按钮元素检查:', {
+                confirmBtn: confirmBtn ? '找到' : '未找到',
+                cancelBtn: cancelBtn ? '找到' : '未找到'
+            });
 
             const cleanup = () => {
                 document.body.removeChild(modal);
             };
 
             confirmBtn.addEventListener('click', () => {
+                console.log('✅ 用户点击了确认按钮');
                 cleanup();
                 resolve(true);
             });
 
             cancelBtn.addEventListener('click', () => {
+                console.log('❌ 用户点击了取消按钮');
                 cleanup();
                 resolve(false);
             });
@@ -1874,70 +2361,229 @@ class AdminApp {
         });
     }
 
-    // 绑定数据管理事件
-    bindDataManagementEvents() {
-        console.log('绑定数据管理事件...');
+    // 统一的事件管理器
+    eventManager = {
+        listeners: new Map(),
         
-        // 绑定数据操作按钮事件
+        // 绑定事件，避免重复绑定
+        bind(elementId, eventType, handler, options = {}) {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                console.warn(`元素 ${elementId} 未找到，无法绑定事件`);
+                return false;
+            }
+            
+            const key = `${elementId}_${eventType}`;
+            
+            // 如果已经绑定过，先移除旧的事件监听器
+            if (this.listeners.has(key)) {
+                const oldHandler = this.listeners.get(key);
+                element.removeEventListener(eventType, oldHandler);
+            }
+            
+            // 绑定新的事件监听器
+            element.addEventListener(eventType, handler, options);
+            this.listeners.set(key, handler);
+            
+            console.log(`✅ 事件绑定成功: ${elementId} -> ${eventType}`);
+            return true;
+        },
+        
+        // 移除事件监听器
+        unbind(elementId, eventType) {
+            const key = `${elementId}_${eventType}`;
+            const element = document.getElementById(elementId);
+            
+            if (this.listeners.has(key) && element) {
+                const handler = this.listeners.get(key);
+                element.removeEventListener(eventType, handler);
+                this.listeners.delete(key);
+                console.log(`🗑️ 事件移除成功: ${elementId} -> ${eventType}`);
+                return true;
+            }
+            
+            return false;
+        },
+        
+        // 清除所有事件监听器
+        clear() {
+            this.listeners.forEach((handler, key) => {
+                const [elementId, eventType] = key.split('_');
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.removeEventListener(eventType, handler);
+                }
+            });
+            this.listeners.clear();
+            console.log('🧹 所有事件监听器已清除');
+        }
+    };
+
+    // 统一的数据管理事件绑定
+    bindDataManagementEvents() {
+        console.log('🔄 开始绑定数据管理事件...');
+        
+        // 数据操作按钮事件
+        this.eventManager.bind('backupDataBtn', 'click', () => this.backupData());
+        this.eventManager.bind('importDataBtn', 'click', () => this.importData());
+        this.eventManager.bind('cleanDataBtn', 'click', () => {
+            console.log('🧹 数据清理按钮被点击');
+            this.cleanData();
+        });
+        this.eventManager.bind('resetDataBtn', 'click', () => this.resetData());
+        
+        // 操作日志相关事件
+        this.eventManager.bind('searchLogsBtn', 'click', () => this.searchLogs());
+        this.eventManager.bind('clearLogsBtn', 'click', () => this.clearLogsDisplay());
+        
+        // 用户数据查看相关事件
+        this.eventManager.bind('dataTypeSelect', 'change', () => this.switchDataType());
+        this.eventManager.bind('searchUserDataBtn', 'click', () => this.searchUserData());
+        this.eventManager.bind('clearUserDataBtn', 'click', () => this.clearUserDataDisplay());
+        
+        // 测试数据管理事件
+        // 生成测试数据表单提交
+        const testDataForm = document.getElementById('testDataForm');
+        if (testDataForm) {
+            testDataForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const generateBtn = document.getElementById('generateBtn');
+                const spinner = document.getElementById('generateSpinner');
+                if (generateBtn) generateBtn.disabled = true;
+                if (spinner) spinner.classList.remove('hidden');
+                try {
+                    const formData = new FormData(testDataForm);
+                    const payload = {};
+                    for (const [key, value] of formData.entries()) {
+                        payload[key] = value;
+                    }
+                    const res = await fetch(getApiUrl('/api/admin/testdata/generate'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.adminApp && window.adminApp.addOperationLog('✅ ' + data.message, 'success');
+                        window.adminApp && window.adminApp.loadOperationLogs && window.adminApp.loadOperationLogs();
+                        window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage(data.message, 'success');
+                    } else {
+                        window.adminApp && window.adminApp.addOperationLog('❌ ' + (data.error || '生成失败'), 'error');
+                        window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage(data.error || '生成失败', 'error');
+                    }
+                } catch (err) {
+                    window.adminApp && window.adminApp.addOperationLog('❌ 生成测试数据异常: ' + err.message, 'error');
+                    window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage('生成测试数据异常: ' + err.message, 'error');
+                } finally {
+                    if (generateBtn) generateBtn.disabled = false;
+                    if (spinner) spinner.classList.add('hidden');
+                }
+            });
+        }
+        // 清除测试数据按钮
+        const clearBtn = document.getElementById('clearBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const spinner = document.getElementById('clearSpinner');
+                clearBtn.disabled = true;
+                if (spinner) spinner.classList.remove('hidden');
+                const confirmed = await (window.adminApp && window.adminApp.showConfirmDialog
+                    ? window.adminApp.showConfirmDialog('清除测试数据', '确定要清除所有测试数据吗？此操作不可恢复！', '确定', '取消')
+                    : Promise.resolve(window.confirm('确定要清除所有测试数据吗？')));
+                if (!confirmed) {
+                    clearBtn.disabled = false;
+                    if (spinner) spinner.classList.add('hidden');
+                    return;
+                }
+                try {
+                    const res = await fetch(getApiUrl('/api/admin/testdata/clear'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.adminApp && window.adminApp.addOperationLog('✅ ' + data.message, 'error');
+                        window.adminApp && window.adminApp.loadOperationLogs && window.adminApp.loadOperationLogs();
+                        window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage(data.message, 'success');
+                    } else {
+                        window.adminApp && window.adminApp.addOperationLog('❌ ' + (data.error || '清除失败'), 'error');
+                        window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage(data.error || '清除失败', 'error');
+                    }
+                } catch (err) {
+                    window.adminApp && window.adminApp.addOperationLog('❌ 清除测试数据异常: ' + err.message, 'error');
+                    window.adminApp && window.adminApp.showMessage && window.adminApp.showMessage('清除测试数据异常: ' + err.message, 'error');
+                } finally {
+                    clearBtn.disabled = false;
+                    if (spinner) spinner.classList.add('hidden');
+                }
+            });
+        }
+        
+        console.log('✅ 数据管理事件绑定完成');
+    }
+
+
+
+    // 移除旧的事件绑定方法
+    bindDataManagementEventsWithRetry(retryCount = 0) {
+        console.log(`🔄 第 ${retryCount + 1} 次尝试绑定数据管理事件...`);
+        
+        // 检查关键元素是否存在
         const backupBtn = document.getElementById('backupDataBtn');
         const cleanBtn = document.getElementById('cleanDataBtn');
         const resetBtn = document.getElementById('resetDataBtn');
+        const clearBtn = document.getElementById('clearBtn');
         
-        if (backupBtn) {
-            backupBtn.addEventListener('click', () => this.backupData());
-            console.log('备份按钮事件已绑定');
-        }
-        if (cleanBtn) {
-            cleanBtn.addEventListener('click', () => this.cleanData());
-            console.log('清理按钮事件已绑定');
-        }
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetData());
-            console.log('重置按钮事件已绑定');
-        }
+        console.log('关键元素检查结果:');
+        console.log('  - backupBtn:', backupBtn ? '找到' : '未找到');
+        console.log('  - cleanBtn:', cleanBtn ? '找到' : '未找到');
+        console.log('  - resetBtn:', resetBtn ? '找到' : '未找到');
+        console.log('  - clearBtn:', clearBtn ? '找到' : '未找到');
         
-        // 绑定操作日志相关事件
-        const searchLogsBtn = document.getElementById('searchLogsBtn');
-        const clearLogsBtn = document.getElementById('clearLogsBtn');
-        
-        if (searchLogsBtn) {
-            searchLogsBtn.addEventListener('click', () => this.searchLogs());
-            console.log('搜索日志按钮事件已绑定');
-        }
-        if (clearLogsBtn) {
-            clearLogsBtn.addEventListener('click', () => this.clearLogsDisplay());
-            console.log('清空日志按钮事件已绑定');
+        // 如果关键元素都找到了，直接绑定事件
+        if (backupBtn && cleanBtn && resetBtn && clearBtn) {
+            this.bindDataManagementEvents();
+            return;
         }
         
-        // 绑定用户数据查看相关事件
-        const dataTypeSelect = document.getElementById('dataTypeSelect');
-        const userFilter = document.getElementById('userFilter');
-        const dataSearch = document.getElementById('dataSearch');
-        const searchUserDataBtn = document.getElementById('searchUserDataBtn');
-        const clearUserDataBtn = document.getElementById('clearUserDataBtn');
-        
-        if (dataTypeSelect) {
-            dataTypeSelect.addEventListener('change', () => this.switchDataType());
-            console.log('数据类型选择事件已绑定');
+        // 如果还有重试次数，继续重试
+        if (retryCount < 5) {
+            console.log(`⏳ 部分元素未找到，${1000}ms 后重试...`);
+            setTimeout(() => {
+                this.bindDataManagementEventsWithRetry(retryCount + 1);
+            }, 1000);
+        } else {
+            console.error('❌ 多次重试后仍有元素未找到');
+            // 即使部分元素未找到，也尝试绑定已存在的元素
+            this.bindDataManagementEvents();
         }
-        if (searchUserDataBtn) {
-            searchUserDataBtn.addEventListener('click', () => this.searchUserData());
-            console.log('搜索用户数据按钮事件已绑定');
-        }
-        if (clearUserDataBtn) {
-            clearUserDataBtn.addEventListener('click', () => this.clearUserDataDisplay());
-            console.log('清空用户数据按钮事件已绑定');
-        }
-        
-        console.log('数据管理事件绑定完成');
     }
 
     // 数据备份功能
     async backupData() {
+        console.log('🚀 开始执行数据备份...');
+        
+        const backupBtn = document.getElementById('backupDataBtn');
+        if (!backupBtn) {
+            console.error('❌ 找不到备份按钮！');
+            this.showMessage('备份按钮未找到，请刷新页面重试', 'error');
+            return;
+        }
+        
+        const originalText = backupBtn.textContent;
+        console.log('备份按钮原始文本:', originalText);
+        
         try {
+            console.log('🔒 禁用备份按钮...');
+            backupBtn.disabled = true;
+            backupBtn.textContent = '备份中...';
             this.showMessage('正在准备数据备份...', 'info');
             
-            const response = await fetch('/api/admin/data/backup', {
+            console.log('📡 发送备份请求...');
+            const response = await fetch(getApiUrl('/api/admin/data/backup'), {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -1945,37 +2591,213 @@ class AdminApp {
                 }
             });
             
+            console.log('📥 收到响应:', response.status, response.statusText);
+            
             if (response.ok) {
+                console.log('📦 开始处理响应数据...');
                 const blob = await response.blob();
+                console.log('文件大小:', blob.size, '字节');
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `系统数据备份_${new Date().toISOString().split('T')[0]}.xlsx`;
+                
+                console.log('📥 触发文件下载...');
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 
+                console.log('✅ 数据备份完成！');
                 this.showMessage('数据备份成功！文件已下载', 'success');
+                
+                // 记录成功日志
+                this.addOperationLog('✅ 数据备份成功', 'success');
                 
                 // 刷新操作日志
                 this.loadOperationLogs();
             } else {
-                const data = await response.json();
-                this.showMessage('数据备份失败: ' + (data.error || '未知错误'), 'error');
+                console.error('❌ 备份请求失败:', response.status);
+                let errorMessage = '未知错误';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.error || '未知错误';
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('错误详情:', errorMessage);
+                this.showMessage('数据备份失败: ' + errorMessage, 'error');
             }
         } catch (error) {
-            console.error('数据备份失败:', error);
+            console.error('❌ 数据备份过程中发生错误:', error);
             this.showMessage('数据备份失败: ' + error.message, 'error');
         } finally {
+            console.log('🔄 恢复备份按钮状态...');
             backupBtn.disabled = false;
             backupBtn.textContent = originalText;
         }
     }
 
+    // 数据导入恢复功能
+    async importData() {
+        console.log('📥 开始执行数据导入恢复...');
+        
+        // 创建文件输入元素
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.xlsx,.xls';
+        fileInput.style.display = 'none';
+        
+        // 监听文件选择
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                console.log('用户取消了文件选择');
+                return;
+            }
+            
+            console.log('选择的文件:', file.name, '大小:', file.size, '字节');
+            
+            // 验证文件类型
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                this.showMessage('请选择有效的Excel文件(.xlsx或.xls格式)', 'error');
+                return;
+            }
+            
+            // 验证文件大小（最大50MB）
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (file.size > maxSize) {
+                this.showMessage('文件大小不能超过50MB', 'error');
+                return;
+            }
+            
+            // 显示确认对话框
+            const confirmed = await this.showConfirmDialog(
+                '数据导入恢复',
+                `确定要导入文件 "${file.name}" 吗？\n\n⚠️ 此操作将恢复备份数据到系统中，可能会覆盖现有数据！\n\n请确保这是正确的备份文件。`,
+                '开始导入',
+                '取消'
+            );
+            
+            if (!confirmed) {
+                console.log('用户取消了数据导入操作');
+                return;
+            }
+            
+            await this.performImport(file);
+        });
+        
+        // 触发文件选择
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+    }
+    
+    // 执行数据导入
+    async performImport(file) {
+        console.log('🔄 开始执行数据导入...');
+        
+        // 显示导入进度
+        this.showMessage('正在上传文件并处理数据...', 'info');
+        
+        try {
+            // 创建FormData对象
+            const formData = new FormData();
+            formData.append('backupFile', file);
+            
+            console.log('📡 发送导入请求...');
+            const response = await fetch(getApiUrl('/api/admin/data/import'), {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            
+            console.log('📥 收到响应:', response.status, response.statusText);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ 数据导入成功:', data);
+                
+                // 显示详细的导入结果
+                const importStats = data.data;
+                let resultMessage = '数据导入恢复成功！\n\n';
+                resultMessage += `📊 导入统计:\n`;
+                resultMessage += `• 用户数据: ${importStats.users} 条\n`;
+                resultMessage += `• 学习项目: ${importStats.projects} 条\n`;
+                resultMessage += `• 学习记录: ${importStats.studyRecords} 条\n`;
+                resultMessage += `• 学习会话: ${importStats.studySessions} 条\n`;
+                resultMessage += `• 成就数据: ${importStats.achievements} 条\n`;
+                resultMessage += `• 用户成就: ${importStats.userAchievements} 条\n`;
+                resultMessage += `• 积分记录: ${importStats.pointsRecords} 条\n`;
+                resultMessage += `• 积分兑换: ${importStats.exchangeRecords} 条\n`;
+                resultMessage += `• 通知记录: ${importStats.notifications} 条\n`;
+                resultMessage += `• 操作日志: ${importStats.operationLogs} 条\n`;
+                resultMessage += `• 系统配置: ${importStats.systemConfig} 条\n`;
+                
+                if (importStats.errors && importStats.errors.length > 0) {
+                    resultMessage += `\n⚠️ 导入过程中有 ${importStats.errors.length} 个错误:\n`;
+                    importStats.errors.slice(0, 5).forEach(error => {
+                        resultMessage += `• ${error}\n`;
+                    });
+                    if (importStats.errors.length > 5) {
+                        resultMessage += `• ... 还有 ${importStats.errors.length - 5} 个错误\n`;
+                    }
+                }
+                
+                // 显示导入成功模态框
+                await this.showImportResultModal('数据导入恢复成功', resultMessage, 'success');
+                
+                // 记录成功日志
+                this.addOperationLog('✅ 数据导入恢复成功', 'success');
+                
+                // 刷新操作日志
+                this.loadOperationLogs();
+                
+                // 刷新相关数据
+                this.refreshRelatedData();
+                
+            } else {
+                console.error('❌ 导入请求失败:', response.status);
+                let errorMessage = '未知错误';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.error || '未知错误';
+                } catch (e) {
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                }
+                console.error('错误详情:', errorMessage);
+                // 显示导入失败模态框
+                await this.showImportResultModal('数据导入失败', '数据导入失败: ' + errorMessage, 'error');
+                
+                // 记录错误日志
+                this.addOperationLog('❌ 数据导入失败: ' + errorMessage, 'error');
+            }
+        } catch (error) {
+            console.error('❌ 数据导入过程中发生错误:', error);
+            // 显示导入失败模态框
+            await this.showImportResultModal('数据导入失败', '数据导入失败: ' + error.message, 'error');
+            
+            // 记录错误日志
+            this.addOperationLog('❌ 数据导入失败: ' + error.message, 'error');
+        }
+    }
+
     // 数据清理功能
     async cleanData() {
-        if (!confirm('确定要清理数据吗？此操作将删除过期的数据！')) {
+        console.log('🧹 开始数据清理流程...');
+        
+        const confirmed = await this.showConfirmDialog(
+            '数据清理',
+            '确定要清理数据吗？此操作将删除过期的数据！',
+            '开始清理',
+            '取消'
+        );
+        
+        console.log('用户确认结果:', confirmed);
+        
+        if (!confirmed) {
+            console.log('用户取消了数据清理操作');
             return;
         }
         
@@ -1986,7 +2808,7 @@ class AdminApp {
             cleanBtn.disabled = true;
             cleanBtn.textContent = '清理中...';
             
-            const response = await fetch('/api/admin/data/clean', {
+            const response = await fetch(getApiUrl('/api/admin/data/clean'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1996,8 +2818,8 @@ class AdminApp {
             const data = await response.json();
             
             if (data.success) {
-                // 移除成功日志，因为这是敏感操作
-                // this.addOperationLog('✅ 数据清理成功', 'warning');
+                // 记录成功日志
+                this.addOperationLog('✅ 数据清理成功', 'success');
                 this.showMessage('数据清理成功！', 'success');
                 this.loadOperationLogs(); // 刷新日志
             } else {
@@ -2015,7 +2837,14 @@ class AdminApp {
 
     // 数据重置功能
     async resetData() {
-        if (!confirm('⚠️ 警告：此操作将重置所有数据！此操作不可恢复！\n\n确定要继续吗？')) {
+        const confirmed = await this.showConfirmDialog(
+            '⚠️ 数据重置警告',
+            '此操作将重置所有数据！此操作不可恢复！\n\n确定要继续吗？',
+            '确认重置',
+            '取消'
+        );
+        
+        if (!confirmed) {
             return;
         }
         
@@ -2026,7 +2855,7 @@ class AdminApp {
             resetBtn.disabled = true;
             resetBtn.textContent = '重置中...';
             
-            const response = await fetch('/api/admin/data/reset', {
+            const response = await fetch(getApiUrl('/api/admin/data/reset'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2036,8 +2865,8 @@ class AdminApp {
             const data = await response.json();
             
             if (data.success) {
-                // 移除成功日志，因为这是危险操作
-                // this.addOperationLog('⚠️ 数据重置成功 - 危险操作', 'critical');
+                // 记录成功日志
+                this.addOperationLog('⚠️ 数据重置成功 - 危险操作', 'critical');
                 this.showMessage('数据重置成功！', 'success');
                 this.loadOperationLogs(); // 刷新日志
             } else {
@@ -2055,46 +2884,79 @@ class AdminApp {
 
     // 搜索日志
     searchLogs() {
-        const searchInput = document.getElementById('logSearch');
-        const searchTerm = searchInput ? searchInput.value.trim() : '';
+        console.log('开始搜索操作日志...');
         
-        if (!searchTerm) {
-            this.showMessage('请输入搜索关键词', 'warning');
-            return;
-        }
+        // 获取筛选条件
+        const startDate = document.getElementById('startDate')?.value || '';
+        const endDate = document.getElementById('endDate')?.value || '';
+        const userId = document.getElementById('logsUserFilter')?.value || '';
+        const operationType = document.getElementById('operationTypeFilter')?.value || '';
         
-        // 移除这行，不需要在操作日志中显示搜索过程
-        // this.addOperationLog('🔍 正在搜索操作日志...', 'info');
+        console.log('筛选条件:', { startDate, endDate, userId, operationType });
         
         // 构建搜索参数
         const params = new URLSearchParams();
-        params.append('search', searchTerm);
-        params.append('limit', '10');
-        params.append('page', '1');
+        params.set('limit', '10');
+        params.set('page', '1');
+        
+        if (startDate) params.set('startDate', startDate);
+        if (endDate) params.set('endDate', endDate);
+        if (userId) params.set('userId', userId);
+        if (operationType) params.set('operationType', operationType);
+        
+        console.log('搜索参数:', params.toString());
         
         // 调用全局函数加载日志
         loadRecentOperationLogs(params.toString());
         
-        // 显示搜索条件（可选，如果需要的话）
+        // 显示搜索条件
         const searchConditions = [];
-        if (searchTerm) searchConditions.push(`关键词: ${searchTerm}`);
+        if (startDate && endDate) searchConditions.push(`日期: ${startDate} 至 ${endDate}`);
+        if (userId) {
+            const userSelect = document.getElementById('logsUserFilter');
+            const selectedOption = userSelect?.options[userSelect.selectedIndex];
+            searchConditions.push(`用户: ${selectedOption?.text || userId}`);
+        }
+        if (operationType) {
+            const typeSelect = document.getElementById('operationTypeFilter');
+            const selectedOption = typeSelect?.options[typeSelect.selectedIndex];
+            searchConditions.push(`操作: ${selectedOption?.text || operationType}`);
+        }
         
         if (searchConditions.length > 0) {
-            // 移除这行，不需要在操作日志中显示搜索条件
-            // this.addOperationLog(`🔍 搜索条件: ${searchConditions.join(', ')}`, 'info');
+            this.showMessage(`🔍 搜索条件: ${searchConditions.join(', ')}`, 'info');
+        } else {
+            this.showMessage('显示所有操作日志', 'info');
         }
     }
 
     clearLogsDisplay() {
+        console.log('清空操作日志显示...');
+        
+        // 清空表格内容
         const tableBody = document.getElementById('recentDataTableBody');
         if (tableBody) {
             tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500 dark:text-gray-400">暂无数据</td></tr>';
         }
         
-        // 移除这行，不需要在操作日志中显示清空操作
-        // this.addOperationLog('🗑️ 清空日志显示', 'warning');
+        // 清空分页
+        const paginationContainer = document.getElementById('logsPagination');
+        if (paginationContainer) {
+            paginationContainer.innerHTML = '';
+        }
         
-        this.showMessage('日志显示已清空', 'info');
+        // 清空筛选条件
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const logsUserFilter = document.getElementById('logsUserFilter');
+        const operationTypeFilter = document.getElementById('operationTypeFilter');
+        
+        if (startDate) startDate.value = '';
+        if (endDate) endDate.value = '';
+        if (logsUserFilter) logsUserFilter.value = '';
+        if (operationTypeFilter) operationTypeFilter.value = '';
+        
+        this.showMessage('操作日志显示已清空，筛选条件已重置', 'info');
     }
 
     // 切换数据类型
@@ -2108,37 +2970,457 @@ class AdminApp {
     }
 
     // 搜索用户数据
-    searchUserData() {
-        console.log('搜索用户数据');
-        const userFilter = document.getElementById('userFilter');
-        const dataSearch = document.getElementById('dataSearch');
+    async searchUserData(page = 1) {
+        console.log('🔍 开始搜索用户数据，页码:', page);
         
-        const userId = userFilter?.value || '';
-        const searchTerm = dataSearch?.value || '';
+        // 获取筛选条件
+        const dataType = document.getElementById('dataTypeSelect')?.value || 'sessions';
+        const userId = document.getElementById('userFilter')?.value || '';
+        const startDate = document.getElementById('userDataStartDate')?.value || '';
+        const endDate = document.getElementById('userDataEndDate')?.value || '';
+        const projectFilter = document.getElementById('projectFilter')?.value || '';
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+        const operationTypeFilter = document.getElementById('userOperationTypeFilter')?.value || '';
         
-        // 构建查询参数
-        const params = new URLSearchParams();
-        if (userId) params.append('userId', userId);
-        if (searchTerm) params.append('search', searchTerm);
+        // 验证必填条件
+        if (!userId) {
+            this.showMessage('请选择用户', 'error');
+            return;
+        }
         
-        // 这里需要实现具体的搜索逻辑
-        console.log('搜索参数:', { userId, searchTerm });
+        console.log('搜索参数:', {
+            dataType,
+            userId,
+            startDate,
+            endDate,
+            projectFilter,
+            statusFilter,
+            operationTypeFilter,
+            page
+        });
+        
+        try {
+            // 构建查询参数
+            const params = new URLSearchParams();
+            params.append('userId', userId);
+            params.append('dataType', dataType);
+            params.append('page', page);
+            params.append('limit', 20); // 每页20条记录
+            
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (projectFilter) params.append('projectId', projectFilter);
+            if (statusFilter) params.append('status', statusFilter);
+            if (operationTypeFilter) params.append('operationType', operationTypeFilter);
+            
+            // 发送请求
+            const response = await fetch(getApiUrl(`/api/admin/data/user-data?${params.toString()}`), {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // 根据数据类型渲染不同的表格和分页
+                this.renderUserDataTable(dataType, data.data || [], data.pagination);
+                this.showMessage(`查询成功，共找到 ${data.total || 0} 条记录`, 'success');
+            } else {
+                this.showMessage(data.error || '查询失败', 'error');
+            }
+            
+        } catch (error) {
+            console.error('搜索用户数据失败:', error);
+            this.showMessage('查询失败: ' + error.message, 'error');
+        }
+    }
+
+    // 渲染用户数据表格
+    renderUserDataTable(dataType, data, pagination) {
+        console.log(`渲染${dataType}数据表格:`, data, '分页信息:', pagination);
+        
+        // 隐藏所有表格
+        const projectsTable = document.getElementById('projectsTable');
+        const sessionsTable = document.getElementById('sessionsTable');
+        const userLogsTable = document.getElementById('userLogsTable');
+        
+        if (projectsTable) projectsTable.classList.add('hidden');
+        if (sessionsTable) sessionsTable.classList.add('hidden');
+        if (userLogsTable) userLogsTable.classList.add('hidden');
+        
+        // 根据数据类型显示对应表格并渲染数据
+        switch (dataType) {
+            case 'projects':
+                if (projectsTable) {
+                    projectsTable.classList.remove('hidden');
+                    this.renderProjectsTable(data);
+                    this.renderUserDataPagination(pagination, 'projects');
+                }
+                break;
+            case 'sessions':
+                if (sessionsTable) {
+                    sessionsTable.classList.remove('hidden');
+                    this.renderSessionsTable(data);
+                    this.renderUserDataPagination(pagination, 'sessions');
+                }
+                break;
+            case 'user-logs':
+                if (userLogsTable) {
+                    userLogsTable.classList.remove('hidden');
+                    this.renderUserLogsTable(data);
+                    this.renderUserDataPagination(pagination, 'user-logs');
+                }
+                break;
+            default:
+                console.warn('未知的数据类型:', dataType);
+        }
+    }
+    
+    // 渲染项目数据表格
+    renderProjectsTable(projects) {
+        const tableBody = document.getElementById('projectsTableBody');
+        if (!tableBody) return;
+        
+        if (!projects || projects.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">暂无项目数据</td></tr>';
+            return;
+        }
+        
+        const rows = projects.map(project => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(project.username || 'N/A')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(project.name || 'N/A')}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusStyle(project.status)}">
+                        ${this.getStatusText(project.status)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatDateOnly(project.start_date)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${project.completion_date ? this.formatDateOnly(project.completion_date) : '未完成'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatDateTime(project.created_at)}</td>
+            </tr>
+        `).join('');
+        
+        tableBody.innerHTML = rows;
+    }
+    
+    // 渲染学习记录表格
+    renderSessionsTable(sessions) {
+        const tableBody = document.getElementById('sessionsTableBody');
+        if (!tableBody) return;
+        
+        if (!sessions || sessions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">暂无学习记录</td></tr>';
+            return;
+        }
+        
+        const rows = sessions.map(session => {
+            // 计算学习时长（分钟）
+            const durationMinutes = session.duration || (session.duration_hours ? Math.round(session.duration_hours * 60) : 0);
+            
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(session.username || 'N/A')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(session.project_name || '未指定项目')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatDateOnly(session.study_date)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatTimeOnly(session.start_time)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatTimeOnly(session.end_time)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${durationMinutes}分钟</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatDateTime(session.created_at)}</td>
+                </tr>
+            `;
+        }).join('');
+        
+        tableBody.innerHTML = rows;
+    }
+    
+    // 渲染用户操作日志表格
+    renderUserLogsTable(logs) {
+        const tableBody = document.getElementById('userLogsTableBody');
+        if (!tableBody) return;
+        
+        if (!logs || logs.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">暂无操作日志</td></tr>';
+            return;
+        }
+        
+        const rows = logs.map(log => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${this.formatDateTime(log.created_at)}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getOperationTypeStyle(log.operation_type)}">
+                        ${this.getOperationTypeText(log.operation_type)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(log.username || 'N/A')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${this.escapeHtml(log.description || 'N/A')}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${this.getStatusStyle(log.status)}">
+                        ${this.getStatusText(log.status)}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+        
+        tableBody.innerHTML = rows;
+    }
+
+    // 渲染用户数据分页
+    renderUserDataPagination(pagination, dataType) {
+        if (!pagination || pagination.totalPages <= 1) {
+            // 隐藏分页容器
+            const paginationContainers = document.querySelectorAll('.user-data-pagination');
+            paginationContainers.forEach(container => {
+                container.classList.add('hidden');
+            });
+            return;
+        }
+
+        // 查找对应的分页容器
+        let paginationContainer;
+        switch (dataType) {
+            case 'projects':
+                paginationContainer = document.getElementById('projectsPagination');
+                break;
+            case 'sessions':
+                paginationContainer = document.getElementById('sessionsPagination');
+                break;
+            case 'user-logs':
+                paginationContainer = document.getElementById('userLogsPagination');
+                break;
+            default:
+                return;
+        }
+
+        if (!paginationContainer) {
+            console.warn(`找不到${dataType}的分页容器`);
+            return;
+        }
+
+        // 显示分页容器
+        paginationContainer.classList.remove('hidden');
+
+        let paginationHTML = '<div class="flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">';
+        
+        // 左侧信息
+        paginationHTML += '<div class="text-sm text-gray-700 dark:text-gray-300">';
+        paginationHTML += `显示第 ${pagination.currentPage} 页，共 ${pagination.totalPages} 页，总计 ${pagination.totalItems} 条记录`;
+        paginationHTML += '</div>';
+        
+        // 右侧分页按钮
+        paginationHTML += '<div class="flex space-x-2">';
+
+        // 上一页按钮
+        if (pagination.hasPrevPage) {
+            paginationHTML += `<button onclick="adminApp.searchUserData(${pagination.currentPage - 1})" class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600">上一页</button>`;
+        }
+
+        // 页码按钮
+        const startPage = Math.max(1, pagination.currentPage - 2);
+        const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === pagination.currentPage) {
+                paginationHTML += `<span class="px-3 py-1 text-sm bg-blue-600 text-white rounded">${i}</span>`;
+            } else {
+                paginationHTML += `<button onclick="adminApp.searchUserData(${i})" class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600">${i}</button>`;
+            }
+        }
+
+        // 下一页按钮
+        if (pagination.hasNextPage) {
+            paginationHTML += `<button onclick="adminApp.searchUserData(${pagination.currentPage + 1})" class="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600">下一页</button>`;
+        }
+
+        paginationHTML += '</div></div>';
+        paginationContainer.innerHTML = paginationHTML;
+    }
+    
+    // 获取状态样式
+    getStatusStyle(status) {
+        const styles = {
+            'active': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'in_progress': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            'completed': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'paused': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+            'success': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'error': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'failed': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'failure': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'pending': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+            'not_started': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+            'on_hold': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+        };
+        return styles[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+    
+    // 获取状态文本
+    getStatusText(status) {
+        const texts = {
+            'active': '进行中',
+            'in_progress': '进行中',
+            'completed': '已完成',
+            'paused': '暂停',
+            'success': '成功',
+            'error': '失败',
+            'pending': '待处理',
+            'not_started': '未开始',
+            'on_hold': '暂停中'
+        };
+        return texts[status] || status || '未知';
+    }
+    
+    // 获取操作类型样式
+    getOperationTypeStyle(operationType) {
+        const styles = {
+            'backup': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+            'reset': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'clean': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+            'import': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+            'export': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            // 创建相关操作使用绿色样式
+            'user_creation': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'project_creation': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            'session_creation': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+            // 删除相关操作使用红色样式
+            'user_hard_deletion': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'user_soft_deletion': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'user_deletion': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'project_deletion': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+            'session_deletion': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+        };
+        return styles[operationType] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+    
+    // 获取操作类型文本
+    getOperationTypeText(operationType) {
+        const texts = {
+            'backup': '数据备份',
+            'reset': '数据重置',
+            'clean': '数据清理',
+            'import': '数据导入恢复',
+            'export': '数据导出',
+            'user_creation': '创建用户',
+            'user_hard_deletion': '硬删除用户',
+            'user_soft_deletion': '软删除用户',
+            'user_deletion': '删除用户',
+            'user_update': '更新用户',
+            'user_status_toggle': '切换用户状态',
+            'login': '用户登录',
+            'logout': '用户登出',
+            'password_reset': '密码重置',
+            'email_verification': '邮箱验证',
+            'project_creation': '创建项目',
+            'project_update': '更新项目',
+            'project_deletion': '删除项目',
+            'session_creation': '创建学习记录',
+            'session_update': '更新学习记录',
+            'session_deletion': '删除学习记录',
+            'achievement_earned': '获得成就',
+            'points_earned': '获得积分',
+            'points_spent': '消费积分',
+            'exchange_request': '积分兑换申请',
+            'exchange_approval': '积分兑换审批'
+        };
+        return texts[operationType] || operationType || '未知操作';
+    }
+    
+    // 格式化日期时间
+    formatDateTime(dateString) {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        } catch (error) {
+            return dateString;
+        }
+    }
+
+    // 格式化日期（仅日期）
+    formatDateOnly(dateString) {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            return dateString;
+        }
+    }
+
+    // 格式化时间（仅时间）
+    formatTimeOnly(timeString) {
+        if (!timeString) return 'N/A';
+        try {
+            const date = new Date(timeString);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        } catch (error) {
+            return timeString;
+        }
+    }
+
+    // 格式化日期（兼容旧版本）
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            return dateString;
+        }
     }
 
     // 清空用户数据显示
     clearUserDataDisplay() {
         console.log('清空用户数据显示');
-        const tableBody = document.getElementById('userDataTableBody');
-        if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">暂无数据</td></tr>';
-        }
+        
+        // 隐藏所有表格
+        const projectsTable = document.getElementById('projectsTable');
+        const sessionsTable = document.getElementById('sessionsTable');
+        const userLogsTable = document.getElementById('userLogsTable');
+        
+        if (projectsTable) projectsTable.classList.add('hidden');
+        if (sessionsTable) sessionsTable.classList.add('hidden');
+        if (userLogsTable) userLogsTable.classList.add('hidden');
         
         // 清空筛选条件
         const userFilter = document.getElementById('userFilter');
-        const dataSearch = document.getElementById('dataSearch');
+        const userDataStartDate = document.getElementById('userDataStartDate');
+        const userDataEndDate = document.getElementById('userDataEndDate');
+        const projectFilter = document.getElementById('projectFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const operationTypeFilter = document.getElementById('userOperationTypeFilter');
         
         if (userFilter) userFilter.value = '';
-        if (dataSearch) dataSearch.value = '';
+        if (userDataStartDate) userDataStartDate.value = '';
+        if (userDataEndDate) userDataEndDate.value = '';
+        if (projectFilter) projectFilter.value = '';
+        if (statusFilter) statusFilter.value = '';
+        if (operationTypeFilter) operationTypeFilter.value = '';
+        
+        this.showMessage('已清空筛选条件', 'info');
     }
 
     // 加载用户数据
@@ -2174,11 +3456,6 @@ class AdminApp {
             return;
         }
 
-        if (!pagination || pagination.totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
         let paginationHTML = '<div class="flex items-center justify-between">';
         paginationHTML += '<div class="text-sm text-gray-700 dark:text-gray-300">';
         paginationHTML += `显示第 ${pagination.currentPage} 页，共 ${pagination.totalPages} 页`;
@@ -2208,7 +3485,7 @@ class AdminApp {
         }
 
         paginationHTML += '</div></div>';
-        paginationContainer.innerHTML = paginationHTML;
+        container.innerHTML = paginationHTML;
     }
 
     // 系统配置功能
@@ -2370,7 +3647,7 @@ class AdminApp {
     async loadSystemConfig() {
         console.log('加载系统配置...');
         try {
-            const response = await fetch('/api/admin/config', {
+            const response = await fetch(getApiUrl('/api/admin/config'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2505,7 +3782,7 @@ class AdminApp {
     async loadStaticSystemInfo() {
         console.log('加载静态系统信息...');
         try {
-            const response = await fetch('/api/admin/system/info', {
+            const response = await fetch(getApiUrl('/api/admin/system/info'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2548,7 +3825,7 @@ class AdminApp {
     async updateUptime() {
         console.log('🔥 更新运行时间...');
         try {
-            const response = await fetch('/api/admin/system/info', {
+            const response = await fetch(getApiUrl('/api/admin/system/info'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2583,7 +3860,7 @@ class AdminApp {
     async updateSystemResources() {
         console.log('🔥 更新系统资源...');
         try {
-            const response = await fetch('/api/admin/system/info', {
+            const response = await fetch(getApiUrl('/api/admin/system/info'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2659,7 +3936,7 @@ class AdminApp {
     async updateDiskSpace() {
         console.log('🔥 更新磁盘空间...');
         try {
-            const response = await fetch('/api/admin/system/info', {
+            const response = await fetch(getApiUrl('/api/admin/system/info'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2717,7 +3994,7 @@ class AdminApp {
     async loadSystemInfo() {
         console.log('🔥 加载完整系统信息...');
         try {
-            const response = await fetch('/api/admin/system/info', {
+            const response = await fetch(getApiUrl('/api/admin/system/info'), {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2862,7 +4139,7 @@ class AdminApp {
             console.log('保存的配置数据:', configData);
             console.log('发送请求到:', '/api/admin/config');
             
-            const response = await fetch('/api/admin/config', {
+            const response = await fetch(getApiUrl('/api/admin/config'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2897,126 +4174,11 @@ class AdminApp {
         }
     }
 
-    // 测试数据管理功能
-    initTestDataManagement() {
-        console.log('初始化测试数据管理功能');
-        // 移除这行，不需要在操作日志中显示页面加载信息
-        // this.addOperationLog('🧪 加载测试数据管理页面', 'info');
-        
-        this.bindTestDataManagementEvents();
-    }
 
-    // 绑定测试数据管理事件
-    bindTestDataManagementEvents() {
-        console.log('开始绑定测试数据管理事件...');
-        
-        // 绑定生成测试数据按钮事件
-        const generateBtn = document.getElementById('generateTestDataBtn');
-        if (generateBtn) {
-            console.log('找到生成测试数据按钮，绑定事件');
-            generateBtn.addEventListener('click', () => this.generateTestData());
-        } else {
-            console.error('未找到生成测试数据按钮');
-        }
-        
-        // 绑定清除测试数据按钮事件
-        const clearBtn = document.getElementById('clearTestDataBtn');
-        if (clearBtn) {
-            console.log('找到清除测试数据按钮，绑定事件');
-            clearBtn.addEventListener('click', () => this.clearTestData());
-        } else {
-            console.error('未找到清除测试数据按钮');
-        }
-    }
 
-    // 生成测试数据
-    async generateTestData() {
-        const generateBtn = document.getElementById('generateTestDataBtn');
-        const originalText = generateBtn.textContent;
-        
-        try {
-            generateBtn.disabled = true;
-            generateBtn.textContent = '生成中...';
-            
-            // 收集表单数据
-            const formData = new FormData(document.getElementById('testDataForm'));
-            const config = {
-                projectCount: parseInt(formData.get('projectCount')),
-                projectType: formData.get('projectType'),
-                recordCount: parseInt(formData.get('recordCount')),
-                timeRange: parseInt(formData.get('timeRange')),
-                dailyRecords: parseInt(formData.get('dailyRecords')),
-                minDuration: parseInt(formData.get('minDuration')),
-                maxDuration: parseInt(formData.get('maxDuration'))
-            };
-            
-            const response = await fetch('/api/admin/testdata/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(config)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // 测试数据生成成功 - 绿色字体显示（操作成功）
-                this.addOperationLog('✅ 测试数据生成成功', 'success');
-                this.showMessage('测试数据生成成功！', 'success');
-            } else {
-                // 测试数据生成失败 - 黄色字体显示（普通警告）
-                this.addOperationLog('⚠️ 测试数据生成失败: ' + data.error, 'warning');
-                this.showMessage('测试数据生成失败: ' + data.error, 'error');
-            }
-        } catch (error) {
-            // 测试数据生成失败 - 黄色字体显示（普通警告）
-            this.addOperationLog('⚠️ 测试数据生成失败: ' + error.message, 'warning');
-            this.showMessage('测试数据生成失败: ' + error.message, 'error');
-        } finally {
-            generateBtn.disabled = false;
-            generateBtn.textContent = originalText;
-        }
-    }
 
-    // 清除测试数据
-    async clearTestData() {
-        if (!confirm('确定要清除所有测试数据吗？此操作不可恢复！')) {
-            return;
-        }
-        
-        const clearBtn = document.getElementById('clearTestDataBtn');
-        const originalText = clearBtn.textContent;
-        
-        try {
-            clearBtn.disabled = true;
-            clearBtn.textContent = '清除中...';
-            
-            const response = await fetch('/api/admin/testdata/clear', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // 清除测试数据成功 - 红色字体显示（敏感操作）
-                this.addOperationLog('🗑️ 清除测试数据成功', 'critical');
-                this.showMessage('测试数据清除成功！', 'success');
-            } else {
-                this.addOperationLog('❌ 清除测试数据失败: ' + data.error, 'error');
-                this.showMessage('测试数据清除失败: ' + data.error, 'error');
-            }
-        } catch (error) {
-            this.addOperationLog('❌ 清除测试数据失败: ' + error.message, 'error');
-            this.showMessage('测试数据清除失败: ' + error.message, 'error');
-        } finally {
-            clearBtn.disabled = false;
-            clearBtn.textContent = originalText;
-        }
-    }
+
+
 
     // 更新系统名称显示
     updateSystemNameDisplay(systemName) {
@@ -3030,7 +4192,7 @@ class AdminApp {
 
     // 添加操作日志
     addOperationLog(message, type = 'info') {
-        const log = document.getElementById('operationLog');
+        const log = document.getElementById('operationLogs');
         if (!log) return;
         
         // 修改时间戳格式为：2025-06-21 18:38:49
@@ -3150,85 +4312,166 @@ class AdminApp {
             }
         }
     }
+
+    // 刷新相关页面数据
+    refreshRelatedData() {
+        console.log('刷新相关页面数据...');
+        
+        // 如果当前在项目管理页面，刷新项目列表
+        const projectsTab = document.querySelector('[data-tab="projects"]');
+        if (projectsTab && projectsTab.classList.contains('active')) {
+            console.log('刷新项目管理页面数据');
+            // 触发项目管理页面的刷新
+            const event = new CustomEvent('refreshProjects');
+            document.dispatchEvent(event);
+        }
+        
+        // 如果当前在学习记录页面，刷新记录列表
+        const sessionsTab = document.querySelector('[data-tab="sessions"]');
+        if (sessionsTab && sessionsTab.classList.contains('active')) {
+            console.log('刷新学习记录页面数据');
+            // 触发学习记录页面的刷新
+            const event = new CustomEvent('refreshSessions');
+            document.dispatchEvent(event);
+        }
+        
+        // 如果当前在数据管理页面，刷新统计数据
+        const dataManagementTab = document.querySelector('[data-tab="data-management"]');
+        if (dataManagementTab && dataManagementTab.classList.contains('active')) {
+            console.log('刷新数据管理页面统计');
+            // 可以在这里添加刷新统计数据的逻辑
+        }
+    }
 }
 
 // 初始化管理应用
 let adminApp;
 
-// 确保在DOM加载完成后初始化
-function initializeAdminApp() {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            adminApp = new AdminApp();
-            window.adminApp = adminApp;
-            console.log('AdminApp已初始化:', window.adminApp);
-        });
-    } else {
-        // DOM已经加载完成
-        adminApp = new AdminApp();
-        window.adminApp = adminApp;
-        window.currentAdminApp = adminApp; // 添加全局引用
-        console.log('AdminApp已初始化:', window.adminApp);
-    }
-}
-
-// 全局导出 AdminApp 类
-window.AdminApp = AdminApp;
-
-// 添加全局调试函数
-window.debugAdminApp = function() {
-    console.log('=== AdminApp 调试信息 ===');
-    console.log('AdminApp 类:', AdminApp);
-    console.log('window.AdminApp:', window.AdminApp);
-    console.log('当前 AdminApp 实例:', window.adminApp);
-    
-    // 检查保存按钮
-    const saveBtn = document.getElementById('saveConfigBtn');
-    console.log('保存按钮:', saveBtn);
-    if (saveBtn) {
-        console.log('按钮事件监听器:', saveBtn.onclick);
-        console.log('按钮是否可见:', saveBtn.offsetParent !== null);
-        console.log('按钮是否禁用:', saveBtn.disabled);
-    }
-    
-    // 测试消息显示
-    if (window.adminApp && window.adminApp.showMessage) {
-        window.adminApp.showMessage('调试消息测试', 'info');
-    }
-};
-
-console.log('admin.js 加载完成，AdminApp 已导出到全局');
-
-// 立即尝试初始化
-initializeAdminApp();
-
-// 备用初始化方法
-document.addEventListener('DOMContentLoaded', () => {
+// 防止重复初始化
+if (window.adminAppInitialized) {
+    console.log('AdminApp 已经初始化过，跳过重复初始化');
+} else {
+    // 确保在DOM加载完成后初始化
+    function initializeAdminApp() {
+        if (window.adminApp) {
+            console.log('AdminApp 实例已存在，跳过初始化');
+            return;
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (!window.adminApp) {
+                    adminApp = new AdminApp();
+                    window.adminApp = adminApp;
+                    window.adminAppInitialized = true;
+                    console.log('AdminApp已初始化:', window.adminApp);
+                }
+            });
+        } else {
+            // DOM已经加载完成
             if (!window.adminApp) {
+                adminApp = new AdminApp();
+                window.adminApp = adminApp;
+                window.currentAdminApp = adminApp; // 添加全局引用
+                window.adminAppInitialized = true;
+                console.log('AdminApp已初始化:', window.adminApp);
+            }
+        }
+    }
+
+    // 全局导出 AdminApp 类（只在第一次加载时）
+    if (!window.AdminApp) {
+        window.AdminApp = AdminApp;
+    }
+
+    // 添加全局调试函数
+    window.debugAdminApp = function() {
+        console.log('=== AdminApp 调试信息 ===');
+        console.log('AdminApp 类:', AdminApp);
+        console.log('window.AdminApp:', window.AdminApp);
+        console.log('当前 AdminApp 实例:', window.adminApp);
+        
+        // 检查保存按钮
+        const saveBtn = document.getElementById('saveConfigBtn');
+        console.log('保存按钮:', saveBtn);
+        if (saveBtn) {
+            console.log('按钮事件监听器:', saveBtn.onclick);
+            console.log('按钮是否可见:', saveBtn.offsetParent !== null);
+            console.log('按钮是否禁用:', saveBtn.disabled);
+        }
+        
+        // 测试消息显示
+        if (window.adminApp && window.adminApp.showMessage) {
+            window.adminApp.showMessage('调试消息测试', 'info');
+        }
+    };
+
+    console.log('admin.js 加载完成，AdminApp 已导出到全局');
+
+    // 立即尝试初始化
+    initializeAdminApp();
+
+    // 备用初始化方法
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!window.adminApp && !window.adminAppInitialized) {
             adminApp = new AdminApp();
             window.adminApp = adminApp;
             window.currentAdminApp = adminApp; // 添加全局引用
+            window.adminAppInitialized = true;
             console.log('AdminApp备用初始化完成:', window.adminApp);
         }
-});
+    });
+}
 
 // 加载日志数据函数，支持带参数
 async function loadRecentOperationLogs(paramStr = '') {
     try {
-        let url = '/api/admin/data/user-operation-logs?limit=10&page=1';
-        if (paramStr) url += '&' + paramStr;
-        const response = await fetch(url);
+        console.log('加载操作日志，参数:', paramStr);
+        
+        // 解析参数
+        const params = new URLSearchParams();
+        params.set('limit', '10');
+        params.set('page', '1'); // 默认值
+        
+        if (paramStr) {
+            const paramPairs = paramStr.split('&');
+            paramPairs.forEach(pair => {
+                const [key, value] = pair.split('=');
+                if (key && value) {
+                    params.set(key, value);
+                }
+            });
+        }
+        
+        const url = `/api/admin/data/user-operation-logs?${params.toString()}`;
+        console.log('请求URL:', url);
+        
+        const response = await fetch(url, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('操作日志响应:', data);
+            
             if (data.success) {
                 // 渲染日志表格和分页
                 renderRecentLogsTable(data.logs);
                 if (window.adminApp && window.adminApp.renderLogsPagination) {
                     window.adminApp.renderLogsPagination(data.pagination);
                 }
+            } else {
+                console.error('操作日志加载失败:', data.error);
             }
+        } else {
+            console.error('操作日志请求失败:', response.status);
         }
-    } catch (e) { console.error('加载操作日志失败', e); }
+    } catch (e) { 
+        console.error('加载操作日志失败', e); 
+    }
 }
 
 // 渲染最近操作日志表格
@@ -3246,7 +4489,7 @@ function renderRecentLogsTable(logs) {
     }
 
     const rows = logs.map(log => {
-        // 修改日期格式为：2025-06-21 18:38:49
+        // 优化日期格式显示：2025-06-21 18:38:49
         const date = new Date(log.created_at);
         const createdAt = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
         
@@ -3263,6 +4506,18 @@ function renderRecentLogsTable(logs) {
                     return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700';
                 case 'export':
                     return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700';
+                // 创建相关操作使用绿色样式
+                case 'user_creation':
+                case 'project_creation':
+                case 'session_creation':
+                    return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700';
+                // 删除相关操作使用红色样式
+                case 'user_hard_deletion':
+                case 'user_soft_deletion':
+                case 'user_deletion':
+                case 'project_deletion':
+                case 'session_deletion':
+                    return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700';
                 default:
                     return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border border-gray-300 dark:border-gray-600';
             }
@@ -3296,7 +4551,12 @@ function renderRecentLogsTable(logs) {
         
         return `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">${createdAt}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-gray-900 dark:text-white">${date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}</span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-3 py-1 text-xs font-medium rounded-full ${getOperationTypeStyle(log.operation_type)}">
                         ${log.operation_name}
@@ -3328,4 +4588,14 @@ window.refreshSystemInfo = function() {
         alert('系统信息刷新功能暂时不可用');
     }
 };
+
+// 步骤C：统一处理 demo 模式下的 API 路径前缀
+function getApiUrl(path) {
+  if (window.isDemo) {
+    if (path.startsWith('/api/')) {
+      return '/demo' + path;
+    }
+  }
+  return path;
+}
 

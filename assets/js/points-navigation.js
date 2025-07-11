@@ -4,6 +4,11 @@
  * 使用增强的动态脚本加载系统，确保SPA页面切换100%生效
  */
 
+// 防止重复加载
+if (window.PointsNavigation) {
+    console.log('PointsNavigation 已经加载过，跳过重复加载');
+} else {
+
 class PointsNavigation {
   constructor() {
     this.currentPage = '';
@@ -164,7 +169,7 @@ class PointsNavigation {
     if (window.showNotification) {
       window.showNotification(message, 'error');
     } else {
-      alert(message);
+      window.demoModeAlert(message);
     }
   }
 
@@ -178,7 +183,9 @@ class PointsNavigation {
 }
 
 // 创建积分导航实例
-window.pointsNavigation = new PointsNavigation();
+if (!window.pointsNavigation) {
+    window.pointsNavigation = new PointsNavigation();
+}
 
 // 处理浏览器前进后退
 window.addEventListener('popstate', (event) => {
@@ -189,4 +196,5 @@ window.addEventListener('popstate', (event) => {
 });
 
 // 导出到全局作用域
-window.PointsNavigation = PointsNavigation; 
+window.PointsNavigation = PointsNavigation;
+} 
