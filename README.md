@@ -78,8 +78,8 @@
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-username/study-tracker.git
-cd study-tracker
+git clone https://github.com/laurawu0122/study-tracker-v1.git
+cd study-tracker-v1
 ```
 
 2. **配置环境变量**
@@ -110,8 +110,8 @@ docker-compose logs -f
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-username/study-tracker.git
-cd study-tracker
+git clone https://github.com/laurawu0122/study-tracker-v1.git
+cd study-tracker-v1
 ```
 
 2. **安装依赖**
@@ -408,9 +408,9 @@ docker-compose down
 
 ## 📞 联系方式
 
-- 项目主页：[GitHub Repository](https://github.com/your-username/study-tracker)
-- 问题反馈：[Issues](https://github.com/your-username/study-tracker/issues)
-- 功能建议：[Discussions](https://github.com/your-username/study-tracker/discussions)
+- 项目主页：[GitHub Repository](https://github.com/laurawu0122/study-tracker-v1)
+- 问题反馈：[Issues](https://github.com/laurawu0122/study-tracker-v1/issues)
+- 功能建议：[Discussions](https://github.com/laurawu0122/study-tracker-v1/discussions)
 
 ---
 
